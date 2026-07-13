@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food & Beverage — Wholesale Snacks, Nuts & Dried Fruit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kraft:#E8DCC3; --kraft-deep:#DACBA6; --paper:#F4EDDB;
+    --espresso:#2B1D12; --espresso-soft:#4A3626;
+    --amber:#C77B2E; --amber-deep:#A2601C;
+    --forest:#3F5738; --forest-deep:#2C3E27;
+    --cranberry:#A23B34; --gold:#B8922F;
+    --line:#C9B896; --shadow:0 8px 24px rgba(43,29,18,0.14);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--kraft);color:var(--espresso);font-family:'Inter',sans-serif;}
+  h1,h2,h3{font-family:'Fraunces',serif;color:var(--espresso);margin:0;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber-deep);font-weight:600;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+  a{color:inherit;}
+  img{max-width:100%;display:block;}
+
+  /* ---------- Header ---------- */
+  header{position:sticky;top:0;z-index:50;background:var(--kraft);border-bottom:2px solid var(--espresso);}
+  header .bar{display:flex;align-items:center;justify-content:space-between;padding:16px 0;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo .mark{width:38px;height:38px;border-radius:50%;background:var(--forest);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:1.05rem;}
+  .logo .word{font-family:'Fraunces',serif;font-weight:800;font-size:1.15rem;line-height:1.1;}
+  .logo .word span{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.16em;color:var(--forest);font-weight:600;}
+  nav{display:flex;gap:28px;font-size:0.92rem;font-weight:500;}
+  nav a{text-decoration:none;border-bottom:2px solid transparent;padding-bottom:3px;transition:border-color .15s;}
+  nav a:hover{border-color:var(--amber);}
+  .nav-cta{background:var(--espresso);color:var(--paper)!important;padding:9px 18px;border-radius:2px;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:none!important;}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:64px 0 56px;position:relative;overflow:hidden;}
+  .hero-grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:48px;align-items:center;}
+  .hero h1{font-size:3.1rem;line-height:1.04;font-weight:900;letter-spacing:-0.01em;margin:14px 0 20px;}
+  .hero h1 em{font-style:normal;color:var(--forest);}
+  .hero p.lede{font-size:1.12rem;color:var(--espresso-soft);max-width:480px;line-height:1.55;margin-bottom:28px;}
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:0.82rem;
+    text-transform:uppercase;letter-spacing:0.05em;padding:13px 24px;border-radius:2px;text-decoration:none;
+    font-weight:600;border:2px solid var(--espresso);
+  }
+  .btn-solid{background:var(--espresso);color:var(--paper);}
+  .btn-outline{background:transparent;color:var(--espresso);}
+  .btn-solid:hover{background:var(--forest);border-color:var(--forest);}
+  .btn-outline:hover{background:var(--espresso);color:var(--paper);}
+
+  /* Shipping-label hero card */
+  .label-card{
+    background:var(--paper);border:2px solid var(--espresso);border-radius:3px;padding:0;
+    box-shadow:var(--shadow); position:relative; transform:rotate(1.2deg);
+  }
+  .label-card .strip{background:var(--espresso);color:var(--paper);padding:10px 18px;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;}
+  .label-card .body{padding:20px 22px 22px;}
+  .label-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:0.86rem;}
+  .label-row:last-child{border-bottom:none;}
+  .label-row .k{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--espresso-soft);}
+  .label-row .v{font-weight:600;text-align:right;}
+  .stamp-mini{
+    position:absolute;top:-18px;right:-14px;width:76px;height:76px;border-radius:50%;
+    border:3px solid var(--cranberry);color:var(--cranberry);display:flex;align-items:center;justify-content:center;
+    text-align:center;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:0.04em;transform:rotate(-14deg);background:rgba(244,237,219,0.9);line-height:1.15;
+  }
+
+  /* ---------- Stats strip ---------- */
+  .stats{background:var(--espresso);color:var(--paper);padding:30px 0;}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center;}
+  .stats-grid .n{font-family:'Fraunces',serif;font-size:2.1rem;font-weight:800;color:var(--gold);}
+  .stats-grid .l{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:#d8c9a8;margin-top:4px;}
+
+  /* ---------- Certification stamps ---------- */
+  .certs{padding:56px 0 40px;}
+  .certs-head{text-align:center;margin-bottom:36px;}
+  .certs-head h2{font-size:1.9rem;margin:10px 0 8px;}
+  .certs-head p{color:var(--espresso-soft);max-width:520px;margin:0 auto;}
+  .stamp-row{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;}
+  .stamp{
+    width:132px;height:132px;border-radius:50%;border:3px solid var(--forest);color:var(--forest);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.03em;
+    padding:10px; position:relative;
+  }
+  .stamp:nth-child(2){border-color:var(--cranberry);color:var(--cranberry);transform:rotate(-6deg);}
+  .stamp:nth-child(1){transform:rotate(4deg);}
+  .stamp:nth-child(3){border-color:var(--gold);color:var(--gold-stamp,#8a6c1f);transform:rotate(-3deg);}
+  .stamp .big{font-size:0.92rem;font-weight:700;margin-bottom:3px;}
+  .stamp .small{font-size:0.58rem;}
+
+  /* ---------- Category grid ---------- */
+  .categories{padding:20px 0 60px;}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
+  .section-head h2{font-size:1.9rem;}
+  .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .cat-card{
+    background:var(--paper);border:1.5px solid var(--line);border-radius:3px;padding:22px 18px;
+    cursor:pointer;transition:transform .12s, border-color .12s;
+  }
+  .cat-card:hover{transform:translateY(-3px);border-color:var(--amber);}
+  .cat-card .ic{font-size:1.7rem;margin-bottom:10px;}
+  .cat-card h3{font-size:1.02rem;margin-bottom:4px;}
+  .cat-card .count{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--espresso-soft);}
+
+  /* ---------- Catalog ---------- */
+  .catalog{background:var(--paper);padding:56px 0 70px;border-top:2px solid var(--espresso);border-bottom:2px solid var(--espresso);}
+  .catalog .section-head h2{font-size:1.9rem;}
+  .catalog-controls{display:flex;gap:12px;margin-bottom:26px;flex-wrap:wrap;}
+  .search-box{
+    flex:1;min-width:220px;padding:12px 16px;border:1.5px solid var(--espresso);border-radius:2px;
+    background:var(--kraft);font-family:'Inter',sans-serif;font-size:0.92rem;color:var(--espresso);
+  }
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px;}
+  .chip{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;
+    padding:7px 14px;border-radius:14px;border:1.5px solid var(--espresso);background:transparent;cursor:pointer;
+    color:var(--espresso);
+  }
+  .chip.active{background:var(--espresso);color:var(--paper);}
+  #catalogStatus{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:var(--espresso-soft);margin-bottom:16px;}
+  .product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .product-card{
+    background:var(--kraft);border:1.5px solid var(--line);border-radius:3px;padding:16px 18px;
+  }
+  .product-card .sku{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--espresso-soft);margin-bottom:6px;}
+  .product-card h4{font-family:'Inter',sans-serif;font-weight:600;font-size:0.95rem;margin-bottom:4px;line-height:1.3;}
+  .product-card .pack{font-size:0.78rem;color:var(--espresso-soft);}
+  .load-more{display:block;margin:30px auto 0;}
+
+  /* ---------- About / facility ---------- */
+  .about{padding:64px 0;}
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center;}
+  .about h2{font-size:2rem;margin:10px 0 16px;}
+  .about p{color:var(--espresso-soft);line-height:1.65;margin-bottom:14px;}
+  .about-facts{list-style:none;padding:0;margin:22px 0 0;}
+  .about-facts li{padding:10px 0;border-bottom:1px solid var(--line);font-size:0.92rem;display:flex;gap:10px;}
+  .about-facts li b{color:var(--forest);}
+  .about-visual{
+    background:var(--espresso);border-radius:4px;padding:30px;color:var(--paper);position:relative;
+  }
+  .about-visual .tag{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;}
+  .route-line{display:flex;align-items:center;gap:0;margin:22px 0;}
+  .route-dot{width:12px;height:12px;border-radius:50%;background:var(--amber);flex-shrink:0;}
+  .route-seg{flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--amber) 0 6px,transparent 6px 12px);}
+  .route-labels{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:#d8c9a8;margin-top:6px;}
+
+  /* ---------- CTA band ---------- */
+  .cta-band{background:var(--forest);color:var(--paper);padding:54px 0;text-align:center;}
+  .cta-band h2{color:var(--paper);font-size:2rem;margin-bottom:14px;}
+  .cta-band p{color:#d9e3d4;max-width:480px;margin:0 auto 26px;}
+
+  /* ---------- Footer ---------- */
+  footer{background:var(--espresso);color:#c9bda3;padding:40px 0 26px;font-size:0.85rem;}
+  .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:30px;margin-bottom:26px;}
+  footer h4{color:var(--paper);font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;}
+  footer a{text-decoration:none;color:#c9bda3;}
+  footer ul{list-style:none;padding:0;margin:0;}
+  footer li{margin-bottom:8px;}
+  .footer-bottom{border-top:1px solid #4A3626;padding-top:20px;font-size:0.75rem;color:#8a7a5f;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+
+  @media (max-width:900px){
+    .hero-grid,.about-grid{grid-template-columns:1fr;}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+    .cat-grid{grid-template-columns:repeat(2,1fr);}
+    .product-grid{grid-template-columns:repeat(2,1fr);}
+    nav{display:none;}
+    .hero h1{font-size:2.2rem;}
+    .footer-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <div class="logo">
+      <div class="mark">A</div>
+      <div class="word">American Food &amp; Beverage<span>GRASSLAND &middot; PREMIUM FOOD</span></div>
+    </div>
+    <nav>
+      <a href="#categories">Categories</a>
+      <a href="#catalog">Full Catalog</a>
+      <a href="#certifications">Certifications</a>
+      <a href="#about">About</a>
+      <a href="/order" class="nav-cta">Order Portal &rarr;</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Wholesale &middot; Paterson, NJ &middot; Since day one in the Tri-State</div>
+      <h1>Dried fruit, nuts &amp;<br><em>snacks</em>, shipped<br>next day.</h1>
+      <p class="lede">We roast, flavor, and pack in our own 60,000 sq ft facility, then run it out on our own trucks. Kosher, USDA Organic, and SQF certified — over 370 items ready to move.</p>
+      <div class="hero-ctas">
+        <a href="#catalog" class="btn btn-solid">Browse the Catalog</a>
+        <a href="#about" class="btn btn-outline">Our Facility</a>
+      </div>
+    </div>
+    <div style="position:relative;padding-top:18px;">
+      <div class="stamp-mini">Est.<br>Tri-State<br>Direct</div>
+      <div class="label-card">
+        <div class="strip"><span>Shipment Manifest</span><span>Next Day</span></div>
+        <div class="body">
+          <div class="label-row"><span class="k">Origin</span><span class="v">Paterson, NJ</span></div>
+          <div class="label-row"><span class="k">Facility</span><span class="v">60,000 sq ft</span></div>
+          <div class="label-row"><span class="k">Fleet</span><span class="v">Company-owned</span></div>
+          <div class="label-row"><span class="k">Delivery</span><span class="v">Tri-State, next day</span></div>
+          <div class="label-row"><span class="k">Certified</span><span class="v">Kosher &middot; Organic &middot; SQF</span></div>
+          <div class="label-row"><span class="k">Catalog</span><span class="v" id="heroSkuCount">370+ SKUs</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="wrap stats-grid">
+    <div><div class="n" id="statProducts">372</div><div class="l">Products Stocked</div></div>
+    <div><div class="n">60K</div><div class="l">Sq Ft Facility</div></div>
+    <div><div class="n">1-Day</div><div class="l">Tri-State Delivery</div></div>
+    <div><div class="n">3</div><div class="l">Certifications</div></div>
+  </div>
+</section>
+
+<section class="certs" id="certifications">
+  <div class="wrap">
+    <div class="certs-head">
+      <div class="eyebrow">Certified for Retail &amp; Foodservice</div>
+      <h2>Every case, held to the same standard.</h2>
+      <p>Our facility and supply chain are audited to keep every category — from raw nuts to finished trail mix — meeting the marks our customers require.</p>
+    </div>
+    <div class="stamp-row">
+      <div class="stamp"><div class="big">Kosher</div><div class="small">Certified</div></div>
+      <div class="stamp"><div class="big">USDA<br>Organic</div><div class="small">Select Lines</div></div>
+      <div class="stamp"><div class="big">SQF</div><div class="small">Certified Facility</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="categories" id="categories">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">The Lineup</div>
+        <h2>Shop by category</h2>
+      </div>
+    </div>
+    <div class="cat-grid" id="categoryGrid"></div>
+  </div>
+</section>
+
+<section class="catalog" id="catalog">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Live Inventory</div>
+        <h2>Full product catalog</h2>
+      </div>
+    </div>
+    <div class="catalog-controls">
+      <input type="text" id="searchBox" class="search-box" placeholder="Search products (e.g. cashew, granola, gummy)…">
+    </div>
+    <div class="chip-row" id="chipRow"></div>
+    <div id="catalogStatus">Loading live catalog…</div>
+    <div class="product-grid" id="productGrid"></div>
+    <button class="btn btn-outline load-more" id="loadMoreBtn" style="display:none;">Show More</button>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="wrap about-grid">
+    <div>
+      <div class="eyebrow">Who We Are</div>
+      <h2>From roasting room to route truck.</h2>
+      <p>American Food &amp; Beverage — operating under our Grassland and Premium Food lines — imports, roasts, flavors, and packs dried fruit, nuts, trail mixes, granola, candy, and chocolate-covered items for grocery, foodservice, and independent retailers across the Tri-State area.</p>
+      <p>We source directly from growers, processors, and packers worldwide, then bring it all together under one roof in Paterson, NJ — including our own custom packaging and private-label programs.</p>
+      <ul class="about-facts">
+        <li><b>Roasting &amp; flavoring</b> — done in-house, not outsourced</li>
+        <li><b>Private label</b> — custom packaging &amp; branding available</li>
+        <li><b>Delivery</b> — our own fleet, next day across the Tri-State</li>
+        <li><b>Sourcing</b> — direct relationships with growers &amp; packers worldwide</li>
+      </ul>
+    </div>
+    <div class="about-visual">
+      <div class="tag">Supply Chain</div>
+      <h3 style="color:#F4EDDB;font-size:1.3rem;">Grower to shelf, one route.</h3>
+      <div class="route-line">
+        <div class="route-dot"></div><div class="route-seg"></div>
+        <div class="route-dot"></div><div class="route-seg"></div>
+        <div class="route-dot"></div><div class="route-seg"></div>
+        <div class="route-dot"></div>
+      </div>
+      <div class="route-labels"><span>Grower</span><span>Roast &amp; Pack</span><span>Warehouse</span><span>Your Door</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="wrap">
+    <h2>Ready to place a wholesale order?</h2>
+    <p>Our order portal shows live stock and gets your order into our system immediately.</p>
+    <a href="/order" class="btn btn-solid" style="border-color:var(--paper);">Open Order Portal &rarr;</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <h4>American Food &amp; Beverage</h4>
+        <p style="max-width:320px;color:#a8987c;">Wholesale dried fruit, nuts, trail mixes, granola, candy &amp; chocolate-covered snacks — roasted, packed, and delivered from our Paterson, NJ facility.</p>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li>PO Box 533, Paterson, NJ 07543</li>
+          <li>(908) 345-6345</li>
+          <li>sales@americanfoodbeverage.com</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Links</h4>
+        <ul>
+          <li><a href="#catalog">Full Catalog</a></li>
+          <li><a href="/order">Order Portal</a></li>
+          <li><a href="#certifications">Certifications</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; American Food &amp; Beverage. Kosher &middot; USDA Organic &middot; SQF Certified.</span>
+      <span>Paterson, NJ</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const API = '';
+let ALL_PRODUCTS = [];
+let activeCategory = 'all';
+let visibleCount = 12;
+const PAGE_SIZE = 12;
+
+const CATEGORY_ICONS = {
+  'default':'🌰','Nuts':'🥜','Trail Mixes':'🥾','Dried Fruits & Vegetables':'🍑',
+  'Chocolate Covered Items':'🍫','Candy':'🍬','Granola':'🥣','Health Snacks':'🌱',
+  'Organic Nuts':'🌿','Grains & Beans':'🌾','Special Flavored Nuts':'✨',
+  'Dried Fruits - Organic':'🍇','Big Presentation Containers':'📦','Nuts To Go Cups':'🥤',
+};
+function iconFor(cat){ return CATEGORY_ICONS[cat] || CATEGORY_ICONS.default; }
+
+async function loadCatalog(){
+  const statusEl = document.getElementById('catalogStatus');
+  try{
+    const res = await fetch(`${API}/products?item_type=sellable`);
+    if(!res.ok) throw new Error('fetch failed');
+    ALL_PRODUCTS = await res.json();
+  }catch(e){
+    statusEl.textContent = 'Catalog is warming up — reload in a few seconds. (Hosted on a free tier that sleeps when idle.)';
+    return;
+  }
+
+  document.getElementById('statProducts').textContent = ALL_PRODUCTS.length;
+  document.getElementById('heroSkuCount').textContent = ALL_PRODUCTS.length + ' SKUs';
+
+  renderCategoryGrid();
+  renderChips();
+  renderProducts();
+}
+
+function categoryCounts(){
+  const counts = {};
+  ALL_PRODUCTS.forEach(p => { counts[p.category] = (counts[p.category]||0) + 1; });
+  return counts;
+}
+
+function renderCategoryGrid(){
+  const counts = categoryCounts();
+  const topCats = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  document.getElementById('categoryGrid').innerHTML = topCats.map(([cat,count])=>`
+    <div class="cat-card" onclick="filterByCategory('${cat.replace(/'/g,"\\'")}')">
+      <div class="ic">${iconFor(cat)}</div>
+      <h3>${cat}</h3>
+      <div class="count">${count} items</div>
+    </div>
+  `).join('');
+}
+
+function renderChips(){
+  const counts = categoryCounts();
+  const cats = ['all', ...Object.keys(counts).sort()];
+  document.getElementById('chipRow').innerHTML = cats.map(c=>`
+    <button class="chip ${c===activeCategory?'active':''}" onclick="filterByCategory('${c.replace(/'/g,"\\'")}')">
+      ${c === 'all' ? 'All' : c}
+    </button>
+  `).join('');
+}
+
+function filterByCategory(cat){
+  activeCategory = cat;
+  visibleCount = PAGE_SIZE;
+  document.getElementById('searchBox').value = '';
+  renderChips();
+  renderProducts();
+  document.getElementById('catalog').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderProducts(){
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  let filtered = ALL_PRODUCTS;
+  if(activeCategory !== 'all') filtered = filtered.filter(p => p.category === activeCategory);
+  if(q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+
+  document.getElementById('catalogStatus').textContent = `${filtered.length} product${filtered.length===1?'':'s'} ${activeCategory!=='all' ? 'in ' + activeCategory : ''}${q ? ' matching "' + q + '"' : ''}`;
+
+  const toShow = filtered.slice(0, visibleCount);
+  document.getElementById('productGrid').innerHTML = toShow.map(p => `
+    <div class="product-card">
+      <div class="sku">${p.sku}</div>
+      <h4>${p.name}</h4>
+      <div class="pack">${p.pack_size || p.category}</div>
+    </div>
+  `).join('') || '<p style="color:var(--espresso-soft);">No products match — try a different search.</p>';
+
+  const moreBtn = document.getElementById('loadMoreBtn');
+  if(filtered.length > visibleCount){
+    moreBtn.style.display = 'block';
+    moreBtn.onclick = () => { visibleCount += PAGE_SIZE; renderProducts(); };
+  } else {
+    moreBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('searchBox').addEventListener('input', () => { visibleCount = PAGE_SIZE; renderProducts(); });
+
+loadCatalog();
+</script>
+
+</body>
+</html>

@@ -296,7 +296,7 @@ async function loadCatalog(){
   const [products, inv] = await Promise.all([ api('/products?item_type=sellable'), api('/inventory') ]);
   PRODUCTS = products;
   INVENTORY = {};
-  inv.forEach(i=>{ INVENTORY[i.sku] = i; });
+  inv.items.forEach(i=>{ INVENTORY[i.sku] = i; });
   buildChips();
   renderShop('');
 }
