@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food &amp; Beverage — Operations Dashboard</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AFB Ops">
+<meta name="theme-color" content="#241A10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 24px 60px;}
+  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:16px 0;}
+  header .wrap{padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header .top{font-weight:900;font-size:1.2rem;}
+  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;}
+  #apiStatus{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:5px 12px;border-radius:12px;background:rgba(251,246,233,0.1);border:1px solid rgba(251,246,233,0.25);}
+  #apiStatus.ok{color:#9fd18a;}
+  #apiStatus.bad{color:#e3897b;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:32px;}
+  .kpi{background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;padding:16px;box-shadow:var(--shadow);}
+  .kpi .n{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:1.5rem;}
+  .kpi .l{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-top:4px;}
+  .kpi.warn .n{color:var(--rust-deep);}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;}
+  .panel{background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;padding:20px;box-shadow:var(--shadow);}
+  .panel h3{font-size:1.05rem;margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+  th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:8px;}
+  td{padding:8px 6px;border-bottom:1px dotted var(--line);}
+  tr.low td:first-child{color:var(--rust-deep);font-weight:600;}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;padding:3px 9px;border-radius:10px;background:var(--olive-deep);color:var(--paper);text-transform:uppercase;}
+  .pill.low{background:var(--rust-deep);}
+  canvas{max-height:260px;}
+  .section-title{margin:32px 0 14px;font-size:1.3rem;}
+  .refresh-btn{background:var(--ink);color:var(--paper);border:none;border-radius:20px;padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;cursor:pointer;}
+  .empty{color:var(--ink-soft);font-style:italic;font-size:0.85rem;}
+  tr.clickable{cursor:pointer;}
+  tr.clickable:hover td{background:rgba(184,80,66,0.06);}
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(36,26,16,0.55);
+    align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--paper); border-radius:6px; max-width:640px; width:100%;
+    max-height:85vh; overflow-y:auto; padding:26px 28px; position:relative;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3);
+  }
+  .modal h3{margin:0 0 4px 0; font-family:'Bitter',serif; font-size:1.3rem;}
+  .modal .sub{color:var(--ink-soft); font-size:0.85rem; margin-bottom:16px;}
+  .modal-close{
+    position:absolute; top:16px; right:18px; background:none; border:none;
+    font-size:1.3rem; color:var(--ink-soft); cursor:pointer; line-height:1;
+  }
+  .modal-close:hover{color:var(--rust-deep);}
+  .modal-field{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line);font-size:0.85rem;}
+  .modal-field .k{color:var(--ink-soft);}
+  .modal table{margin-top:6px;}
+  .status-pill{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 8px;border-radius:10px;background:var(--olive-deep);color:var(--paper);text-transform:uppercase;}
+  .adjust-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.03em;
+    background:none;border:1px solid var(--line-strong);color:var(--ink-soft);border-radius:14px;
+    padding:4px 12px;cursor:pointer;
+  }
+  .adjust-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .adjust-row{display:flex;gap:8px;margin-bottom:14px;}
+  .adjust-row button{
+    font-family:'IBM Plex Mono',monospace;font-size:0.85rem;width:38px;height:38px;border-radius:6px;
+    border:1px solid var(--line-strong);background:#fff;cursor:pointer;
+  }
+  .adjust-row input{margin:0;text-align:center;}
+  select#adjReason{margin-bottom:14px;}
+  .modal input, .modal select{
+    padding:9px 10px;border:1px solid var(--line-strong);border-radius:3px;background:#fff;
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;color:var(--ink);
+  }
+  .modal select{width:100%;}
+  .modal-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;
+    background:var(--rust);color:#fff;border:none;border-radius:20px;padding:10px 22px;cursor:pointer;
+  }
+  .modal-btn:hover{background:var(--rust-deep);}
+  @media (max-width:900px){ .kpi-grid{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <div class="top">American Food &amp; Beverage</div>
+      <div class="bottom">Operations Dashboard</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a href="/production" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">Packing &amp; Production &rarr;</a>
+      <span id="apiStatus" class="mono">checking API…</span>
+      <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Orders by status</h3>
+      <canvas id="statusChart"></canvas>
+    </div>
+    <div class="panel">
+      <h3>Average hours between stages</h3>
+      <canvas id="cycleChart"></canvas>
+      <p id="cycleTotal" class="empty"></p>
+    </div>
+  </div>
+
+  <h2 class="section-title">Inventory</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Reorder at</th><th>Status</th><th></th></tr></thead>
+      <tbody id="inventoryRows"></tbody>
+    </table>
+  </div>
+
+  <h2 class="section-title">Today's Production</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Packer</th><th>Units Packed Today</th><th>Log Entries</th></tr></thead>
+      <tbody id="productionRows"></tbody>
+    </table>
+  </div>
+
+  <h2 class="section-title">Customers</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Customer</th><th>Company</th><th>Orders</th><th>Total cases</th><th>Last order</th></tr></thead>
+      <tbody id="customerRows"></tbody>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Shipping performance</h3>
+      <table>
+        <thead><tr><th>Carrier</th><th>Shipments</th><th>Delivered</th><th>Avg transit (hrs)</th></tr></thead>
+        <tbody id="shippingRows"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h3>Packing productivity</h3>
+      <table>
+        <thead><tr><th>Packed by</th><th>Orders packed</th><th>Boxes</th></tr></thead>
+        <tbody id="packingRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';   // same-origin: works from any workstation that loaded this page from the server
+let statusChart, cycleChart;
+
+async function fetchJSON(path){
+  const res = await fetch(API + path);
+  if(!res.ok) throw new Error(path + ' failed');
+  return res.json();
+}
+
+async function loadAll(){
+  const statusEl = document.getElementById('apiStatus');
+  try{
+    const dash = await fetchJSON('/reports/dashboard');
+    statusEl.textContent = 'API connected';
+    statusEl.className = 'mono ok';
+    renderKPIs(dash);
+  }catch(e){
+    statusEl.textContent = 'API not reachable — is uvicorn running on :8000?';
+    statusEl.className = 'mono bad';
+    return;
+  }
+
+  const [byStatus, cycle, customers, inventory, shipping, packing, production] = await Promise.all([
+    fetchJSON('/reports/orders-by-status'),
+    fetchJSON('/reports/order-cycle-time'),
+    fetchJSON('/reports/customers/top'),
+    fetchJSON('/reports/inventory'),
+    fetchJSON('/reports/shipping'),
+    fetchJSON('/reports/packing-productivity'),
+    fetchJSON('/production/summary/today'),
+  ]);
+
+  renderStatusChart(byStatus);
+  renderCycleChart(cycle);
+  renderInventory(inventory);
+  renderCustomers(customers);
+  renderShipping(shipping);
+  renderPacking(packing);
+  renderProduction(production);
+}
+
+function renderKPIs(d){
+  const items = [
+    ['Customers', d.total_customers],
+    ['Products', d.total_products],
+    ['Open orders', d.open_orders],
+    ['Delivered', d.delivered_orders],
+    ['Orders this week', d.orders_this_week],
+    ['Low stock items', d.low_stock_items, d.low_stock_items > 0],
+  ];
+  document.getElementById('kpiGrid').innerHTML = items.map(([l,n,warn])=>`
+    <div class="kpi ${warn ? 'warn':''}"><div class="n">${n}</div><div class="l">${l}</div></div>
+  `).join('');
+}
+
+function renderStatusChart(data){
+  const labels = Object.keys(data);
+  const values = Object.values(data);
+  if(statusChart) statusChart.destroy();
+  statusChart = new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: '#a3402a', borderRadius:3 }] },
+    options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{precision:0}}} }
+  });
+}
+
+function renderCycleChart(data){
+  const labels = Object.keys(data.average_hours_per_transition || {});
+  const values = Object.values(data.average_hours_per_transition || {});
+  if(cycleChart) cycleChart.destroy();
+  cycleChart = new Chart(document.getElementById('cycleChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor:'#4f5c3a', borderRadius:3 }] },
+    options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} }
+  });
+  document.getElementById('cycleTotal').textContent = data.average_received_to_delivered_hours
+    ? `Average received → delivered: ${data.average_received_to_delivered_hours} hours, across ${data.completed_order_count} completed orders.`
+    : 'No fully completed orders yet.';
+}
+
+function renderInventory(data){
+  document.getElementById('inventoryRows').innerHTML = data.items.map(i=>`
+    <tr class="${i.low_stock ? 'low':''}">
+      <td class="mono">${i.sku}</td><td>${i.name}</td><td>${i.category}</td>
+      <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
+      <td><span class="pill ${i.low_stock?'low':''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
+      <td><button class="adjust-btn" onclick="openAdjustModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${i.qty_on_hand})">Adjust</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderProduction(data){
+  const rows = document.getElementById('productionRows');
+  if(!data.length){ rows.innerHTML = '<tr><td colspan="3" class="empty">No production logged today yet.</td></tr>'; return; }
+  rows.innerHTML = data.map(p=>`
+    <tr><td>${p.packer_name}</td><td>${p.units_packed}</td><td>${p.log_count}</td></tr>
+  `).join('');
+}
+
+function renderCustomers(data){
+  const rows = document.getElementById('customerRows');
+  if(!data.length){ rows.innerHTML = '<tr><td colspan="5" class="empty">No orders yet.</td></tr>'; return; }
+  rows.innerHTML = data.map(c=>`
+    <tr class="clickable" onclick="openCustomerModal(${c.customer_id})">
+      <td>${c.customer}</td><td>${c.company||''}</td><td>${c.order_count}</td><td>${c.total_cases_ordered}</td>
+      <td>${new Date(c.last_order_at).toLocaleDateString()}</td></tr>
+  `).join('');
+}
+
+async function openCustomerModal(customerId){
+  const modal = document.getElementById('customerModal');
+  modal.classList.add('open');
+  document.getElementById('cmName').textContent = 'Loading…';
+  document.getElementById('cmOrderRows').innerHTML = '';
+
+  try {
+    const [customer, orders] = await Promise.all([
+      fetchJSON(`/customers/${customerId}`),
+      fetchJSON(`/orders?customer_id=${customerId}`),
+    ]);
+
+    document.getElementById('cmName').textContent = customer.name;
+    document.getElementById('cmCompany').textContent = customer.company || '';
+    document.getElementById('cmEmail').textContent = customer.email || '—';
+    document.getElementById('cmPhone').textContent = customer.phone || '—';
+    document.getElementById('cmAddress').textContent = customer.address || '—';
+    document.getElementById('cmOrderCount').textContent = orders.length;
+    const totalCases = orders.reduce((sum,o)=> sum + o.items.reduce((s,i)=>s+i.qty_ordered,0), 0);
+    document.getElementById('cmTotalCases').textContent = totalCases;
+
+    const rows = document.getElementById('cmOrderRows');
+    if(!orders.length){
+      rows.innerHTML = '<tr><td colspan="4" class="empty">No orders yet.</td></tr>';
+    } else {
+      rows.innerHTML = orders.map(o=>`
+        <tr><td class="mono">${o.order_number}</td>
+          <td><span class="status-pill">${o.status.replace(/_/g,' ')}</span></td>
+          <td>${new Date(o.created_at).toLocaleDateString()}</td>
+          <td>${o.items.length}</td></tr>
+      `).join('');
+    }
+  } catch(e){
+    document.getElementById('cmName').textContent = 'Could not load customer';
+  }
+}
+
+function closeCustomerModal(){
+  document.getElementById('customerModal').classList.remove('open');
+}
+document.getElementById('customerModal').addEventListener('click', (e)=>{
+  if(e.target.id === 'customerModal') closeCustomerModal();
+});
+
+let ADJ_PRODUCT_ID = null;
+let ADJ_CURRENT_QTY = 0;
+
+function openAdjustModal(productId, sku, name, currentQty){
+  ADJ_PRODUCT_ID = productId;
+  ADJ_CURRENT_QTY = currentQty;
+  document.getElementById('adjSku').textContent = sku;
+  document.getElementById('adjProductName').textContent = name;
+  document.getElementById('adjCurrentQty').textContent = currentQty;
+  document.getElementById('adjAmount').value = 1;
+  document.getElementById('adjNote').value = '';
+  document.getElementById('adjMsg').style.display = 'none';
+  updateAdjPreview();
+  document.getElementById('adjustModal').classList.add('open');
+}
+
+function closeAdjustModal(){
+  document.getElementById('adjustModal').classList.remove('open');
+}
+document.getElementById('adjustModal').addEventListener('click', (e)=>{
+  if(e.target.id === 'adjustModal') closeAdjustModal();
+});
+
+function stepAdjust(dir){
+  const input = document.getElementById('adjAmount');
+  input.value = (parseInt(input.value)||0) + dir;
+  updateAdjPreview();
+}
+document.getElementById('adjAmount').addEventListener('input', updateAdjPreview);
+
+function updateAdjPreview(){
+  const change = parseInt(document.getElementById('adjAmount').value) || 0;
+  const newQty = ADJ_CURRENT_QTY + change;
+  document.getElementById('adjPreview').textContent =
+    `New on-hand quantity will be ${newQty} (${change >= 0 ? '+' : ''}${change})`;
+}
+
+async function submitAdjust(){
+  const change_qty = parseInt(document.getElementById('adjAmount').value);
+  const reason = document.getElementById('adjReason').value;
+  const reference = document.getElementById('adjNote').value || null;
+  const msgEl = document.getElementById('adjMsg');
+  if(!change_qty){
+    msgEl.textContent = 'Enter a non-zero amount.';
+    msgEl.style.display = 'block'; msgEl.style.background = '#f7dcd8'; msgEl.style.color = 'var(--rust-deep)';
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/inventory/${ADJ_PRODUCT_ID}/adjust`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({change_qty, reason, reference}),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    msgEl.textContent = 'Saved.';
+    msgEl.style.display = 'block'; msgEl.style.background = '#e3f0d8'; msgEl.style.color = 'var(--olive-deep)';
+    setTimeout(()=>{ closeAdjustModal(); loadAll(); }, 700);
+  } catch(e){
+    msgEl.textContent = 'Could not save: ' + e.message;
+    msgEl.style.display = 'block'; msgEl.style.background = '#f7dcd8'; msgEl.style.color = 'var(--rust-deep)';
+  }
+}
+
+function renderShipping(data){
+  const rows = document.getElementById('shippingRows');
+  if(!data.length){ rows.innerHTML = '<tr><td colspan="4" class="empty">No shipments yet.</td></tr>'; return; }
+  rows.innerHTML = data.map(s=>`
+    <tr><td>${s.carrier}</td><td>${s.shipment_count}</td><td>${s.delivered_count}</td><td>${s.avg_transit_hours ?? '—'}</td></tr>
+  `).join('');
+}
+
+function renderPacking(data){
+  const rows = document.getElementById('packingRows');
+  if(!data.length){ rows.innerHTML = '<tr><td colspan="3" class="empty">No packing records yet.</td></tr>'; return; }
+  rows.innerHTML = data.map(p=>`
+    <tr><td>${p.packed_by}</td><td>${p.orders_packed}</td><td>${p.boxes}</td></tr>
+  `).join('');
+}
+
+loadAll();
+</script>
+<div class="modal-backdrop" id="customerModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCustomerModal()">&times;</button>
+    <h3 id="cmName">Customer</h3>
+    <div class="sub" id="cmCompany"></div>
+
+    <div class="modal-field"><span class="k">Email</span><span id="cmEmail"></span></div>
+    <div class="modal-field"><span class="k">Phone</span><span id="cmPhone"></span></div>
+    <div class="modal-field"><span class="k">Address</span><span id="cmAddress"></span></div>
+    <div class="modal-field"><span class="k">Total orders</span><span id="cmOrderCount"></span></div>
+    <div class="modal-field"><span class="k">Total cases ordered</span><span id="cmTotalCases"></span></div>
+
+    <h3 style="margin-top:20px;font-size:1rem;">Order history</h3>
+    <table>
+      <thead><tr><th>Order #</th><th>Status</th><th>Placed</th><th>Items</th></tr></thead>
+      <tbody id="cmOrderRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="adjustModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAdjustModal()">&times;</button>
+    <h3 id="adjSku">Adjust Inventory</h3>
+    <div class="sub" id="adjProductName"></div>
+    <div class="modal-field"><span class="k">Current on hand</span><span id="adjCurrentQty"></span></div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:14px 0 4px;">Change amount</label>
+    <div class="adjust-row">
+      <button onclick="stepAdjust(-1)">&minus;</button>
+      <input type="number" id="adjAmount" value="1" style="flex:1;">
+      <button onclick="stepAdjust(1)">&plus;</button>
+    </div>
+    <div class="sub" id="adjPreview" style="margin-bottom:14px;"></div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Reason</label>
+    <select id="adjReason">
+      <option value="adjustment">Manual adjustment</option>
+      <option value="received_stock">Received stock</option>
+      <option value="production_completed">Production completed</option>
+    </select>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Note (optional)</label>
+    <input type="text" id="adjNote" style="width:100%;margin-bottom:16px;" placeholder="e.g. Physical count correction">
+
+    <div id="adjMsg" class="msg" style="display:none;font-size:0.85rem;padding:8px 12px;border-radius:3px;margin-bottom:14px;"></div>
+    <button class="modal-btn" onclick="submitAdjust()">Save Adjustment</button>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food &amp; Beverage — Packing &amp; Production</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AFB Ops">
+<meta name="theme-color" content="#241A10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 24px 60px;}
+  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:16px 0;}
+  header .wrap{padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header .top{font-weight:900;font-size:1.2rem;}
+  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;}
+  nav.tabs{display:flex;gap:8px;margin:24px 0;}
+  nav.tabs button{
+    font-family:'IBM Plex Mono',monospace;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;
+    padding:10px 20px;border-radius:20px;border:1px solid var(--line-strong);background:var(--paper);
+    color:var(--ink-soft);cursor:pointer;
+  }
+  nav.tabs button.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .view{display:none;} .view.active{display:block;}
+  .panel{background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;padding:20px;box-shadow:var(--shadow);margin-bottom:22px;}
+  .section-title{font-size:1.05rem;margin:26px 0 12px;}
+  label{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;}
+  input,select,textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line-strong);border-radius:3px;background:#fff;
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;color:var(--ink);margin-bottom:14px;
+  }
+  textarea{min-height:60px;resize:vertical;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+  .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;
+    background:var(--rust);color:#fff;border:none;border-radius:20px;padding:10px 22px;cursor:pointer;
+  }
+  .btn:hover{background:var(--rust-deep);}
+  .btn.secondary{background:var(--olive);}
+  .btn.secondary:hover{background:var(--olive-deep);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:8px;}
+  td{padding:8px 6px;border-bottom:1px dotted var(--line);font-size:0.88rem;}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;padding:3px 9px;border-radius:10px;background:var(--olive-deep);color:var(--paper);text-transform:uppercase;}
+  .pill.assigned{background:var(--gold);color:var(--ink);}
+  .pill.in_progress{background:var(--rust);}
+  .pill.completed{background:var(--olive-deep);}
+  .pill.cancelled{background:#999;}
+  .empty{color:var(--ink-soft);font-style:italic;font-size:0.85rem;}
+  .assignment-card{
+    background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:14px 16px;margin-bottom:12px;
+  }
+  .assignment-card .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .assignment-card .prod{font-weight:600;}
+  .assignment-card .progress{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);margin-bottom:10px;}
+  .assignment-card .log-row{display:flex;gap:8px;align-items:center;}
+  .assignment-card .log-row input{width:90px;margin:0;}
+  .assignment-card .log-row button{margin:0;}
+  .msg{font-size:0.85rem;padding:8px 12px;border-radius:3px;margin-bottom:14px;display:none;}
+  .msg.ok{background:#e3f0d8;color:var(--olive-deep);display:block;}
+  .msg.err{background:#f7dcd8;color:var(--rust-deep);display:block;}
+  @media (max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <div class="top">American Food &amp; Beverage</div>
+      <div class="bottom">Packing &amp; Production</div>
+    </div>
+    <div><a href="/dashboard" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">&larr; Dashboard</a></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="tabs">
+    <button id="tabManagerBtn" class="active" onclick="switchTab('manager')">Packing Manager</button>
+    <button id="tabPackerBtn" onclick="switchTab('packer')">Packer Portal</button>
+  </nav>
+
+  <!-- MANAGER VIEW -->
+  <div id="managerView" class="view active">
+    <div class="panel">
+      <h2 class="section-title" style="margin-top:0;">Assign a Packing Job</h2>
+      <div id="managerMsg" class="msg"></div>
+      <div class="form-grid">
+        <div>
+          <label>Product</label>
+          <select id="mProduct"></select>
+        </div>
+        <div>
+          <label>Quantity Needed</label>
+          <input type="number" id="mQty" min="1" value="50">
+        </div>
+        <div>
+          <label>Assign To</label>
+          <select id="mPacker"></select>
+        </div>
+        <div>
+          <label>Assigned By (your name)</label>
+          <input type="text" id="mManagerName" placeholder="e.g. Warehouse Manager">
+        </div>
+      </div>
+      <label>Notes (optional)</label>
+      <textarea id="mNotes" placeholder="e.g. Pull from bulk room, priority for Friday delivery"></textarea>
+      <button class="btn" onclick="createAssignment()">Create Assignment</button>
+    </div>
+
+    <h2 class="section-title">All Assignments</h2>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Product</th><th>Qty</th><th>Progress</th><th>Assigned To</th><th>Status</th><th>Created</th></tr></thead>
+        <tbody id="assignmentRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PACKER VIEW -->
+  <div id="packerView" class="view">
+    <div class="panel">
+      <label>Who are you?</label>
+      <select id="packerSelect" onchange="loadPackerTasks()"></select>
+    </div>
+
+    <h2 class="section-title">My Assigned Jobs</h2>
+    <div id="myAssignments"><p class="empty">Select your name above.</p></div>
+
+    <h2 class="section-title">Log Production Not Tied to a Job</h2>
+    <div class="panel">
+      <div id="packerMsg" class="msg"></div>
+      <div class="form-grid">
+        <div>
+          <label>Product</label>
+          <select id="pProduct"></select>
+        </div>
+        <div>
+          <label>Quantity Packed</label>
+          <input type="number" id="pQty" min="1" value="10">
+        </div>
+      </div>
+      <label>Notes (optional)</label>
+      <textarea id="pNotes" placeholder="e.g. Extra units packed ahead of schedule"></textarea>
+      <button class="btn secondary" onclick="logAdHocProduction()">Log Production</button>
+    </div>
+
+    <h2 class="section-title">My Log Today</h2>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Product</th><th>Qty</th><th>Time</th><th>Notes</th></tr></thead>
+        <tbody id="myLogRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';
+async function api(path, opts={}){
+  const res = await fetch(API + path, {
+    headers: {'Content-Type':'application/json'}, ...opts
+  });
+  if(!res.ok){
+    const body = await res.text();
+    throw new Error(body || res.statusText);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+let PRODUCTS = [];
+let PACKERS = [];
+
+function switchTab(tab){
+  document.getElementById('managerView').classList.toggle('active', tab==='manager');
+  document.getElementById('packerView').classList.toggle('active', tab==='packer');
+  document.getElementById('tabManagerBtn').classList.toggle('active', tab==='manager');
+  document.getElementById('tabPackerBtn').classList.toggle('active', tab==='packer');
+  if(tab==='manager') loadAssignments();
+  if(tab==='packer') loadPackerTasks();
+}
+
+function productOptions(){
+  return PRODUCTS.map(p=>`<option value="${p.id}">${p.sku} — ${p.name}</option>`).join('');
+}
+function packerOptions(){
+  return PACKERS.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+}
+
+async function init(){
+  PRODUCTS = await api('/products');
+  PACKERS = await api('/production/packers');
+  document.getElementById('mProduct').innerHTML = productOptions();
+  document.getElementById('pProduct').innerHTML = productOptions();
+  document.getElementById('mPacker').innerHTML = packerOptions();
+  document.getElementById('packerSelect').innerHTML = '<option value="">— select —</option>' + packerOptions();
+  loadAssignments();
+}
+
+function showMsg(id, text, ok){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+  setTimeout(()=>{ el.className = 'msg'; }, 4000);
+}
+
+async function createAssignment(){
+  const product_id = parseInt(document.getElementById('mProduct').value);
+  const qty_assigned = parseInt(document.getElementById('mQty').value);
+  const assigned_to = document.getElementById('mPacker').value;
+  const assigned_by = document.getElementById('mManagerName').value || null;
+  const notes = document.getElementById('mNotes').value || null;
+  try {
+    await api('/production/assignments', {method:'POST', body: JSON.stringify({product_id, qty_assigned, assigned_to, assigned_by, notes})});
+    showMsg('managerMsg', `Assigned ${qty_assigned} units to ${assigned_to}.`, true);
+    document.getElementById('mNotes').value = '';
+    loadAssignments();
+  } catch(e){
+    showMsg('managerMsg', 'Could not create assignment: ' + e.message, false);
+  }
+}
+
+async function loadAssignments(){
+  const rows = await api('/production/assignments');
+  const tbody = document.getElementById('assignmentRows');
+  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty">No assignments yet.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(a=>`
+    <tr>
+      <td class="mono">${a.sku}</td>
+      <td>${a.product_name}</td>
+      <td>${a.qty_completed} / ${a.qty_assigned}</td>
+      <td>${a.assigned_to}</td>
+      <td><span class="pill ${a.status}">${a.status.replace('_',' ')}</span></td>
+      <td>${new Date(a.created_at).toLocaleDateString()}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadPackerTasks(){
+  const packer = document.getElementById('packerSelect').value;
+  const container = document.getElementById('myAssignments');
+  const logRows = document.getElementById('myLogRows');
+  if(!packer){
+    container.innerHTML = '<p class="empty">Select your name above.</p>';
+    logRows.innerHTML = '';
+    return;
+  }
+  const [assignments, logs] = await Promise.all([
+    api(`/production/assignments?assigned_to=${encodeURIComponent(packer)}`),
+    api(`/production/log?packer_name=${encodeURIComponent(packer)}`),
+  ]);
+  const open = assignments.filter(a => a.status === 'assigned' || a.status === 'in_progress');
+  if(!open.length){
+    container.innerHTML = '<p class="empty">No open jobs assigned right now.</p>';
+  } else {
+    container.innerHTML = open.map(a=>`
+      <div class="assignment-card">
+        <div class="row1">
+          <span class="prod">${a.product_name} <span class="mono" style="color:var(--ink-soft);">(${a.sku})</span></span>
+          <span class="pill ${a.status}">${a.status.replace('_',' ')}</span>
+        </div>
+        <div class="progress">${a.qty_completed} of ${a.qty_assigned} packed${a.notes ? ' &middot; ' + a.notes : ''}</div>
+        <div class="log-row">
+          <input type="number" id="qty-${a.id}" min="1" value="${Math.max(1, a.qty_assigned - a.qty_completed)}">
+          <button class="btn" onclick="logAssignmentProduction(${a.id}, ${a.product_id})">Log Completed</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const today = new Date().toDateString();
+  const todayLogs = logs.filter(l => new Date(l.logged_at).toDateString() === today);
+  if(!todayLogs.length){
+    logRows.innerHTML = '<tr><td colspan="4" class="empty">Nothing logged today yet.</td></tr>';
+  } else {
+    logRows.innerHTML = todayLogs.map(l=>`
+      <tr><td>${l.product_name}</td><td>${l.qty_completed}</td>
+        <td>${new Date(l.logged_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</td>
+        <td>${l.notes || ''}</td></tr>
+    `).join('');
+  }
+}
+
+async function logAssignmentProduction(assignmentId, productId){
+  const packer_name = document.getElementById('packerSelect').value;
+  const qty_completed = parseInt(document.getElementById(`qty-${assignmentId}`).value);
+  if(!qty_completed || qty_completed <= 0) return;
+  try {
+    await api('/production/log', {method:'POST', body: JSON.stringify({
+      packer_name, product_id: productId, qty_completed, assignment_id: assignmentId
+    })});
+    showMsg('packerMsg', `Logged ${qty_completed} units.`, true);
+    loadPackerTasks();
+  } catch(e){
+    showMsg('packerMsg', 'Could not log production: ' + e.message, false);
+  }
+}
+
+async function logAdHocProduction(){
+  const packer_name = document.getElementById('packerSelect').value;
+  if(!packer_name){ showMsg('packerMsg', 'Select your name first.', false); return; }
+  const product_id = parseInt(document.getElementById('pProduct').value);
+  const qty_completed = parseInt(document.getElementById('pQty').value);
+  const notes = document.getElementById('pNotes').value || null;
+  try {
+    await api('/production/log', {method:'POST', body: JSON.stringify({packer_name, product_id, qty_completed, notes})});
+    showMsg('packerMsg', `Logged ${qty_completed} units.`, true);
+    document.getElementById('pNotes').value = '';
+    loadPackerTasks();
+  } catch(e){
+    showMsg('packerMsg', 'Could not log production: ' + e.message, false);
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>

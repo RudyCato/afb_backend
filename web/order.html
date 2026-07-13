@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food &amp; Beverage — Order &amp; Track</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AFB Ops">
+<meta name="theme-color" content="#241A10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72;
+    --shadow:0 6px 18px rgba(36,26,16,0.12); --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:'Bitter',serif;margin:0;color:var(--ink);letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px;}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;background-image:radial-gradient(circle at 20% 10%, rgba(255,255,255,0.35), transparent 40%),radial-gradient(circle at 80% 90%, rgba(0,0,0,0.04), transparent 45%);}
+
+  header{position:sticky;top:0;z-index:50;background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);}
+  .header-inner{display:flex;align-items:center;gap:20px;padding:14px 24px;max-width:1100px;margin:0 auto;flex-wrap:wrap;}
+  .logomark{display:flex;flex-direction:column;line-height:1;flex-shrink:0;}
+  .logomark .top{font-family:'Bitter',serif;font-weight:900;font-size:1.2rem;}
+  .logomark .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-top:2px;}
+  nav.tabs{display:flex;gap:6px;flex:1;}
+  nav.tabs a{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;
+    padding:8px 14px;border-radius:20px;text-decoration:none;color:rgba(251,246,233,0.75);
+    border:1px solid transparent; transition:all .15s ease;
+  }
+  nav.tabs a.active{background:var(--rust);color:var(--paper);border-color:var(--rust);}
+  nav.tabs a:not(.active):hover{border-color:rgba(251,246,233,0.3);color:var(--paper);}
+  .cart-btn{
+    display:flex;align-items:center;gap:8px;background:rgba(251,246,233,0.08);
+    border:1px solid rgba(251,246,233,0.25);border-radius:20px;padding:8px 14px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--paper);text-decoration:none;
+  }
+  .cart-btn .badge{background:var(--gold);color:var(--ink);border-radius:10px;padding:1px 7px;font-weight:700;}
+  #apiStatus{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:4px 10px;border-radius:12px;background:rgba(251,246,233,0.08);border:1px solid rgba(251,246,233,0.2);}
+  #apiStatus.ok{color:#9fd18a;} #apiStatus.bad{color:#e3897b;}
+
+  main{min-height:60vh;}
+  .view{display:none;padding:36px 0 60px;}
+  .view.active{display:block;}
+
+  .page-head{margin-bottom:26px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--rust-deep);font-weight:600;display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .eyebrow::before{content:"";width:22px;height:2px;background:var(--rust-deep);}
+  .page-head h1{font-size:clamp(1.7rem,4vw,2.4rem);margin-bottom:8px;}
+  .page-head p{color:var(--ink-soft);max-width:60ch;line-height:1.55;margin:0;font-size:0.98rem;}
+
+  .notice{background:var(--paper);border:1px dashed var(--line-strong);border-radius:var(--radius);padding:12px 16px;font-size:0.82rem;color:var(--ink-soft);margin-bottom:24px;line-height:1.5;}
+  .notice b{color:var(--ink);}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;position:sticky;top:57px;background:var(--cream);padding:10px 0;z-index:20;border-bottom:2px solid var(--ink);}
+  .controls input{flex:1;min-width:200px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;padding:10px 14px;border:1.5px solid var(--ink);border-radius:2px;background:var(--paper);color:var(--ink);outline:none;}
+  .controls input:focus{border-color:var(--rust);}
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;padding:8px 13px;border:1px solid var(--line-strong);border-radius:20px;background:var(--paper);color:var(--ink-soft);}
+  .chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  .cat-block{border-top:1px solid var(--line-strong);padding:20px 0;}
+  .cat-block-head h3{font-size:1.1rem;}
+  .item-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
+  .item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);padding:10px 12px;}
+  .item-row .info{min-width:0;}
+  .item-row .name{font-size:0.88rem;display:block;}
+  .item-row .wt{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--olive-deep);}
+  .item-row .avail{font-family:'IBM Plex Mono',monospace;font-size:0.64rem;color:var(--ink-soft);}
+  .item-row .avail.low{color:var(--rust-deep);font-weight:600;}
+  .stepper{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .stepper button{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);font-size:1rem;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .stepper button:hover{background:var(--ink);color:var(--paper);}
+  .stepper input{width:36px;text-align:center;font-family:'IBM Plex Mono',monospace;border:none;background:none;font-size:0.85rem;color:var(--ink);}
+  .no-results{padding:24px 4px;color:var(--ink-soft);font-style:italic;display:none;}
+  .loading{padding:24px 4px;color:var(--ink-soft);font-style:italic;}
+
+  .checkout-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:34px;align-items:start;}
+  .cart-table{width:100%;border-collapse:collapse;}
+  .cart-table th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:8px;}
+  .cart-table td{padding:12px 0;border-bottom:1px dotted var(--line);vertical-align:middle;}
+  .cart-table .rm{background:none;border:none;color:var(--rust-deep);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-transform:uppercase;}
+  .cart-empty{padding:40px 20px;text-align:center;color:var(--ink-soft);background:var(--paper);border:1px dashed var(--line-strong);border-radius:var(--radius);}
+  .cart-empty a{color:var(--rust);text-decoration:underline;}
+
+  .panel{background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);}
+  .panel h3{font-size:1.05rem;margin-bottom:14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-bottom:5px;}
+  .field input, .field textarea, .field select{width:100%;font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;padding:9px 11px;border:1.5px solid var(--line-strong);border-radius:2px;background:#fff;color:var(--ink);outline:none;}
+  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--rust);}
+  .field.error input, .field.error textarea{border-color:var(--rust-deep);}
+  .field .err-msg{font-size:0.72rem;color:var(--rust-deep);margin-top:4px;display:none;}
+  .field.error .err-msg{display:block;}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  .btn{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;padding:13px 22px;border-radius:2px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--ink);width:100%;transition:all .15s ease;}
+  .btn-solid{background:var(--ink);color:var(--paper);}
+  .btn-solid:hover{background:var(--rust);border-color:var(--rust);}
+  .btn-solid:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--ink);}
+  .btn-ghost:hover{background:var(--ink);color:var(--paper);}
+  .summary-line{display:flex;justify-content:space-between;font-size:0.86rem;padding:6px 0;color:var(--ink-soft);}
+  .summary-line.total{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:600;color:var(--ink);}
+
+  .confirm-box{max-width:560px;margin:0 auto;text-align:center;padding:20px 0;}
+  .confirm-icon{width:70px;height:70px;border-radius:50%;border:2px dashed var(--olive-deep);color:var(--olive-deep);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:1.8rem;transform:rotate(-4deg);}
+  .order-id-display{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:600;background:var(--paper);border:1px dashed var(--line-strong);border-radius:var(--radius);padding:14px 20px;display:inline-block;margin:14px 0;letter-spacing:0.04em;}
+
+  .track-search{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;}
+  .track-search input{flex:1;min-width:220px;font-family:'IBM Plex Mono',monospace;font-size:0.9rem;padding:12px 14px;border:1.5px solid var(--ink);border-radius:2px;background:var(--paper);}
+  .track-search button{padding:12px 22px;}
+
+  .timeline{display:flex;flex-direction:column;gap:0;margin:24px 0;}
+  .tl-step{display:flex;gap:16px;position:relative;padding-bottom:26px;}
+  .tl-step:last-child{padding-bottom:0;}
+  .tl-dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--line-strong);background:var(--paper);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1rem;z-index:1;}
+  .tl-step.done .tl-dot{border-color:var(--olive-deep);background:var(--olive-deep);color:var(--paper);}
+  .tl-step.current .tl-dot{border-color:var(--rust);background:var(--rust);color:var(--paper);}
+  .tl-step:not(:last-child)::before{content:"";position:absolute;left:16px;top:34px;bottom:0;width:2px;background:var(--line-strong);}
+  .tl-step.done:not(:last-child)::before{background:var(--olive-deep);}
+  .tl-content .t{font-weight:600;font-size:0.95rem;}
+  .tl-content .d{font-size:0.78rem;color:var(--ink-soft);margin-top:2px;}
+  .cancelled-banner{background:var(--rust-deep);color:var(--paper);padding:14px 18px;border-radius:var(--radius);font-family:'IBM Plex Mono',monospace;font-size:0.85rem;margin:20px 0;}
+
+  .order-recent{margin-top:36px;}
+  .order-card{background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);padding:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;cursor:pointer;}
+  .order-card:hover{border-color:var(--rust);}
+  .order-card .oid{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .order-card .meta{font-size:0.78rem;color:var(--ink-soft);}
+  .status-pill{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;padding:4px 10px;border-radius:12px;background:var(--olive-deep);color:var(--paper);white-space:nowrap;}
+  .status-pill.cancelled{background:var(--rust-deep);}
+
+  footer{padding:40px 0 50px;border-top:2px solid var(--ink);margin-top:20px;}
+  footer p{font-size:0.85rem;color:var(--ink-soft);line-height:1.7;}
+
+  @media (max-width:800px){
+    .checkout-grid{grid-template-columns:1fr;}
+    .item-grid{grid-template-columns:1fr;}
+    .row-2{grid-template-columns:1fr;}
+    nav.tabs{order:3;width:100%;overflow-x:auto;}
+    .header-inner{gap:10px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logomark">
+      <span class="top">American Food &amp; Beverage</span>
+      <span class="bottom">Order &amp; Track</span>
+    </div>
+    <nav class="tabs" id="navTabs">
+      <a href="#shop" data-view="shop">Shop</a>
+      <a href="#track" data-view="track">Track Order</a>
+    </nav>
+    <span id="apiStatus" class="mono">connecting…</span>
+    <a href="#cart" class="cart-btn" id="cartBtn">🧺 Cart <span class="badge" id="cartBadge">0</span></a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="view" id="view-shop">
+    <div class="page-head">
+      <span class="eyebrow">Wholesale Order Portal · Live</span>
+      <h1>Build your order</h1>
+      <p>Browse real-time inventory, set case quantities, and submit. This creates an order directly in our system — our team sees it immediately.</p>
+    </div>
+    <div class="controls">
+      <input id="shopSearch" type="text" placeholder="Search products…">
+    </div>
+    <div class="chips" id="chipFilter" style="margin-bottom:20px;"></div>
+    <div id="shopBody" class="loading">Loading catalog…</div>
+    <div class="no-results" id="noResults">Nothing matches that search — try a broader term.</div>
+  </section>
+
+  <section class="view" id="view-cart">
+    <div class="page-head">
+      <span class="eyebrow">Step 2 of 2</span>
+      <h1>Review &amp; place your order</h1>
+      <p>Confirm quantities, add your delivery details, and submit. This reserves stock and creates a real order number you can track.</p>
+    </div>
+    <div id="cartContent"></div>
+  </section>
+
+  <section class="view" id="view-confirm">
+    <div class="confirm-box">
+      <div class="confirm-icon">✓</div>
+      <h1>Order received</h1>
+      <p style="color:var(--ink-soft);margin-top:10px;">Your order is in our system. Save this number to check its status any time.</p>
+      <div class="order-id-display mono" id="confirmOrderId"></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px;">
+        <a href="#track" class="btn btn-solid" style="width:auto;" id="confirmTrackBtn">Track this order</a>
+        <a href="#shop" class="btn btn-ghost" style="width:auto;">Continue shopping</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-track">
+    <div class="page-head">
+      <span class="eyebrow">Order Status · Live</span>
+      <h1>Track your order</h1>
+      <p>Enter your order number below. Order numbers look like <span class="mono">AFB-482913</span>.</p>
+    </div>
+    <div class="track-search">
+      <input id="trackInput" type="text" placeholder="Enter order number, e.g. AFB-482913">
+      <button class="btn btn-solid" id="trackBtn" style="width:auto;">Track</button>
+    </div>
+    <div id="trackResult"></div>
+    <div class="order-recent" id="recentOrders"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>American Food &amp; Beverage</b> · PO Box 533, Paterson, NJ 07543 · (908) 345‑6345 · sales@americanfoodbeverage.com</p>
+  </div>
+</footer>
+
+<script>
+const API = '';   // same origin: this page is served by the same backend it talks to
+
+const STATUS_STEPS = [
+  {key:'received', label:'Order Received', icon:'📝', desc:'Your order was logged and is queued for review.'},
+  {key:'confirmed', label:'Confirmed', icon:'✔️', desc:'Our team confirmed item availability and quantities.'},
+  {key:'packing', label:'Packing', icon:'📦', desc:'Being roasted, weighed and packed at the Paterson facility.'},
+  {key:'packed', label:'Packed', icon:'✅', desc:'Fully packed and staged for shipment.'},
+  {key:'out_for_delivery', label:'Out for Delivery', icon:'🚚', desc:'On the fleet or handed to our trucking partner.'},
+  {key:'delivered', label:'Delivered', icon:'🏠', desc:'Delivered. Thanks for the order!'},
+];
+
+let PRODUCTS = [];
+let INVENTORY = {};   // product_id -> {qty_available,...}
+let cart = {};         // product_id -> {product, qty}
+let activeCat = 'all';
+
+async function api(path, opts={}){
+  const res = await fetch(API + path, {
+    headers: {'Content-Type':'application/json'}, ...opts
+  });
+  if(!res.ok){
+    const body = await res.json().catch(()=>({detail:res.statusText}));
+    throw new Error(body.detail || 'Request failed');
+  }
+  return res.json();
+}
+
+async function checkApi(){
+  const el = document.getElementById('apiStatus');
+  try{
+    await api('/reports/dashboard');
+    el.textContent = 'Connected'; el.className = 'mono ok';
+  }catch(e){
+    el.textContent = 'API unreachable'; el.className = 'mono bad';
+  }
+}
+
+/* ============ ROUTING ============ */
+const views = ['shop','cart','confirm','track'];
+function showView(name){
+  views.forEach(v=> document.getElementById('view-'+v).classList.toggle('active', v===name));
+  document.querySelectorAll('#navTabs a').forEach(a=> a.classList.toggle('active', a.dataset.view===name));
+  if(name==='cart') renderCart();
+  if(name==='track') renderTrackDefault();
+}
+window.addEventListener('hashchange', route);
+function route(){
+  const hash = location.hash.replace('#','') || 'shop';
+  const [base, param] = hash.split('/');
+  if(views.includes(base)){
+    showView(base);
+    if(base==='track' && param) lookupOrder(param);
+  } else {
+    showView('shop');
+  }
+}
+
+/* ============ SHOP ============ */
+async function loadCatalog(){
+  const [products, inv] = await Promise.all([ api('/products'), api('/inventory') ]);
+  PRODUCTS = products;
+  INVENTORY = {};
+  inv.items.forEach(i=>{ INVENTORY[i.sku] = i; });
+  buildChips();
+  renderShop('');
+}
+
+function buildChips(){
+  const chipFilter = document.getElementById('chipFilter');
+  chipFilter.innerHTML = '';
+  const cats = ['all', ...new Set(PRODUCTS.map(p=>p.category))];
+  cats.forEach(cat=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (cat==='all' ? ' active' : '');
+    chip.textContent = cat === 'all' ? 'All' : cat;
+    chip.addEventListener('click', ()=>{
+      activeCat = cat;
+      chipFilter.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      renderShop(document.getElementById('shopSearch').value);
+    });
+    chipFilter.appendChild(chip);
+  });
+}
+
+function renderShop(searchTerm=''){
+  searchTerm = searchTerm.trim().toLowerCase();
+  const shopBody = document.getElementById('shopBody');
+  shopBody.innerHTML = '';
+
+  const byCategory = {};
+  PRODUCTS.forEach(p=>{
+    if(activeCat !== 'all' && p.category !== activeCat) return;
+    if(searchTerm && !p.name.toLowerCase().includes(searchTerm)) return;
+    (byCategory[p.category] = byCategory[p.category] || []).push(p);
+  });
+
+  const anyVisible = Object.keys(byCategory).length > 0;
+  document.getElementById('noResults').style.display = anyVisible ? 'none' : 'block';
+
+  Object.entries(byCategory).forEach(([cat, items])=>{
+    const block = document.createElement('div');
+    block.className = 'cat-block';
+    block.innerHTML = `<div class="cat-block-head"><h3>${cat}</h3></div><div class="item-grid"></div>`;
+    const grid = block.querySelector('.item-grid');
+    items.forEach(p=>{
+      const inv = INVENTORY[p.sku];
+      const avail = inv ? inv.qty_available : null;
+      const qty = cart[p.id]?.qty || 0;
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <div class="info">
+          <span class="name">${p.name}</span>
+          <span class="wt">${p.pack_size || ''}</span>
+          ${avail !== null ? `<span class="avail ${avail<=10?'low':''}">${avail} available</span>` : ''}
+        </div>
+        <div class="stepper">
+          <button data-act="dec" aria-label="decrease">−</button>
+          <input type="number" min="0" value="${qty}" data-id="${p.id}">
+          <button data-act="inc" aria-label="increase">+</button>
+        </div>
+      `;
+      const input = row.querySelector('input');
+      row.querySelector('[data-act="dec"]').addEventListener('click', ()=>{
+        input.value = Math.max(0,(parseInt(input.value)||0)-1); updateCartFromInput(input, p);
+      });
+      row.querySelector('[data-act="inc"]').addEventListener('click', ()=>{
+        input.value = (parseInt(input.value)||0)+1; updateCartFromInput(input, p);
+      });
+      input.addEventListener('change', ()=> updateCartFromInput(input, p));
+      grid.appendChild(row);
+    });
+    shopBody.appendChild(block);
+  });
+}
+
+function updateCartFromInput(input, product){
+  const qty = Math.max(0, parseInt(input.value)||0);
+  if(qty === 0){ delete cart[product.id]; } else { cart[product.id] = {product, qty}; }
+  updateCartBadge();
+}
+document.getElementById('shopSearch').addEventListener('input', e=> renderShop(e.target.value));
+
+function updateCartBadge(){
+  const count = Object.values(cart).reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cartBadge').textContent = count;
+}
+
+/* ============ CART / CHECKOUT ============ */
+function renderCart(){
+  const items = Object.values(cart);
+  const content = document.getElementById('cartContent');
+  if(items.length === 0){
+    content.innerHTML = `<div class="cart-empty">Your cart is empty. <a href="#shop">Go pick out some products →</a></div>`;
+    return;
+  }
+  const totalCases = items.reduce((s,i)=>s+i.qty,0);
+  content.innerHTML = `
+    <div class="checkout-grid">
+      <div>
+        <table class="cart-table">
+          <thead><tr><th>Item</th><th>Pack</th><th>Qty</th><th></th></tr></thead>
+          <tbody id="cartRows"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>Delivery details</h3>
+        <div class="field" id="f-name"><label>Full name *</label><input id="c-name" type="text" placeholder="Jane Rivera"><div class="err-msg">Please enter your name.</div></div>
+        <div class="row-2">
+          <div class="field" id="f-company"><label>Company</label><input id="c-company" type="text" placeholder="Rivera Foods LLC"></div>
+          <div class="field" id="f-phone"><label>Phone</label><input id="c-phone" type="tel" placeholder="(555) 555-5555"></div>
+        </div>
+        <div class="field" id="f-email"><label>Email *</label><input id="c-email" type="email" placeholder="jane@company.com"><div class="err-msg">Please enter a valid email.</div></div>
+        <div class="field" id="f-address"><label>Delivery address *</label><textarea id="c-address" rows="2" placeholder="Street, city, state, ZIP"></textarea><div class="err-msg">Please enter a delivery address.</div></div>
+        <div class="field">
+          <label>Preferred delivery window</label>
+          <select id="c-pref">
+            <option>Next available Tri-State delivery</option>
+            <option>Specific date (note below)</option>
+            <option>Will arrange freight pickup</option>
+          </select>
+        </div>
+        <div class="field"><label>Order notes</label><textarea id="c-notes" rows="2" placeholder="Split delivery, dock hours, substitutions OK, etc."></textarea></div>
+        <div class="summary-line"><span>Line items</span><span>${items.length}</span></div>
+        <div class="summary-line total"><span>Total cases requested</span><span>${totalCases}</span></div>
+        <button class="btn btn-solid" id="placeOrderBtn" style="margin-top:12px;">Place order</button>
+        <p id="orderError" style="font-size:0.78rem;color:var(--rust-deep);margin-top:8px;display:none;"></p>
+      </div>
+    </div>
+  `;
+
+  const rows = document.getElementById('cartRows');
+  items.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.product.name}</td>
+      <td class="mono" style="font-size:0.78rem;color:var(--olive-deep);">${item.product.pack_size||''}</td>
+      <td><div class="stepper"><button data-act="dec">−</button><input type="number" min="0" value="${item.qty}" style="width:44px;"><button data-act="inc">+</button></div></td>
+      <td><button class="rm">Remove</button></td>
+    `;
+    const input = tr.querySelector('input');
+    tr.querySelector('[data-act="dec"]').addEventListener('click', ()=>{ input.value = Math.max(0,(parseInt(input.value)||0)-1); applyCartRowChange(item.product, input.value); });
+    tr.querySelector('[data-act="inc"]').addEventListener('click', ()=>{ input.value = (parseInt(input.value)||0)+1; applyCartRowChange(item.product, input.value); });
+    input.addEventListener('change', ()=> applyCartRowChange(item.product, input.value));
+    tr.querySelector('.rm').addEventListener('click', ()=>{ delete cart[item.product.id]; updateCartBadge(); renderCart(); });
+    rows.appendChild(tr);
+  });
+
+  document.getElementById('placeOrderBtn').addEventListener('click', placeOrder);
+}
+
+function applyCartRowChange(product, val){
+  const qty = Math.max(0, parseInt(val)||0);
+  if(qty===0){ delete cart[product.id]; } else { cart[product.id].qty = qty; }
+  updateCartBadge(); renderCart();
+}
+
+function setFieldError(id, hasError){ document.getElementById(id).classList.toggle('error', hasError); }
+
+async function placeOrder(){
+  const name = document.getElementById('c-name').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  const address = document.getElementById('c-address').value.trim();
+  const company = document.getElementById('c-company').value.trim();
+  const phone = document.getElementById('c-phone').value.trim();
+  const pref = document.getElementById('c-pref').value;
+  const notes = document.getElementById('c-notes').value.trim();
+
+  const emailOk = /\S+@\S+\.\S+/.test(email);
+  setFieldError('f-name', name==='');
+  setFieldError('f-email', !emailOk);
+  setFieldError('f-address', address==='');
+  if(name==='' || !emailOk || address==='') return;
+
+  const btn = document.getElementById('placeOrderBtn');
+  const errEl = document.getElementById('orderError');
+  btn.disabled = true; btn.textContent = 'Placing order…'; errEl.style.display='none';
+
+  try{
+    const payload = {
+      customer: {name, email, address, company: company || null, phone: phone || null},
+      items: Object.values(cart).map(i=>({product_id: i.product.id, qty_ordered: i.qty})),
+      delivery_pref: pref,
+      notes: notes || null,
+    };
+    const order = await api('/orders', {method:'POST', body: JSON.stringify(payload)});
+    cart = {}; updateCartBadge();
+    document.getElementById('confirmOrderId').textContent = order.order_number;
+    document.getElementById('confirmTrackBtn').href = '#track/' + order.order_number;
+    location.hash = 'confirm';
+    showView('confirm');
+    loadCatalog();  // refresh stock levels shown in shop
+  }catch(e){
+    errEl.textContent = 'Could not place order: ' + e.message;
+    errEl.style.display = 'block';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Place order';
+  }
+}
+
+/* ============ TRACKING ============ */
+document.getElementById('trackBtn').addEventListener('click', ()=>{
+  const id = document.getElementById('trackInput').value.trim().toUpperCase();
+  if(id) location.hash = 'track/' + id;
+});
+document.getElementById('trackInput').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('trackBtn').click(); });
+
+async function lookupOrder(orderNumber){
+  document.getElementById('trackInput').value = orderNumber;
+  const result = document.getElementById('trackResult');
+  result.innerHTML = `<div class="loading">Looking up ${orderNumber}…</div>`;
+  try{
+    const order = await api('/orders/' + encodeURIComponent(orderNumber));
+    renderOrderDetail(order);
+  }catch(e){
+    result.innerHTML = `<div class="notice">No order found for <span class="mono">${orderNumber}</span>. Double-check the number with whoever placed the order.</div>`;
+  }
+}
+
+function renderOrderDetail(order){
+  const result = document.getElementById('trackResult');
+  if(order.status === 'cancelled'){
+    result.innerHTML = `
+      <div class="panel">
+        <h3>Order ${order.order_number} <span class="status-pill cancelled">Cancelled</span></h3>
+        <div class="cancelled-banner">This order was cancelled. Contact us if that's unexpected.</div>
+      </div>`;
+    return;
+  }
+  const stageIdx = STATUS_STEPS.findIndex(s=>s.key === order.status);
+  result.innerHTML = `
+    <div class="panel">
+      <h3>Order ${order.order_number} <span class="status-pill">${STATUS_STEPS[stageIdx]?.label || order.status}</span></h3>
+      <p style="font-size:0.82rem;color:var(--ink-soft);margin:8px 0 0;">Placed ${new Date(order.created_at).toLocaleString()} for ${order.customer.name}${order.customer.company ? ' · '+order.customer.company : ''}</p>
+      <div class="timeline" id="tlContainer"></div>
+      <h3 style="margin-top:6px;">Items</h3>
+      <div style="margin-top:8px;">${order.items.map(i=>`<div class="summary-line"><span>${i.name}</span><span class="mono">${i.qty_ordered} case(s) · packed ${i.qty_packed}/${i.qty_ordered}</span></div>`).join('')}</div>
+    </div>
+  `;
+  const tl = document.getElementById('tlContainer');
+  STATUS_STEPS.forEach((step, i)=>{
+    const div = document.createElement('div');
+    div.className = 'tl-step ' + (i < stageIdx ? 'done' : i===stageIdx ? 'current' : '');
+    div.innerHTML = `<div class="tl-dot">${i<=stageIdx ? step.icon : ''}</div><div class="tl-content"><div class="t">${step.label}</div><div class="d">${step.desc}</div></div>`;
+    tl.appendChild(div);
+  });
+}
+
+async function renderTrackDefault(){
+  const recentWrap = document.getElementById('recentOrders');
+  recentWrap.innerHTML = `<div class="loading">Loading recent orders…</div>`;
+  try{
+    const orders = await api('/orders');
+    recentWrap.innerHTML = `<h3 style="margin-bottom:12px;">Recent orders</h3>`;
+    orders.slice(0, 15).forEach(o=>{
+      const stageIdx = STATUS_STEPS.findIndex(s=>s.key === o.status);
+      const label = o.status === 'cancelled' ? 'Cancelled' : (STATUS_STEPS[stageIdx]?.label || o.status);
+      const card = document.createElement('div');
+      card.className = 'order-card';
+      card.innerHTML = `
+        <div><div class="oid mono">${o.order_number}</div><div class="meta">${new Date(o.created_at).toLocaleDateString()} · ${o.customer.name}${o.customer.company ? ' · '+o.customer.company : ''} · ${o.items.length} item(s)</div></div>
+        <span class="status-pill ${o.status==='cancelled'?'cancelled':''}">${label}</span>
+      `;
+      card.addEventListener('click', ()=>{ location.hash = 'track/' + o.order_number; lookupOrder(o.order_number); });
+      recentWrap.appendChild(card);
+    });
+  }catch(e){
+    recentWrap.innerHTML = `<p class="loading">Couldn't load recent orders.</p>`;
+  }
+}
+
+/* ============ INIT ============ */
+checkApi();
+loadCatalog();
+route();
+setInterval(checkApi, 15000);
+</script>
+</body>
+</html>
