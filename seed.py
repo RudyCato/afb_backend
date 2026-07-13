@@ -327,6 +327,84 @@ def seed_packers_and_production(db, products):
     return packers
 
 
+def seed_packaging_materials(db, products):
+    """
+    Indirect materials: containers, lids (separate items), shipping boxes, and
+    general supplies (tape, hairnets, etc). These aren't sold to customers —
+    they're internal stock the packing team consumes to package the real catalog.
+    """
+    containers = [
+        ("PKG-CTR-8OZ", "8 oz Container", "Packaging - Containers"),
+        ("PKG-CTR-12OZ", "12 oz Container", "Packaging - Containers"),
+        ("PKG-CTR-16OZ", "16 oz Container", "Packaging - Containers"),
+        ("PKG-CTR-24OZ", "24 oz Container", "Packaging - Containers"),
+    ]
+    lids = [
+        ("PKG-LID-8OZ", "8 oz Lid", "Packaging - Lids"),
+        ("PKG-LID-12OZ", "12 oz Lid", "Packaging - Lids"),
+        ("PKG-LID-16OZ", "16 oz Lid", "Packaging - Lids"),
+        ("PKG-LID-24OZ", "24 oz Lid", "Packaging - Lids"),
+    ]
+    boxes = [
+        ("PKG-BOX-10x8x6", "Case Box 10x8x6", "Packaging - Boxes"),
+        ("PKG-BOX-14x9x9", "Case Box 14x9x9", "Packaging - Boxes"),
+        ("PKG-BOX-18x12x10", "Case Box 18x12x10", "Packaging - Boxes"),
+    ]
+    supplies = [
+        ("PKG-TAPE-CLEAR", "Packing Tape (Clear)", "Packaging - Supplies"),
+        ("PKG-TAPE-BRAND", "Packing Tape (Branded)", "Packaging - Supplies"),
+        ("PPE-HAIRNET", "Hairnets", "PPE - Food Safety Supplies"),
+        ("PPE-GLOVES-M", "Gloves (Medium)", "PPE - Food Safety Supplies"),
+        ("PPE-GLOVES-L", "Gloves (Large)", "PPE - Food Safety Supplies"),
+        ("PPE-APRON", "Aprons", "PPE - Food Safety Supplies"),
+    ]
+
+    created = {}
+    for sku, name, category in containers + lids + boxes + supplies:
+        p = models.Product(
+            sku=sku, name=name, category=category,
+            item_type=models.ProductType.indirect_material, active=True,
+        )
+        db.add(p)
+        db.flush()
+        qty = random.randint(200, 1500)
+        db.add(models.Inventory(product_id=p.id, qty_on_hand=qty, reorder_threshold=100))
+        db.add(models.InventoryTransaction(
+            product_id=p.id, change_qty=qty,
+            reason=models.InventoryReason.received_stock, reference="initial stock"
+        ))
+        created[sku] = p
+    db.commit()
+
+    # Sample packaging specs: link a handful of real sellable products to
+    # containers/lids/boxes so the "materials needed" calculation has data
+    # to demo. Picks products whose pack_size hints at a small retail unit.
+    candidates = [p for p in products if p.pack_size and ("oz" in p.pack_size.lower())][:6]
+    unit_size_map = {"8": "8OZ", "12": "12OZ", "16": "16OZ", "24": "24OZ"}
+
+    specs_created = 0
+    for p in candidates:
+        # crude match: pick the first size token that appears in pack_size, default 12OZ
+        size_key = next((v for k, v in unit_size_map.items() if k in p.pack_size), "12OZ")
+        container = created.get(f"PKG-CTR-{size_key}")
+        lid = created.get(f"PKG-LID-{size_key}")
+        box = created.get("PKG-BOX-14x9x9")
+        if not (container and lid and box):
+            continue
+        spec = models.PackagingSpec(
+            product_id=p.id,
+            container_product_id=container.id, container_qty_per_unit=1,
+            lid_product_id=lid.id, lid_qty_per_unit=1,
+            box_product_id=box.id, units_per_box=12,
+            notes="Seeded sample spec — adjust units_per_box to match real case pack.",
+        )
+        db.add(spec)
+        specs_created += 1
+    db.commit()
+
+    return len(created), specs_created
+
+
 def run(catalog_only=False):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -349,9 +427,11 @@ def run(catalog_only=False):
     products = seed_catalog(db)
     customers = seed_customers_and_orders(db, products)
     packers = seed_packers_and_production(db, products)
+    material_count, spec_count = seed_packaging_materials(db, products)
     db.close()
     print(f"Seeded {len(products)} products, {len(customers)} customers, 6 sample orders, "
-          f"{len(packers)} packers with sample assignments.")
+          f"{len(packers)} packers with sample assignments, {material_count} packaging/PPE "
+          f"materials, {spec_count} packaging specs.")
 
 
 if __name__ == "__main__":

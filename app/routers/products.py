@@ -34,10 +34,12 @@ def create_product(payload: schemas.ProductCreate, db: Session = Depends(get_db)
 
 
 @router.get("", response_model=list[schemas.ProductOut])
-def list_products(category: str | None = None, db: Session = Depends(get_db)):
+def list_products(category: str | None = None, item_type: models.ProductType | None = None, db: Session = Depends(get_db)):
     q = db.query(models.Product)
     if category:
         q = q.filter(models.Product.category == category)
+    if item_type:
+        q = q.filter(models.Product.item_type == item_type)
     return q.order_by(models.Product.category, models.Product.name).all()
 
 

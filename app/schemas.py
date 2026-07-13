@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 
-from .models import OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus
+from .models import OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus, ProductType
 
 
 # ---------- Customers ----------
@@ -28,6 +28,7 @@ class ProductCreate(BaseModel):
     category: str
     pack_size: Optional[str] = None
     unit_price: Optional[float] = None
+    item_type: ProductType = ProductType.sellable
     active: bool = True
     initial_qty: int = 0
     reorder_threshold: int = 10
@@ -41,6 +42,7 @@ class ProductOut(BaseModel):
     category: str
     pack_size: Optional[str]
     unit_price: Optional[float]
+    item_type: ProductType
     active: bool
 
 
@@ -192,6 +194,14 @@ class PackingAssignmentCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class MaterialLine(BaseModel):
+    role: str          # "container" | "lid" | "box"
+    product_id: int
+    sku: str
+    name: str
+    qty_needed: int
+
+
 class PackingAssignmentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -206,6 +216,7 @@ class PackingAssignmentOut(BaseModel):
     notes: Optional[str]
     created_at: datetime
     updated_at: datetime
+    materials_needed: List[MaterialLine] = []
 
 
 class AssignmentStatusUpdate(BaseModel):
@@ -290,3 +301,38 @@ class PalletAssignOrder(BaseModel):
 
 class PalletStatusUpdate(BaseModel):
     status: PalletStatus
+
+
+# ---------- Packaging Specs & Materials ----------
+class PackagingSpecCreate(BaseModel):
+    product_id: int
+    container_product_id: Optional[int] = None
+    container_qty_per_unit: int = 1
+    lid_product_id: Optional[int] = None
+    lid_qty_per_unit: int = 1
+    box_product_id: Optional[int] = None
+    units_per_box: int = 1
+    notes: Optional[str] = None
+
+
+class PackagingSpecOut(BaseModel):
+    id: int
+    product_id: int
+    product_name: str
+    container_product_id: Optional[int]
+    container_name: Optional[str]
+    container_qty_per_unit: int
+    lid_product_id: Optional[int]
+    lid_name: Optional[str]
+    lid_qty_per_unit: int
+    box_product_id: Optional[int]
+    box_name: Optional[str]
+    units_per_box: int
+    notes: Optional[str]
+
+
+class MaterialsNeededOut(BaseModel):
+    product_id: int
+    qty_ordered: int
+    has_spec: bool
+    materials: List[MaterialLine]

@@ -223,6 +223,12 @@
   <button class="toggle-link" onclick="toggleInventory()">+ View full product &amp; inventory list</button>
   <div id="inventorySection">
     <h2 class="section-title">Inventory</h2>
+    <div class="filter-row">
+      <select id="inventoryTypeFilter" onchange="renderInventory(LAST_INVENTORY)">
+        <option value="sellable">Products (sellable catalog)</option>
+        <option value="indirect_material">Packaging &amp; Supplies (containers, lids, boxes, PPE)</option>
+      </select>
+    </div>
     <div class="panel">
       <table>
         <thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Reorder at</th><th>Status</th><th></th></tr></thead>
@@ -489,15 +495,20 @@ function renderCycleChart(data){
     : 'No fully completed orders yet.';
 }
 
+let LAST_INVENTORY = {items: []};
+
 function renderInventory(data){
-  document.getElementById('inventoryRows').innerHTML = data.items.map(i=>`
+  LAST_INVENTORY = data;
+  const filterType = document.getElementById('inventoryTypeFilter').value;
+  const filtered = data.items.filter(i => (i.item_type || 'sellable') === filterType);
+  document.getElementById('inventoryRows').innerHTML = filtered.map(i=>`
     <tr class="${i.low_stock ? 'low':''}">
       <td class="mono">${i.sku}</td><td>${i.name}</td><td>${i.category}</td>
       <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
       <td><span class="pill ${i.low_stock?'low':''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
       <td><button class="adjust-btn" onclick="openAdjustModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${i.qty_on_hand})">Adjust</button></td>
     </tr>
-  `).join('');
+  `).join('') || '<tr><td colspan="9" class="empty">Nothing in this category.</td></tr>';
 }
 
 /* ---------------- Customers ---------------- */

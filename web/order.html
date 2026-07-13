@@ -293,7 +293,7 @@ function route(){
 
 /* ============ SHOP ============ */
 async function loadCatalog(){
-  const [products, inv] = await Promise.all([ api('/products'), api('/inventory') ]);
+  const [products, inv] = await Promise.all([ api('/products?item_type=sellable'), api('/inventory') ]);
   PRODUCTS = products;
   INVENTORY = {};
   inv.items.forEach(i=>{ INVENTORY[i.sku] = i; });

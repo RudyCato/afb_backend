@@ -62,6 +62,11 @@ class Customer(Base):
     orders = relationship("Order", back_populates="customer")
 
 
+class ProductType(str, enum.Enum):
+    sellable = "sellable"
+    indirect_material = "indirect_material"
+
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -72,10 +77,15 @@ class Product(Base):
     pack_size = Column(String, nullable=True)   # e.g. "25 lb case"
     unit_price = Column(Float, nullable=True)   # optional, fill in later
     barcode = Column(String, nullable=True, unique=False, index=True)  # placeholder for future barcode scanning
+    item_type = Column(Enum(ProductType), default=ProductType.sellable, nullable=False)
     active = Column(Boolean, default=True)
 
     inventory = relationship("Inventory", back_populates="product", uselist=False)
     order_items = relationship("OrderItem", back_populates="product")
+    packaging_spec = relationship(
+        "PackagingSpec", back_populates="product", uselist=False,
+        foreign_keys="PackagingSpec.product_id",
+    )
 
 
 class Inventory(Base):
@@ -249,3 +259,33 @@ class Pallet(Base):
     shipped_at = Column(DateTime, nullable=True)
 
     orders = relationship("Order", back_populates="pallet")
+
+
+class PackagingSpec(Base):
+    """
+    Defines what indirect materials (container, lid, box) a sellable product
+    needs, and how many sellable units fit per box — lets the system compute
+    exactly how many containers/lids/boxes a packing job requires.
+    """
+    __tablename__ = "packaging_specs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), unique=True, nullable=False)
+
+    container_product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    container_qty_per_unit = Column(Integer, default=1)   # containers needed per sellable unit
+
+    lid_product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    lid_qty_per_unit = Column(Integer, default=1)          # lids needed per sellable unit (separate item)
+
+    box_product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    units_per_box = Column(Integer, default=1)             # how many sellable units fit in one box
+
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    product = relationship("Product", back_populates="packaging_spec", foreign_keys=[product_id])
+    container_product = relationship("Product", foreign_keys=[container_product_id])
+    lid_product = relationship("Product", foreign_keys=[lid_product_id])
+    box_product = relationship("Product", foreign_keys=[box_product_id])

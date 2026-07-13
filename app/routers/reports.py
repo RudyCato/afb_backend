@@ -60,6 +60,7 @@ def inventory_report(db: Session = Depends(get_db)):
             "sku": r.product.sku,
             "name": r.product.name,
             "category": r.product.category,
+            "item_type": r.product.item_type.value,
             "qty_on_hand": r.qty_on_hand,
             "qty_reserved": r.qty_reserved,
             "qty_available": available,

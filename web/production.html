@@ -102,11 +102,11 @@
       <div class="form-grid">
         <div>
           <label>Product</label>
-          <select id="mProduct"></select>
+          <select id="mProduct" onchange="previewMaterials()"></select>
         </div>
         <div>
           <label>Quantity Needed</label>
-          <input type="number" id="mQty" min="1" value="50">
+          <input type="number" id="mQty" min="1" value="50" oninput="previewMaterials()">
         </div>
         <div>
           <label>Assign To</label>
@@ -119,14 +119,62 @@
       </div>
       <label>Notes (optional)</label>
       <textarea id="mNotes" placeholder="e.g. Pull from bulk room, priority for Friday delivery"></textarea>
+
+      <div id="materialsPreview" style="display:none;background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:6px;">Indirect materials needed for this job</div>
+        <div id="materialsPreviewList"></div>
+      </div>
+
       <button class="btn" onclick="createAssignment()">Create Assignment</button>
     </div>
 
     <h2 class="section-title">All Assignments</h2>
     <div class="panel">
       <table>
-        <thead><tr><th>Product</th><th>Qty</th><th>Progress</th><th>Assigned To</th><th>Status</th><th>Created</th></tr></thead>
+        <thead><tr><th>Product</th><th>Qty</th><th>Progress</th><th>Assigned To</th><th>Status</th><th>Materials Needed</th><th>Created</th></tr></thead>
         <tbody id="assignmentRows"></tbody>
+      </table>
+    </div>
+
+    <h2 class="section-title">Packaging Specs</h2>
+    <p style="font-size:0.85rem;color:var(--ink-soft);margin-top:-6px;">Define what container, lid, and box each product uses, and how many units fit per box. This is what powers the materials calculation above.</p>
+    <div class="panel">
+      <div id="specMsg" class="msg"></div>
+      <div class="form-grid">
+        <div>
+          <label>Product</label>
+          <select id="sProduct"></select>
+        </div>
+        <div>
+          <label>Units Per Box</label>
+          <input type="number" id="sUnitsPerBox" min="1" value="12">
+        </div>
+        <div>
+          <label>Container</label>
+          <select id="sContainer"><option value="">— none —</option></select>
+        </div>
+        <div>
+          <label>Container Qty per Unit</label>
+          <input type="number" id="sContainerQty" min="1" value="1">
+        </div>
+        <div>
+          <label>Lid (separate item)</label>
+          <select id="sLid"><option value="">— none —</option></select>
+        </div>
+        <div>
+          <label>Lid Qty per Unit</label>
+          <input type="number" id="sLidQty" min="1" value="1">
+        </div>
+        <div>
+          <label>Box</label>
+          <select id="sBox"><option value="">— none —</option></select>
+        </div>
+      </div>
+      <button class="btn secondary" onclick="saveSpec()">Save Packaging Spec</button>
+
+      <table style="margin-top:18px;">
+        <thead><tr><th>Product</th><th>Container</th><th>Lid</th><th>Units/Box</th><th>Box</th></tr></thead>
+        <tbody id="specRows"></tbody>
       </table>
     </div>
   </div>
@@ -184,6 +232,7 @@ async function api(path, opts={}){
 }
 
 let PRODUCTS = [];
+let MATERIALS = [];
 let PACKERS = [];
 
 function switchTab(tab){
@@ -191,25 +240,40 @@ function switchTab(tab){
   document.getElementById('packerView').classList.toggle('active', tab==='packer');
   document.getElementById('tabManagerBtn').classList.toggle('active', tab==='manager');
   document.getElementById('tabPackerBtn').classList.toggle('active', tab==='packer');
-  if(tab==='manager') loadAssignments();
+  if(tab==='manager'){ loadAssignments(); loadSpecs(); }
   if(tab==='packer') loadPackerTasks();
 }
 
-function productOptions(){
-  return PRODUCTS.map(p=>`<option value="${p.id}">${p.sku} — ${p.name}</option>`).join('');
+function productOptions(list){
+  return list.map(p=>`<option value="${p.id}">${p.sku} — ${p.name}</option>`).join('');
 }
 function packerOptions(){
   return PACKERS.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
 }
+function materialsListHtml(materials){
+  if(!materials.length) return '<span class="empty">No packaging spec set for this product yet.</span>';
+  return materials.map(m => `<div>${m.qty_needed} &times; ${m.name} <span class="mono" style="color:var(--ink-soft);">(${m.role})</span></div>`).join('');
+}
 
 async function init(){
-  PRODUCTS = await api('/products');
+  PRODUCTS = await api('/products?item_type=sellable');
+  MATERIALS = await api('/products?item_type=indirect_material');
   PACKERS = await api('/production/packers');
-  document.getElementById('mProduct').innerHTML = productOptions();
-  document.getElementById('pProduct').innerHTML = productOptions();
+
+  document.getElementById('mProduct').innerHTML = productOptions(PRODUCTS);
+  document.getElementById('pProduct').innerHTML = productOptions(PRODUCTS);
+  document.getElementById('sProduct').innerHTML = productOptions(PRODUCTS);
   document.getElementById('mPacker').innerHTML = packerOptions();
   document.getElementById('packerSelect').innerHTML = '<option value="">— select —</option>' + packerOptions();
+
+  const matOpts = '<option value="">— none —</option>' + MATERIALS.map(m=>`<option value="${m.id}">${m.sku} — ${m.name}</option>`).join('');
+  document.getElementById('sContainer').innerHTML = matOpts;
+  document.getElementById('sLid').innerHTML = matOpts;
+  document.getElementById('sBox').innerHTML = matOpts;
+
   loadAssignments();
+  loadSpecs();
+  previewMaterials();
 }
 
 function showMsg(id, text, ok){
@@ -217,6 +281,20 @@ function showMsg(id, text, ok){
   el.textContent = text;
   el.className = 'msg ' + (ok ? 'ok' : 'err');
   setTimeout(()=>{ el.className = 'msg'; }, 4000);
+}
+
+async function previewMaterials(){
+  const productId = parseInt(document.getElementById('mProduct').value);
+  const qty = parseInt(document.getElementById('mQty').value) || 0;
+  const box = document.getElementById('materialsPreview');
+  if(!productId || !qty){ box.style.display = 'none'; return; }
+  try {
+    const result = await api(`/packaging/materials-needed?product_id=${productId}&qty=${qty}`);
+    box.style.display = 'block';
+    document.getElementById('materialsPreviewList').innerHTML = materialsListHtml(result.materials);
+  } catch(e){
+    box.style.display = 'none';
+  }
 }
 
 async function createAssignment(){
@@ -238,7 +316,7 @@ async function createAssignment(){
 async function loadAssignments(){
   const rows = await api('/production/assignments');
   const tbody = document.getElementById('assignmentRows');
-  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="6" class="empty">No assignments yet.</td></tr>'; return; }
+  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty">No assignments yet.</td></tr>'; return; }
   tbody.innerHTML = rows.map(a=>`
     <tr>
       <td class="mono">${a.sku}</td>
@@ -246,7 +324,47 @@ async function loadAssignments(){
       <td>${a.qty_completed} / ${a.qty_assigned}</td>
       <td>${a.assigned_to}</td>
       <td><span class="pill ${a.status}">${a.status.replace('_',' ')}</span></td>
+      <td style="font-size:0.78rem;">${materialsListHtml(a.materials_needed)}</td>
       <td>${new Date(a.created_at).toLocaleDateString()}</td>
+    </tr>
+  `).join('');
+}
+
+async function saveSpec(){
+  const product_id = parseInt(document.getElementById('sProduct').value);
+  const units_per_box = parseInt(document.getElementById('sUnitsPerBox').value) || 1;
+  const containerVal = document.getElementById('sContainer').value;
+  const lidVal = document.getElementById('sLid').value;
+  const boxVal = document.getElementById('sBox').value;
+  const payload = {
+    product_id, units_per_box,
+    container_product_id: containerVal ? parseInt(containerVal) : null,
+    container_qty_per_unit: parseInt(document.getElementById('sContainerQty').value) || 1,
+    lid_product_id: lidVal ? parseInt(lidVal) : null,
+    lid_qty_per_unit: parseInt(document.getElementById('sLidQty').value) || 1,
+    box_product_id: boxVal ? parseInt(boxVal) : null,
+  };
+  try {
+    await api('/packaging/specs', {method:'POST', body: JSON.stringify(payload)});
+    showMsg('specMsg', 'Packaging spec saved.', true);
+    loadSpecs();
+    previewMaterials();
+  } catch(e){
+    showMsg('specMsg', 'Could not save spec: ' + e.message, false);
+  }
+}
+
+async function loadSpecs(){
+  const specs = await api('/packaging/specs');
+  const rows = document.getElementById('specRows');
+  if(!specs.length){ rows.innerHTML = '<tr><td colspan="5" class="empty">No packaging specs defined yet.</td></tr>'; return; }
+  rows.innerHTML = specs.map(s=>`
+    <tr>
+      <td>${s.product_name}</td>
+      <td>${s.container_name || '—'}</td>
+      <td>${s.lid_name || '—'}</td>
+      <td>${s.units_per_box}</td>
+      <td>${s.box_name || '—'}</td>
     </tr>
   `).join('');
 }
@@ -275,6 +393,7 @@ async function loadPackerTasks(){
           <span class="pill ${a.status}">${a.status.replace('_',' ')}</span>
         </div>
         <div class="progress">${a.qty_completed} of ${a.qty_assigned} packed${a.notes ? ' &middot; ' + a.notes : ''}</div>
+        ${a.materials_needed.length ? `<div style="font-size:0.78rem;color:var(--ink-soft);margin-bottom:8px;"><b>Pull:</b> ${a.materials_needed.map(m=>`${m.qty_needed} ${m.name}`).join(', ')}</div>` : ''}
         <div class="log-row">
           <input type="number" id="qty-${a.id}" min="1" value="${Math.max(1, a.qty_assigned - a.qty_completed)}">
           <button class="btn" onclick="logAssignmentProduction(${a.id}, ${a.product_id})">Log Completed</button>

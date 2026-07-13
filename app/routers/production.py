@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from .packaging import compute_materials_needed
 
 router = APIRouter(prefix="/production", tags=["production"])
 
@@ -19,12 +20,14 @@ def list_packers(active_only: bool = True, db: Session = Depends(get_db)):
 
 
 # ---------- Assignments (packing manager creates, packers work off these) ----------
-def _assignment_to_out(a: models.PackingAssignment) -> schemas.PackingAssignmentOut:
+def _assignment_to_out(a: models.PackingAssignment, db: Session) -> schemas.PackingAssignmentOut:
+    remaining = max(0, a.qty_assigned - a.qty_completed)
     return schemas.PackingAssignmentOut(
         id=a.id, product_id=a.product_id, sku=a.product.sku, product_name=a.product.name,
         qty_assigned=a.qty_assigned, qty_completed=a.qty_completed,
         assigned_to=a.assigned_to, assigned_by=a.assigned_by, status=a.status,
         notes=a.notes, created_at=a.created_at, updated_at=a.updated_at,
+        materials_needed=compute_materials_needed(db, a.product_id, remaining or a.qty_assigned),
     )
 
 
@@ -41,7 +44,7 @@ def create_assignment(payload: schemas.PackingAssignmentCreate, db: Session = De
     db.add(assignment)
     db.commit()
     db.refresh(assignment)
-    return _assignment_to_out(assignment)
+    return _assignment_to_out(assignment, db)
 
 
 @router.get("/assignments", response_model=list[schemas.PackingAssignmentOut])
@@ -56,7 +59,7 @@ def list_assignments(
     if status:
         q = q.filter(models.PackingAssignment.status == status)
     rows = q.order_by(models.PackingAssignment.created_at.desc()).all()
-    return [_assignment_to_out(a) for a in rows]
+    return [_assignment_to_out(a, db) for a in rows]
 
 
 @router.patch("/assignments/{assignment_id}", response_model=schemas.PackingAssignmentOut)
@@ -68,7 +71,7 @@ def update_assignment_status(assignment_id: int, payload: schemas.AssignmentStat
     assignment.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(assignment)
-    return _assignment_to_out(assignment)
+    return _assignment_to_out(assignment, db)
 
 
 # ---------- Daily production logging (packers log completed work here) ----------
