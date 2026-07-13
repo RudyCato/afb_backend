@@ -166,11 +166,84 @@ def shipping_report(db: Session = Depends(get_db)):
 @router.get("/packing-productivity")
 def packing_productivity(db: Session = Depends(get_db)):
     records = db.query(models.PackingRecord).all()
-    by_staff = defaultdict(lambda: {"orders_packed": 0, "boxes": 0})
+    by_staff = defaultdict(lambda: {"orders_packed": 0, "boxes": 0, "hours": []})
     for r in records:
         bucket = by_staff[r.packed_by]
         bucket["orders_packed"] += 1
         bucket["boxes"] += r.boxes
+        order = r.order
+        if order and order.created_at:
+            hours = (r.packed_at - order.created_at).total_seconds() / 3600
+            if hours >= 0:
+                bucket["hours"].append(hours)
     return [
-        {"packed_by": staff, **data} for staff, data in by_staff.items()
+        {
+            "packed_by": staff,
+            "orders_packed": data["orders_packed"],
+            "boxes": data["boxes"],
+            "avg_hours_to_pack": round(sum(data["hours"]) / len(data["hours"]), 2) if data["hours"] else None,
+        }
+        for staff, data in by_staff.items()
     ]
+
+
+@router.get("/alerts")
+def alerts(db: Session = Depends(get_db)):
+    """Exceptions worth a manager/CEO's attention right now."""
+    issues = []
+
+    # Low stock
+    inv_rows = db.query(models.Inventory).all()
+    low_stock = [r for r in inv_rows if (r.qty_on_hand - r.qty_reserved) <= r.reorder_threshold]
+    if low_stock:
+        issues.append({
+            "severity": "warning",
+            "category": "inventory",
+            "message": f"{len(low_stock)} product(s) at or below reorder threshold",
+            "count": len(low_stock),
+        })
+
+    # Orders stuck in a non-terminal status for more than 48 hours with no progress
+    stale_cutoff = datetime.utcnow() - timedelta(hours=48)
+    stuck_orders = db.query(models.Order).filter(
+        models.Order.status.notin_([models.OrderStatus.delivered, models.OrderStatus.cancelled]),
+        models.Order.updated_at <= stale_cutoff,
+    ).all()
+    if stuck_orders:
+        issues.append({
+            "severity": "critical",
+            "category": "orders",
+            "message": f"{len(stuck_orders)} order(s) haven't moved in over 48 hours",
+            "count": len(stuck_orders),
+            "order_numbers": [o.order_number for o in stuck_orders],
+        })
+
+    # Packing assignments overdue (created more than 24h ago, not completed)
+    assign_cutoff = datetime.utcnow() - timedelta(hours=24)
+    overdue_assignments = db.query(models.PackingAssignment).filter(
+        models.PackingAssignment.status.in_([models.AssignmentStatus.assigned, models.AssignmentStatus.in_progress]),
+        models.PackingAssignment.created_at <= assign_cutoff,
+    ).all()
+    if overdue_assignments:
+        issues.append({
+            "severity": "warning",
+            "category": "production",
+            "message": f"{len(overdue_assignments)} packing assignment(s) open for over 24 hours",
+            "count": len(overdue_assignments),
+        })
+
+    # Pallets sitting in "building" status for a long time (loaded but never shipped)
+    pallet_cutoff = datetime.utcnow() - timedelta(hours=48)
+    stale_pallets = db.query(models.Pallet).filter(
+        models.Pallet.status != models.PalletStatus.shipped,
+        models.Pallet.created_at <= pallet_cutoff,
+    ).all()
+    if stale_pallets:
+        issues.append({
+            "severity": "warning",
+            "category": "shipping",
+            "message": f"{len(stale_pallets)} pallet(s) not yet shipped after 48+ hours",
+            "count": len(stale_pallets),
+        })
+
+    return {"issue_count": len(issues), "issues": issues}

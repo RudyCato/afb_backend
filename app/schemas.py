@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 
-from .models import OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus
+from .models import OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus
 
 
 # ---------- Customers ----------
@@ -96,6 +96,13 @@ class OrderStatusHistoryOut(BaseModel):
     changed_at: datetime
 
 
+class PackingRecordBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    packed_by: str
+    boxes: int
+    packed_at: datetime
+
+
 class OrderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -108,6 +115,8 @@ class OrderOut(BaseModel):
     customer: CustomerOut
     items: List[OrderItemOut]
     status_history: List[OrderStatusHistoryOut]
+    packing_records: List[PackingRecordBrief] = []
+    pallet_number: Optional[str] = None
 
 
 class OrderStatusUpdate(BaseModel):
@@ -222,3 +231,62 @@ class ProductionLogOut(BaseModel):
     qty_completed: int
     notes: Optional[str]
     logged_at: datetime
+
+
+# ---------- Pallets & Manifests ----------
+class PalletCreate(BaseModel):
+    loaded_by: str
+    carrier: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PalletOrderBrief(BaseModel):
+    order_number: str
+    customer_name: str
+    company: Optional[str]
+    item_count: int
+    status: OrderStatus
+
+
+class PalletOut(BaseModel):
+    id: int
+    pallet_number: str
+    loaded_by: str
+    carrier: Optional[str]
+    status: PalletStatus
+    notes: Optional[str]
+    created_at: datetime
+    shipped_at: Optional[datetime]
+    order_count: int
+
+
+class PalletManifestItem(BaseModel):
+    sku: str
+    name: str
+    qty: int
+
+
+class PalletManifestOrder(BaseModel):
+    order_number: str
+    customer_name: str
+    company: Optional[str]
+    address: Optional[str]
+    items: List[PalletManifestItem]
+
+
+class PalletManifestOut(BaseModel):
+    pallet_number: str
+    loaded_by: str
+    carrier: Optional[str]
+    status: PalletStatus
+    created_at: datetime
+    shipped_at: Optional[datetime]
+    orders: List[PalletManifestOrder]
+
+
+class PalletAssignOrder(BaseModel):
+    order_number: str
+
+
+class PalletStatusUpdate(BaseModel):
+    status: PalletStatus

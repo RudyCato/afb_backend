@@ -254,12 +254,34 @@ def seed_customers_and_orders(db, products):
         db.commit()
         return order
 
-    add_order(customers[0], days_ago=6, target_status="delivered", carrier="AFB Fleet", packer="Luis M.")
-    add_order(customers[1], days_ago=4, target_status="delivered", carrier="AFB Fleet", packer="Dana K.")
-    add_order(customers[2], days_ago=3, target_status="out_for_delivery", carrier="Private Trucking Partner")
-    add_order(customers[3], days_ago=2, target_status="packed", packer="Luis M.")
+    o1 = add_order(customers[0], days_ago=6, target_status="delivered", carrier="AFB Fleet", packer="Luis M.")
+    o2 = add_order(customers[1], days_ago=4, target_status="delivered", carrier="AFB Fleet", packer="Dana K.")
+    o3 = add_order(customers[2], days_ago=3, target_status="out_for_delivery", carrier="Private Trucking Partner")
+    o4 = add_order(customers[3], days_ago=2, target_status="packed", packer="Luis M.")
     add_order(customers[0], days_ago=1, target_status="confirmed")
     add_order(customers[2], days_ago=0, target_status="received")
+
+    # sample pallets: one already shipped (the two delivered orders), one still being loaded
+    pallet1 = models.Pallet(
+        pallet_number=f"PLT-{random.randint(100000,999999)}", loaded_by="Luis M.",
+        carrier="AFB Fleet", status=models.PalletStatus.shipped,
+        shipped_at=o1.updated_at,
+    )
+    db.add(pallet1)
+    db.flush()
+    o1.pallet_id = pallet1.id
+    o2.pallet_id = pallet1.id
+
+    pallet2 = models.Pallet(
+        pallet_number=f"PLT-{random.randint(100000,999999)}", loaded_by="Dana K.",
+        carrier="Private Trucking Partner", status=models.PalletStatus.staged,
+    )
+    db.add(pallet2)
+    db.flush()
+    o3.pallet_id = pallet2.id
+    o4.pallet_id = pallet2.id
+
+    db.commit()
 
     return customers
 

@@ -26,12 +26,18 @@ def _order_to_out(order: models.Order) -> schemas.OrderOut:
         )
         for i in order.items
     ]
+    packing_out = [
+        schemas.PackingRecordBrief(packed_by=r.packed_by, boxes=r.boxes, packed_at=r.packed_at)
+        for r in sorted(order.packing_records, key=lambda r: r.packed_at)
+    ]
     return schemas.OrderOut(
         id=order.id, order_number=order.order_number, status=order.status,
         delivery_pref=order.delivery_pref, notes=order.notes,
         created_at=order.created_at, updated_at=order.updated_at,
         customer=order.customer, items=items_out,
         status_history=sorted(order.status_history, key=lambda h: h.changed_at),
+        packing_records=packing_out,
+        pallet_number=order.pallet.pallet_number if order.pallet else None,
     )
 
 

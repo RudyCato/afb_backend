@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets
 
 Base.metadata.create_all(bind=engine)
 
@@ -32,6 +32,7 @@ app.include_router(packing.router)
 app.include_router(shipping.router)
 app.include_router(reports.router)
 app.include_router(production.router)
+app.include_router(pallets.router)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 

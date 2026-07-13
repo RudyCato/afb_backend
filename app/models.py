@@ -42,6 +42,12 @@ class AssignmentStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class PalletStatus(str, enum.Enum):
+    building = "building"     # being loaded
+    staged = "staged"         # full, waiting for pickup
+    shipped = "shipped"
+
+
 class Customer(Base):
     __tablename__ = "customers"
 
@@ -65,6 +71,7 @@ class Product(Base):
     category = Column(String, nullable=False)
     pack_size = Column(String, nullable=True)   # e.g. "25 lb case"
     unit_price = Column(Float, nullable=True)   # optional, fill in later
+    barcode = Column(String, nullable=True, unique=False, index=True)  # placeholder for future barcode scanning
     active = Column(Boolean, default=True)
 
     inventory = relationship("Inventory", back_populates="product", uselist=False)
@@ -107,6 +114,7 @@ class Order(Base):
     status = Column(Enum(OrderStatus), default=OrderStatus.received)
     delivery_pref = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
+    pallet_id = Column(Integer, ForeignKey("pallets.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -115,6 +123,7 @@ class Order(Base):
     status_history = relationship("OrderStatusHistory", back_populates="order", cascade="all, delete-orphan")
     packing_records = relationship("PackingRecord", back_populates="order", cascade="all, delete-orphan")
     shipment = relationship("Shipment", back_populates="order", uselist=False, cascade="all, delete-orphan")
+    pallet = relationship("Pallet", back_populates="orders")
 
 
 class OrderItem(Base):
@@ -225,3 +234,18 @@ class PackerProductionLog(Base):
 
     assignment = relationship("PackingAssignment", back_populates="production_logs")
     product = relationship("Product")
+
+
+class Pallet(Base):
+    __tablename__ = "pallets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pallet_number = Column(String, unique=True, index=True, nullable=False)  # e.g. "PLT-000123" — barcode-ready
+    loaded_by = Column(String, nullable=False)      # who placed packages on the pallet
+    carrier = Column(String, nullable=True)
+    status = Column(Enum(PalletStatus), default=PalletStatus.building)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    shipped_at = Column(DateTime, nullable=True)
+
+    orders = relationship("Order", back_populates="pallet")
