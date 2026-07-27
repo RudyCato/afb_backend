@@ -83,7 +83,11 @@
       <div class="top">American Food &amp; Beverage</div>
       <div class="bottom">Packing &amp; Production</div>
     </div>
-    <div><a href="/dashboard" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">&larr; Dashboard</a></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a href="/dashboard" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">&larr; Dashboard</a>
+      <a href="/stock" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">Inventory</a>
+      <a href="#" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
+    </div>
   </div>
 </header>
 

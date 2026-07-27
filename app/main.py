@@ -114,6 +114,17 @@ def production_page(staff=Depends(get_current_staff_optional)):
     return FileResponse(os.path.join(WEB_DIR, "production.html"))
 
 
+@app.get("/stock")
+def stock_page(staff=Depends(get_current_staff_optional)):
+    """Dedicated inventory/stock-count page — separate path from the
+    /inventory API router (list/adjust/location/transactions) mounted
+    below, so the two don't collide."""
+    gate = _staff_gate("/stock", staff)
+    if gate:
+        return gate
+    return FileResponse(os.path.join(WEB_DIR, "inventory.html"))
+
+
 @app.get("/login", response_class=FileResponse)
 def login_page():
     return FileResponse(os.path.join(WEB_DIR, "login.html"))

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food &amp; Beverage — Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+
+  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:14px 0;}
+  header .wrap{padding:0 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header .top{font-weight:900;font-size:1.15rem;}
+  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.18em;color:var(--gold);text-transform:uppercase;}
+  .nav-link{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;}
+
+  /* Share bar */
+  .share-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .share-btn{
+    display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+    text-transform:uppercase;letter-spacing:0.04em;padding:9px 14px;border-radius:20px;border:1.5px solid var(--ink);
+    background:var(--paper);color:var(--ink);cursor:pointer;text-decoration:none;font-weight:600;
+  }
+  .share-btn:hover{background:var(--ink);color:var(--paper);}
+  #linkCopiedMsg{font-size:0.78rem;color:var(--olive-deep);font-weight:600;display:none;align-self:center;}
+
+  /* Controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+  .controls input[type="search"]{
+    flex:1;min-width:180px;padding:11px 14px;border:1.5px solid var(--line-strong);border-radius:3px;
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.92rem;background:var(--paper);color:var(--ink);
+  }
+  .controls select{padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink);font-size:0.85rem;}
+  .toggle-chip{
+    display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:20px;border:1.5px solid var(--line-strong);
+    background:var(--paper);font-size:0.82rem;cursor:pointer;user-select:none;
+  }
+  .toggle-chip.active{background:var(--rust);color:var(--paper);border-color:var(--rust);}
+
+  .summary-row{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;font-size:0.85rem;color:var(--ink-soft);}
+  .summary-row strong{color:var(--ink);}
+
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;overflow:hidden;box-shadow:var(--shadow);}
+  th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);padding:9px 10px;border-bottom:2px solid var(--ink);background:var(--cream);white-space:nowrap;}
+  td{padding:10px;border-bottom:1px solid var(--line);font-size:0.85rem;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  tr.low{background:#fbe9d8;}
+  .pill{font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:12px;background:#e3f0d8;color:var(--olive-deep);}
+  .pill.low{background:#f7dcd8;color:var(--rust-deep);}
+  .count-input{width:64px;padding:6px 8px;border:1.5px solid var(--line-strong);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;}
+  .action-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;padding:6px 10px;
+    border-radius:3px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;margin:1px;
+  }
+  .action-btn:hover{background:var(--ink);color:var(--paper);}
+  .empty{color:var(--ink-soft);font-style:italic;padding:20px;text-align:center;}
+
+  /* Modals — same pattern as dashboard.html */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(36,26,16,0.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:200;overflow-y:auto;}
+  .modal-backdrop.show{display:flex;}
+  .modal{background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;box-shadow:var(--shadow);width:100%;max-width:480px;padding:24px 26px;margin-top:10px;position:relative;}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--ink-soft);}
+  .modal h3{font-size:1.1rem;margin-bottom:4px;}
+  .modal .sub{color:var(--ink-soft);font-size:0.85rem;margin-bottom:14px;}
+  .modal .modal-field{display:flex;justify-content:space-between;padding:6px 0;font-size:0.88rem;border-bottom:1px solid var(--line);}
+  .modal label{display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;color:var(--ink-soft);}
+  .modal input, .modal select{width:100%;padding:9px 11px;border:1.5px solid var(--line-strong);border-radius:3px;font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;background:#fff;color:var(--ink);}
+  .adjust-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .adjust-row button{width:38px;height:38px;border:1.5px solid var(--ink);background:var(--paper);border-radius:3px;font-size:1.1rem;cursor:pointer;}
+  .modal-btn{width:100%;margin-top:6px;padding:12px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;text-transform:uppercase;cursor:pointer;font-weight:600;}
+  .msg{font-size:0.82rem;margin-top:8px;display:none;}
+  .msg.ok{color:var(--olive-deep);display:block;}
+  .msg.err{color:var(--rust-deep);display:block;}
+
+  /* Print stylesheet — a clean physical count sheet: hide chrome, add a
+     blank "Counted Qty" column to write real numbers against system numbers */
+  @media print {
+    header, .share-bar, .controls, .action-col, th.action-col, .no-print { display:none !important; }
+    body{background:#fff;color:#000;}
+    table{box-shadow:none;border:1px solid #000;}
+    th{background:#eee;color:#000;border-bottom:2px solid #000;}
+    tr.low{background:#f4f4f4;}
+    .print-count-col{display:table-cell !important;}
+    .wrap{max-width:100%;padding:0;margin:0;}
+    .print-title{display:block !important;margin-bottom:12px;}
+  }
+  .print-count-col{display:none;}
+  .print-title{display:none;font-family:'Bitter',serif;font-size:1.3rem;}
+</style>
+</head>
+<body>
+
+<header class="no-print">
+  <div class="wrap">
+    <div>
+      <div class="top">American Food &amp; Beverage</div>
+      <div class="bottom">Inventory &amp; Stock Count</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a href="/dashboard" class="nav-link">&larr; Dashboard</a>
+      <a href="#" class="nav-link" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h1 class="print-title">American Food &amp; Beverage — Stock Count Sheet</h1>
+  <div class="print-title mono" style="font-size:0.8rem;margin-bottom:16px;" id="printDate"></div>
+
+  <div class="share-bar no-print">
+    <button class="share-btn" onclick="shareVia('sms')">&#128172; Text this page</button>
+    <button class="share-btn" onclick="shareVia('email')">&#9993; Email this page</button>
+    <button class="share-btn" onclick="window.print()">&#128424; Print count sheet</button>
+    <button class="share-btn" onclick="copyLink()">&#128279; Copy link</button>
+    <span id="linkCopiedMsg">Link copied</span>
+  </div>
+
+  <div class="controls no-print">
+    <input type="search" id="searchBox" placeholder="Search SKU, name, description, category…" oninput="renderTable()">
+    <select id="typeFilter" onchange="renderTable()">
+      <option value="sellable">Products (sellable)</option>
+      <option value="indirect_material">Packaging &amp; Supplies</option>
+      <option value="all">All items</option>
+    </select>
+    <div class="toggle-chip" id="lowStockToggle" onclick="toggleLowStock()">Low stock only</div>
+  </div>
+
+  <div class="summary-row no-print" id="summaryRow"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>SKU</th><th>Product</th><th>Description</th><th>Location</th>
+        <th>On hand</th><th>Reserved</th><th>Available</th><th>Min qty</th>
+        <th class="print-count-col">Counted qty</th>
+        <th>Status</th><th class="action-col no-print"></th>
+      </tr>
+    </thead>
+    <tbody id="rows"><tr><td colspan="11" class="empty">Loading inventory…</td></tr></tbody>
+  </table>
+
+</div>
+
+<!-- ADJUST MODAL -->
+<div class="modal-backdrop" id="adjustModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('adjustModal')">&times;</button>
+    <h3 id="adjSku">Adjust Inventory</h3>
+    <div class="sub" id="adjProductName"></div>
+    <div class="modal-field"><span>Current on hand</span><span id="adjCurrentQty"></span></div>
+    <label style="margin-top:14px;">Change amount</label>
+    <div class="adjust-row">
+      <button onclick="stepAdjust(-1)">&minus;</button>
+      <input type="number" id="adjAmount" value="1" style="flex:1;">
+      <button onclick="stepAdjust(1)">&plus;</button>
+    </div>
+    <div class="sub" id="adjPreview" style="margin-bottom:12px;"></div>
+    <label>Reason</label>
+    <select id="adjReason" style="margin-bottom:6px;">
+      <option value="adjustment">Manual adjustment</option>
+      <option value="received_stock">Received stock</option>
+      <option value="production_completed">Production completed</option>
+      <option value="removed">Removed (damaged / lost / samples)</option>
+      <option value="returned">Returned to stock</option>
+    </select>
+    <div class="sub" style="margin-bottom:12px;font-size:0.72rem;">"Removed" always subtracts and "Returned" always adds, no matter which sign you type above.</div>
+    <label>Note (optional)</label>
+    <input type="text" id="adjNote" style="margin-bottom:14px;" placeholder="e.g. Physical count correction">
+    <div id="adjMsg" class="msg"></div>
+    <button class="modal-btn" onclick="submitAdjust()">Save Adjustment</button>
+  </div>
+</div>
+
+<!-- LOCATION MODAL -->
+<div class="modal-backdrop" id="locationModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('locationModal')">&times;</button>
+    <h3 id="locSku">Edit Location</h3>
+    <div class="sub" id="locProductName"></div>
+    <label>Warehouse</label>
+    <input type="text" id="locWarehouse" placeholder="e.g. Main, Supplies" style="margin-bottom:12px;">
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label>Aisle</label>
+        <input type="text" id="locAisle" placeholder="e.g. A" style="margin-bottom:12px;">
+      </div>
+      <div style="flex:1;">
+        <label>Bin / Column</label>
+        <input type="text" id="locBinColumn" placeholder="e.g. 12" style="margin-bottom:12px;">
+      </div>
+    </div>
+    <label>Min qty (reorder point)</label>
+    <input type="number" id="locMinQty" style="margin-bottom:14px;">
+    <div id="locMsg" class="msg"></div>
+    <button class="modal-btn" onclick="submitLocation()">Save Location</button>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-backdrop" id="historyModal">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="closeModal('historyModal')">&times;</button>
+    <h3 id="histSku">Transaction History</h3>
+    <div class="sub" id="histProductName" style="margin-bottom:14px;"></div>
+    <table>
+      <thead><tr><th>Date</th><th>Change</th><th>Reason</th><th>Note</th></tr></thead>
+      <tbody id="histRows"><tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading&hellip;</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const API = '';
+  let ALL_ITEMS = [];
+  let lowStockOnly = false;
+
+  document.getElementById('printDate').textContent = 'Printed ' + new Date().toLocaleString();
+
+  async function loadInventory(){
+    try {
+      const res = await fetch('/reports/inventory');
+      const data = await res.json();
+      ALL_ITEMS = data.items || [];
+      renderTable();
+      if (new URLSearchParams(window.location.search).get('print') === '1') {
+        setTimeout(() => window.print(), 400);
+      }
+    } catch(e) {
+      document.getElementById('rows').innerHTML = '<tr><td colspan="11" class="empty">Could not load inventory.</td></tr>';
+    }
+  }
+
+  function toggleLowStock(){
+    lowStockOnly = !lowStockOnly;
+    document.getElementById('lowStockToggle').classList.toggle('active', lowStockOnly);
+    renderTable();
+  }
+
+  function renderTable(){
+    const q = document.getElementById('searchBox').value.trim().toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value;
+
+    let items = ALL_ITEMS.slice();
+    if (typeFilter !== 'all') items = items.filter(i => (i.item_type || 'sellable') === typeFilter);
+    if (lowStockOnly) items = items.filter(i => i.low_stock);
+    if (q) {
+      items = items.filter(i =>
+        (i.sku || '').toLowerCase().includes(q) ||
+        (i.name || '').toLowerCase().includes(q) ||
+        (i.description || '').toLowerCase().includes(q) ||
+        (i.category || '').toLowerCase().includes(q)
+      );
+    }
+
+    const lowCount = items.filter(i => i.low_stock).length;
+    document.getElementById('summaryRow').innerHTML = `
+      <span><strong>${items.length}</strong> items shown</span>
+      <span><strong>${lowCount}</strong> at or below min qty</span>
+    `;
+
+    if (!items.length) {
+      document.getElementById('rows').innerHTML = '<tr><td colspan="11" class="empty">No items match.</td></tr>';
+      return;
+    }
+
+    document.getElementById('rows').innerHTML = items.map(i => {
+      const locLabel = [i.warehouse, i.aisle ? `Aisle ${i.aisle}` : '', i.bin_column ? `Bin ${i.bin_column}` : '']
+        .filter(Boolean).join(' / ') || (i.location || '—');
+      return `
+        <tr class="${i.low_stock ? 'low' : ''}">
+          <td class="mono">${escapeHtml(i.sku)}</td>
+          <td>${escapeHtml(i.name)}</td>
+          <td style="max-width:200px;font-size:0.8rem;color:var(--ink-soft);">${escapeHtml(i.description || '')}</td>
+          <td style="font-size:0.8rem;">${escapeHtml(locLabel)}</td>
+          <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
+          <td class="print-count-col"><input class="count-input" type="text"></td>
+          <td><span class="pill ${i.low_stock ? 'low' : ''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
+          <td class="action-col no-print">
+            <button class="action-btn" onclick="openAdjustModal(${i.product_id}, '${escJs(i.sku)}', '${escJs(i.name)}', ${i.qty_on_hand})">Adjust</button>
+            <button class="action-btn" onclick="openLocationModal(${i.product_id}, '${escJs(i.sku)}', '${escJs(i.name)}', ${JSON.stringify(i.warehouse || '')}, ${JSON.stringify(i.aisle || '')}, ${JSON.stringify(i.bin_column || '')}, ${i.reorder_threshold})">Location</button>
+            <button class="action-btn" onclick="openHistoryModal(${i.product_id}, '${escJs(i.sku)}')">History</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+  function escJs(str){ return (str || '').replace(/'/g, "\\'"); }
+
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+  /* ---------------- Share bar ---------------- */
+  function pageUrl(){ return window.location.origin + '/stock'; }
+
+  function shareVia(kind){
+    const url = pageUrl();
+    const text = `AFB Inventory — stock count page: ${url}`;
+    if (kind === 'sms') {
+      window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
+    } else if (kind === 'email') {
+      const subject = encodeURIComponent('AFB Inventory — Stock Count Link');
+      const body = encodeURIComponent(text);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
+  }
+
+  function copyLink(){
+    navigator.clipboard.writeText(pageUrl()).then(() => {
+      const msg = document.getElementById('linkCopiedMsg');
+      msg.style.display = 'inline';
+      setTimeout(() => msg.style.display = 'none', 2000);
+    }).catch(() => {
+      prompt('Copy this link:', pageUrl());
+    });
+  }
+
+  /* ---------------- Adjust ---------------- */
+  let ADJ_PRODUCT_ID = null, ADJ_CURRENT_QTY = 0;
+  function openAdjustModal(productId, sku, name, currentQty){
+    ADJ_PRODUCT_ID = productId; ADJ_CURRENT_QTY = currentQty;
+    document.getElementById('adjSku').textContent = sku;
+    document.getElementById('adjProductName').textContent = name;
+    document.getElementById('adjCurrentQty').textContent = currentQty;
+    document.getElementById('adjAmount').value = 1;
+    document.getElementById('adjNote').value = '';
+    document.getElementById('adjMsg').style.display = 'none';
+    updateAdjPreview();
+    openModal('adjustModal');
+  }
+  function stepAdjust(dir){
+    const input = document.getElementById('adjAmount');
+    input.value = (parseInt(input.value) || 0) + dir;
+    updateAdjPreview();
+  }
+  document.getElementById('adjAmount').addEventListener('input', updateAdjPreview);
+  function updateAdjPreview(){
+    const change = parseInt(document.getElementById('adjAmount').value) || 0;
+    document.getElementById('adjPreview').textContent =
+      `New on-hand quantity will be ${ADJ_CURRENT_QTY + change} (${change >= 0 ? '+' : ''}${change})`;
+  }
+  async function submitAdjust(){
+    let change_qty = parseInt(document.getElementById('adjAmount').value);
+    const reason = document.getElementById('adjReason').value;
+    const reference = document.getElementById('adjNote').value || null;
+    const msgEl = document.getElementById('adjMsg');
+    if (!change_qty) { msgEl.textContent = 'Enter a non-zero amount.'; msgEl.className = 'msg err'; return; }
+    if (reason === 'removed') change_qty = -Math.abs(change_qty);
+    if (reason === 'returned') change_qty = Math.abs(change_qty);
+    try {
+      const res = await fetch(`${API}/inventory/${ADJ_PRODUCT_ID}/adjust`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({change_qty, reason, reference}),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok';
+      setTimeout(() => { closeModal('adjustModal'); loadInventory(); }, 700);
+    } catch (e) {
+      msgEl.textContent = 'Could not save: ' + e.message; msgEl.className = 'msg err';
+    }
+  }
+
+  /* ---------------- Location ---------------- */
+  let LOC_PRODUCT_ID = null;
+  function openLocationModal(productId, sku, name, warehouse, aisle, binColumn, reorderThreshold){
+    LOC_PRODUCT_ID = productId;
+    document.getElementById('locSku').textContent = sku;
+    document.getElementById('locProductName').textContent = name;
+    document.getElementById('locWarehouse').value = warehouse || '';
+    document.getElementById('locAisle').value = aisle || '';
+    document.getElementById('locBinColumn').value = binColumn || '';
+    document.getElementById('locMinQty').value = reorderThreshold;
+    document.getElementById('locMsg').style.display = 'none';
+    openModal('locationModal');
+  }
+  async function submitLocation(){
+    const msgEl = document.getElementById('locMsg');
+    const payload = {
+      warehouse: document.getElementById('locWarehouse').value.trim() || null,
+      aisle: document.getElementById('locAisle').value.trim() || null,
+      bin_column: document.getElementById('locBinColumn').value.trim() || null,
+      reorder_threshold: parseInt(document.getElementById('locMinQty').value) || 0,
+    };
+    try {
+      const res = await fetch(`${API}/inventory/${LOC_PRODUCT_ID}/location`, {
+        method: 'PATCH', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok'; msgEl.style.display = 'block';
+      setTimeout(() => { closeModal('locationModal'); loadInventory(); }, 700);
+    } catch (e) {
+      msgEl.textContent = 'Could not save: ' + e.message; msgEl.className = 'msg err'; msgEl.style.display = 'block';
+    }
+  }
+
+  /* ---------------- History ---------------- */
+  async function openHistoryModal(productId, sku){
+    document.getElementById('histSku').textContent = sku;
+    document.getElementById('histProductName').textContent = 'Every change to this item — received, removed, returned, adjusted.';
+    document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading…</td></tr>';
+    openModal('historyModal');
+    try {
+      const res = await fetch(`/inventory/${productId}/transactions`);
+      const rows = await res.json();
+      if (!rows.length) {
+        document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">No transactions logged yet.</td></tr>';
+        return;
+      }
+      const reasonLabels = {
+        received_stock: 'Received stock', order_reserved: 'Order reserved', order_released: 'Order released',
+        order_shipped: 'Order shipped', adjustment: 'Manual adjustment', production_completed: 'Production completed',
+        removed: 'Removed', returned: 'Returned',
+      };
+      document.getElementById('histRows').innerHTML = rows.map(r => `
+        <tr>
+          <td class="mono">${new Date(r.created_at).toLocaleString()}</td>
+          <td style="color:${r.change_qty >= 0 ? 'var(--olive-deep)' : 'var(--rust-deep)'};font-weight:600;">${r.change_qty >= 0 ? '+' : ''}${r.change_qty}</td>
+          <td>${reasonLabels[r.reason] || r.reason}</td>
+          <td class="mono" style="font-size:0.8rem;">${r.reference || '—'}</td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">Could not load history.</td></tr>';
+    }
+  }
+
+  loadInventory();
+</script>
+
+</body>
+</html>

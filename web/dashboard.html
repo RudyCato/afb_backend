@@ -192,6 +192,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:14px;">
       <a href="/production" class="prod-link">Packing &amp; Production &rarr;</a>
+      <a href="/stock" class="prod-link">Inventory (Stock Count) &rarr;</a>
       <a href="/applications-admin" class="prod-link">Job Applications &rarr;</a>
       <a href="/change-password" class="prod-link">Change Password</a>
       <span id="apiStatus" class="mono">checking API…</span>
@@ -281,6 +282,17 @@
   <button class="toggle-link" onclick="toggleInventory()">+ View full product &amp; inventory list</button>
   <div id="inventorySection">
     <h2 class="section-title">Inventory</h2>
+    <div class="share-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="refresh-btn" onclick="shareInventory('sms')">&#128172; Text link</button>
+      <button class="refresh-btn" onclick="shareInventory('email')">&#9993; Email link</button>
+      <button class="refresh-btn" onclick="shareInventory('print')">&#128424; Print count sheet</button>
+      <button class="refresh-btn" onclick="shareInventory('copy')">&#128279; Copy link</button>
+      <span id="invLinkCopied" style="display:none;font-size:0.8rem;color:var(--olive-deep);align-self:center;">Link copied</span>
+    </div>
+    <div class="sub" style="font-size:0.8rem;color:var(--ink-soft);margin-bottom:14px;">
+      For a focused, mobile-friendly page for taking a physical count, use the dedicated
+      <a href="/stock" style="color:var(--rust);font-weight:600;">Inventory page</a> instead of this dashboard section.
+    </div>
     <div class="filter-row">
       <select id="inventoryTypeFilter" onchange="renderInventory(LAST_INVENTORY)">
         <option value="sellable">Products (sellable catalog)</option>
@@ -560,6 +572,32 @@ function toggleInventory(){
   el.classList.toggle('show');
   document.querySelector('.toggle-link').textContent =
     el.classList.contains('show') ? '− Hide product & inventory list' : '+ View full product & inventory list';
+}
+
+function openInventoryFromHash(){
+  if (window.location.hash === '#inventory') {
+    const el = document.getElementById('inventorySection');
+    el.classList.add('show');
+    document.querySelector('.toggle-link').textContent = '− Hide product & inventory list';
+    setTimeout(() => el.scrollIntoView({behavior: 'smooth', block: 'start'}), 150);
+  }
+}
+
+function shareInventory(kind){
+  const stockUrl = window.location.origin + '/stock';
+  if (kind === 'sms') {
+    window.location.href = `sms:?&body=${encodeURIComponent('AFB Inventory — stock count page: ' + stockUrl)}`;
+  } else if (kind === 'email') {
+    window.location.href = `mailto:?subject=${encodeURIComponent('AFB Inventory — Stock Count Link')}&body=${encodeURIComponent(stockUrl)}`;
+  } else if (kind === 'print') {
+    window.open(stockUrl + '?print=1', '_blank');
+  } else if (kind === 'copy') {
+    navigator.clipboard.writeText(stockUrl).then(() => {
+      const msg = document.getElementById('invLinkCopied');
+      msg.style.display = 'inline';
+      setTimeout(() => msg.style.display = 'none', 2000);
+    }).catch(() => prompt('Copy this link:', stockUrl));
+  }
 }
 
 async function loadAll(){
@@ -1235,6 +1273,8 @@ function escapeHtmlLocal(str){
 
 initBackupPanel();
 loadAll();
+openInventoryFromHash();
+window.addEventListener('hashchange', openInventoryFromHash);
 </script>
 
 </body>
