@@ -228,17 +228,23 @@
       <p>Order history and contact info per account.</p>
       <div class="cta">View customers &rarr;</div>
     </div>
-    <div class="ov-card" onclick="openOrdersModal()">
-      <div class="icon">&#128230;</div>
-      <h3>Open Orders</h3>
-      <p>Status, who packed it, and how long each stage took.</p>
-      <div class="cta">View orders &rarr;</div>
+    <div class="ov-card" onclick="openReturnModal()">
+      <div class="icon">&#8630;</div>
+      <h3>Log a Return</h3>
+      <p>Record product coming back — by order # or customer — and put it back into stock.</p>
+      <div class="cta">Log return &rarr;</div>
     </div>
     <div class="ov-card" onclick="openProductionModal()">
       <div class="icon">&#9878;&#65039;</div>
       <h3>Packing &amp; Production</h3>
       <p>Who packed what today, and average time to pack.</p>
       <div class="cta">View production &rarr;</div>
+    </div>
+    <div class="ov-card" onclick="openReceivingModal()">
+      <div class="icon">&#128230;</div>
+      <h3>Receiving</h3>
+      <p>Log inbound product with vendor, lot code, sell-by, condition, and put-away.</p>
+      <div class="cta">Log receipt &rarr;</div>
     </div>
     <div class="ov-card" onclick="openPalletsModal()">
       <div class="icon">&#128666;</div>
@@ -251,6 +257,12 @@
       <h3>Staff Assignment Board</h3>
       <p>Who's working on what, right now — orders and stock.</p>
       <div class="cta">View staff board &rarr;</div>
+    </div>
+    <div class="ov-card" onclick="openReportsModal()">
+      <div class="icon">&#128196;</div>
+      <h3>Reports</h3>
+      <p>Print or email PDF reports — daily production, receiving, and inventory status.</p>
+      <div class="cta">Open reports &rarr;</div>
     </div>
   </div>
 
@@ -539,6 +551,237 @@
   </div>
 </div>
 
+<!-- REPORTS MODAL -->
+<div class="modal-backdrop" id="reportsModal">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('reportsModal')">&times;</button>
+    <h3>Reports</h3>
+    <div class="sub">Each report opens as a PDF in a new tab (browser Print / Save works from there), or you can email it directly.</div>
+
+    <div id="reportsMsg" class="msg"></div>
+
+    <!-- Daily Production -->
+    <div style="background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:16px;margin-bottom:14px;">
+      <h3 style="font-size:1rem;margin-bottom:4px;">Daily Production</h3>
+      <div class="sub" style="margin-bottom:12px;">Every packer log for a given day, plus per-packer totals.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:150px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Date</label>
+          <input type="date" id="rptDailyDate">
+        </div>
+        <div style="flex:2;min-width:220px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Email to (optional)</label>
+          <input type="email" id="rptDailyEmail" placeholder="name@example.com">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="modal-btn secondary" onclick="openReportPdf('daily-production')">Open PDF</button>
+          <button class="modal-btn" onclick="emailReport('daily-production')">Email PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receiving -->
+    <div style="background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:16px;margin-bottom:14px;">
+      <h3 style="font-size:1rem;margin-bottom:4px;">Product Receiving</h3>
+      <div class="sub" style="margin-bottom:12px;">Inbound receipts by vendor, PO, lot, sell-by, condition, and put-away location.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:150px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Last N days</label>
+          <input type="number" id="rptReceiptsDays" min="1" max="90" value="7">
+        </div>
+        <div style="flex:2;min-width:220px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Email to (optional)</label>
+          <input type="email" id="rptReceiptsEmail" placeholder="name@example.com">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="modal-btn secondary" onclick="openReportPdf('receipts')">Open PDF</button>
+          <button class="modal-btn" onclick="emailReport('receipts')">Email PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory -->
+    <div style="background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:16px;margin-bottom:14px;">
+      <h3 style="font-size:1rem;margin-bottom:4px;">Inventory Status</h3>
+      <div class="sub" style="margin-bottom:12px;">Current on-hand + reserved + reorder-point status per SKU.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:180px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Filter</label>
+          <select id="rptInventoryType">
+            <option value="">All active products</option>
+            <option value="sellable">Sellable catalog only</option>
+            <option value="indirect_material">Packaging &amp; supplies only</option>
+          </select>
+        </div>
+        <div style="flex:2;min-width:220px;">
+          <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Email to (optional)</label>
+          <input type="email" id="rptInventoryEmail" placeholder="name@example.com">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="modal-btn secondary" onclick="openReportPdf('inventory')">Open PDF</button>
+          <button class="modal-btn" onclick="emailReport('inventory')">Email PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub" style="font-size:0.72rem;">Emailing requires SMTP env vars (<span class="mono">SMTP_HOST</span>, <span class="mono">SMTP_USER</span>, etc.) and <span class="mono">MAIL_ENABLED=1</span>. Without them the request logs but doesn't actually send — a helpful confirmation message is returned either way.</div>
+  </div>
+</div>
+
+<!-- RECEIVING MODAL -->
+<div class="modal-backdrop" id="receivingModal">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('receivingModal')">&times;</button>
+    <h3>Receiving — Log Inbound Product</h3>
+    <div class="sub">Log a truck / delivery line. Accepted receipts automatically add to on-hand inventory and update put-away location. Rejected shipments are logged for the paper trail but do NOT enter stock.</div>
+
+    <div id="receivingMsg" class="msg"></div>
+
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Vendor / Supplier</label>
+        <input type="text" id="rcvVendor" placeholder="e.g. Grassland Feed Co.">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">PO # / Invoice #</label>
+        <input type="text" id="rcvPO" placeholder="e.g. PO-9821">
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin:14px 0 4px;">
+      <label style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:0;">Product</label>
+      <button type="button" class="refresh-btn" onclick="promptScan('receiving')" style="padding:4px 12px;font-size:0.65rem;">&#128246; Scan barcode</button>
+    </div>
+    <select id="rcvProduct" style="margin-bottom:12px;"></select>
+
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Qty received</label>
+        <input type="number" id="rcvQtyReceived" min="1" value="1">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Qty expected (from PO)</label>
+        <input type="number" id="rcvQtyExpected" min="0" placeholder="optional">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Temp (°F, cold chain)</label>
+        <input type="number" step="0.1" id="rcvTemperature" placeholder="optional">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Lot code</label>
+        <input type="text" id="rcvLot" placeholder="Manufacturer lot #">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Sell-by / Best-by</label>
+        <input type="date" id="rcvSellBy">
+      </div>
+    </div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:14px 0 4px;">Condition on arrival</label>
+    <select id="rcvCondition" style="margin-bottom:12px;">
+      <option value="good">Good — no issues</option>
+      <option value="partial_damage">Partial damage — accepted with notes</option>
+      <option value="damaged">Damaged — accepted with reservation</option>
+      <option value="rejected">Rejected — refused, sent back (NOT added to inventory)</option>
+    </select>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:16px 0 6px;">Put-away location</div>
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Warehouse</label>
+        <input type="text" id="rcvWarehouse" placeholder="e.g. Main">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Aisle</label>
+        <input type="text" id="rcvAisle" placeholder="e.g. A">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Bin / Column</label>
+        <input type="text" id="rcvBin" placeholder="e.g. 12">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Received by (staff name)</label>
+        <input type="text" id="rcvReceivedBy" placeholder="e.g. Warehouse Manager">
+      </div>
+    </div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:14px 0 4px;">Notes</label>
+    <textarea id="rcvNotes" style="width:100%;min-height:60px;resize:vertical;padding:9px 10px;border:1px solid var(--line-strong);border-radius:3px;background:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;color:var(--ink);margin-bottom:16px;" placeholder="Seal #, driver, damage detail, anything else worth remembering…"></textarea>
+
+    <button class="modal-btn" onclick="submitReceipt()">Log Receipt</button>
+
+    <h3 style="margin-top:24px;font-size:1rem;">Recent receipts (last 7 days)</h3>
+    <table>
+      <thead><tr><th>When</th><th>Vendor / PO</th><th>Product</th><th>Qty</th><th>Lot / Sell-by</th><th>Condition</th><th>By</th></tr></thead>
+      <tbody id="rcvRecentRows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- RETURN MODAL -->
+<div class="modal-backdrop" id="returnModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('returnModal')">&times;</button>
+    <h3>Log a Return</h3>
+    <div class="sub">Record product coming back from a customer or order. This also puts the qty back into on-hand inventory.</div>
+
+    <div id="returnMsg" class="msg"></div>
+
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Order # (optional)</label>
+        <input type="text" id="retOrderNumber" placeholder="e.g. ORD-1042">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Or select customer</label>
+        <select id="retCustomer"><option value="">— none —</option></select>
+      </div>
+    </div>
+    <div class="sub" style="font-size:0.72rem;margin-top:-8px;margin-bottom:14px;">
+      One of Order # or Customer helps trace the return — either is fine on its own.
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4px;">
+      <label style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:0;">Product</label>
+      <button type="button" class="refresh-btn" onclick="promptScan('return')" style="padding:4px 12px;font-size:0.65rem;">&#128246; Scan barcode</button>
+    </div>
+    <select id="retProduct" style="margin-bottom:12px;"></select>
+
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Qty returning</label>
+        <input type="number" id="retQty" min="1" value="1">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Sell-by date</label>
+        <input type="date" id="retSellBy">
+      </div>
+    </div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:14px 0 4px;">Reason for return</label>
+    <select id="retReason" style="margin-bottom:12px;">
+      <option value="damaged">Damaged</option>
+      <option value="expired">Expired / past sell-by</option>
+      <option value="wrong_item">Wrong item shipped</option>
+      <option value="quality_issue">Quality issue</option>
+      <option value="customer_refused">Customer refused delivery</option>
+      <option value="overshipment">Overshipment</option>
+      <option value="other">Other</option>
+    </select>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Notes</label>
+    <textarea id="retNotes" style="width:100%;min-height:60px;resize:vertical;padding:9px 10px;border:1px solid var(--line-strong);border-radius:3px;background:#fff;font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;color:var(--ink);margin-bottom:16px;" placeholder="Anything else (driver note, condition, disposition)…"></textarea>
+
+    <button class="modal-btn" onclick="submitReturn()">Log Return &amp; Add to Inventory</button>
+  </div>
+</div>
+
 <!-- INVENTORY HISTORY MODAL -->
 <div class="modal-backdrop" id="historyModal">
   <div class="modal" style="max-width:520px;">
@@ -643,17 +886,21 @@ function renderAlerts(data){
 }
 
 function renderKPIs(d){
+  // Only the Open orders KPI is a click target — it is the single entry point
+  // for tracking orders now that the drill-in card has been removed.
   const items = [
-    ['Customers', d.total_customers],
-    ['Products', d.total_products],
-    ['Open orders', d.open_orders],
-    ['Delivered', d.delivered_orders],
-    ['This week', d.orders_this_week],
-    ['Low stock', d.low_stock_items, d.low_stock_items > 0],
+    ['Customers', d.total_customers, false, null],
+    ['Products', d.total_products, false, null],
+    ['Open orders', d.open_orders, false, 'openOrdersModal()'],
+    ['Delivered', d.delivered_orders, false, null],
+    ['This week', d.orders_this_week, false, null],
+    ['Low stock', d.low_stock_items, d.low_stock_items > 0, null],
   ];
-  document.getElementById('kpiGrid').innerHTML = items.map(([l,n,warn])=>`
-    <div class="kpi ${warn?'warn':''}"><div class="n">${n}</div><div class="l">${l}</div></div>
-  `).join('');
+  document.getElementById('kpiGrid').innerHTML = items.map(([l,n,warn,onclick])=>{
+    const click = onclick ? ` onclick="${onclick}" style="cursor:pointer;" title="Click to view open orders"` : '';
+    const arrow = onclick ? ' <span style="font-size:0.7rem;color:var(--rust);vertical-align:super;">&rarr;</span>' : '';
+    return `<div class="kpi ${warn?'warn':''}"${click}><div class="n">${n}${arrow}</div><div class="l">${l}</div></div>`;
+  }).join('');
 }
 
 function renderStatusChart(data){
@@ -1275,6 +1522,315 @@ initBackupPanel();
 loadAll();
 openInventoryFromHash();
 window.addEventListener('hashchange', openInventoryFromHash);
+
+/* ---------------- Barcode scan (works with Bluetooth scanners AND phone camera via manual entry) ---------------- */
+async function promptScan(context){
+  // Bluetooth scanners paired as keyboards emit their payload straight into a
+  // focused input, so `prompt()` is the fastest cross-device capture we can
+  // use without pulling in a camera library. Phone cameras + BarcodeDetector
+  // are a v2 upgrade; for now, the tech and the workflow both work by typing
+  // into this prompt (or letting the scanner "type" into it).
+  const raw = window.prompt(
+    "Scan or type the barcode.\n\n" +
+    "Bluetooth scanner: focus is already in the box, just pull the trigger.\n" +
+    "Phone: type in the code below the case's barcode."
+  );
+  if(!raw) return;
+  try {
+    const res = await fetch(`${API}/scan/lookup`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({raw}),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    applyScanToForm(context, data);
+  } catch(e){
+    alert('Scan lookup failed: ' + e.message);
+  }
+}
+
+function applyScanToForm(context, data){
+  const ids = context === 'receiving'
+    ? {product: 'rcvProduct', lot: 'rcvLot', sellBy: 'rcvSellBy', msg: 'receivingMsg'}
+    : {product: 'retProduct', lot: null,      sellBy: 'retSellBy', msg: 'returnMsg'};
+
+  const msg = document.getElementById(ids.msg);
+  const productSelect = document.getElementById(ids.product);
+  let filledParts = [];
+
+  if(data.product_id){
+    productSelect.value = String(data.product_id);
+    filledParts.push(`product ${data.sku}`);
+  }
+  if(ids.lot && data.lot_code){
+    document.getElementById(ids.lot).value = data.lot_code;
+    filledParts.push(`lot ${data.lot_code}`);
+  }
+  if(data.sell_by_date){
+    document.getElementById(ids.sellBy).value = data.sell_by_date;
+    filledParts.push(`sell-by ${data.sell_by_date}`);
+  }
+
+  if(!filledParts.length){
+    msg.textContent = data.note || 'Scan recognized but nothing to fill.';
+    msg.className = 'msg err'; msg.style.display = 'block';
+    return;
+  }
+  msg.textContent = 'Filled from scan: ' + filledParts.join(', ') + '.';
+  msg.className = 'msg ok'; msg.style.display = 'block';
+}
+
+/* ---------------- Reports (PDF) ---------------- */
+function openReportsModal(){
+  openModal('reportsModal');
+  document.getElementById('reportsMsg').style.display = 'none';
+  // Default the daily-production date to today (YYYY-MM-DD in local time).
+  const t = new Date();
+  const iso = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  document.getElementById('rptDailyDate').value = iso;
+}
+
+function _reportParams(report){
+  const params = new URLSearchParams();
+  if(report === 'daily-production'){
+    const d = document.getElementById('rptDailyDate').value;
+    if(d) params.set('date', d);
+  } else if(report === 'receipts'){
+    const days = document.getElementById('rptReceiptsDays').value;
+    if(days) params.set('days', days);
+  } else if(report === 'inventory'){
+    const it = document.getElementById('rptInventoryType').value;
+    if(it) params.set('item_type', it);
+  }
+  return params;
+}
+
+function openReportPdf(report){
+  const params = _reportParams(report);
+  const qs = params.toString();
+  window.open(`${API}/reports/pdf/${report}${qs ? '?' + qs : ''}`, '_blank');
+}
+
+async function emailReport(report){
+  const msg = document.getElementById('reportsMsg');
+  const emailIdMap = {
+    'daily-production': 'rptDailyEmail',
+    'receipts': 'rptReceiptsEmail',
+    'inventory': 'rptInventoryEmail',
+  };
+  const to = document.getElementById(emailIdMap[report]).value.trim();
+  if(!to || !to.includes('@')){
+    msg.textContent = 'Enter a valid recipient email address.';
+    msg.className = 'msg err'; msg.style.display = 'block'; return;
+  }
+  const params = _reportParams(report);
+  params.set('report', report);
+  params.set('to', to);
+  msg.textContent = 'Generating and sending…';
+  msg.className = 'msg'; msg.style.display = 'block'; msg.style.background = '#fbf1d8'; msg.style.color = 'var(--ink)';
+  try {
+    const res = await fetch(`${API}/reports/pdf/email?${params.toString()}`, {method: 'POST'});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || res.statusText);
+    msg.style.background = ''; msg.style.color = '';
+    msg.textContent = data.detail || 'Sent.';
+    msg.className = 'msg ok'; msg.style.display = 'block';
+  } catch(e){
+    msg.style.background = ''; msg.style.color = '';
+    msg.textContent = 'Could not send: ' + e.message;
+    msg.className = 'msg err'; msg.style.display = 'block';
+  }
+}
+
+/* ---------------- Receiving ---------------- */
+const RCV_CONDITION_LABEL = {
+  good: 'Good',
+  partial_damage: 'Partial damage',
+  damaged: 'Damaged',
+  rejected: 'Rejected',
+};
+
+async function openReceivingModal(){
+  openModal('receivingModal');
+  const msg = document.getElementById('receivingMsg');
+  msg.style.display = 'none';
+
+  // Reset form
+  ['rcvVendor','rcvPO','rcvQtyExpected','rcvTemperature','rcvLot','rcvSellBy',
+   'rcvWarehouse','rcvAisle','rcvBin','rcvNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('rcvQtyReceived').value = 1;
+  document.getElementById('rcvCondition').value = 'good';
+  // Received-by defaults to current staff full name if we have it; otherwise blank.
+  try {
+    const me = await fetch('/auth/me').then(r => r.ok ? r.json() : null);
+    document.getElementById('rcvReceivedBy').value = (me && me.full_name) || '';
+  } catch(e){}
+
+  // Product dropdown + recent receipts, in parallel.
+  try {
+    const [products, recent] = await Promise.all([
+      fetchJSON('/products'),   // include both sellable and indirect_material — you may receive either
+      fetchJSON('/receipts?since_days=7'),
+    ]);
+    document.getElementById('rcvProduct').innerHTML = products
+      .map(p => `<option value="${p.id}">${p.sku} — ${p.name}${p.item_type && p.item_type !== 'sellable' ? ' (' + p.item_type.replace('_',' ') + ')' : ''}</option>`)
+      .join('') || '<option value="">— no products —</option>';
+    renderRecentReceipts(recent);
+  } catch(e){
+    msg.textContent = 'Could not load receiving data: ' + e.message;
+    msg.className = 'msg err'; msg.style.display = 'block';
+  }
+}
+
+function renderRecentReceipts(rows){
+  const tbody = document.getElementById('rcvRecentRows');
+  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty">No receipts in the last 7 days.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => {
+    const cond = RCV_CONDITION_LABEL[r.condition] || r.condition;
+    const condColor = r.condition === 'rejected' ? 'var(--rust-deep)'
+      : (r.condition === 'damaged' || r.condition === 'partial_damage') ? 'var(--rust)'
+      : 'var(--olive-deep)';
+    const vendorPO = [r.vendor, r.po_number ? '#' + r.po_number : ''].filter(Boolean).join(' · ') || '—';
+    const lotSellBy = [r.lot_code ? 'Lot ' + r.lot_code : '', r.sell_by_date ? 'Best by ' + r.sell_by_date : ''].filter(Boolean).join(' · ') || '—';
+    const qtyCell = r.qty_expected != null && r.discrepancy !== 0
+      ? `${r.qty_received} <span class="mono" style="color:var(--rust-deep);font-size:0.72rem;">(exp ${r.qty_expected}, ${r.discrepancy > 0 ? '-' : '+'}${Math.abs(r.discrepancy)})</span>`
+      : `${r.qty_received}`;
+    return `
+      <tr>
+        <td class="mono" style="font-size:0.78rem;">${new Date(r.created_at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+        <td style="font-size:0.82rem;">${vendorPO}</td>
+        <td><span class="mono" style="font-size:0.78rem;">${r.sku}</span> — ${r.product_name}</td>
+        <td>${qtyCell}</td>
+        <td style="font-size:0.78rem;">${lotSellBy}</td>
+        <td style="color:${condColor};font-weight:600;font-size:0.82rem;">${cond}</td>
+        <td style="font-size:0.82rem;">${r.received_by}</td>
+      </tr>`;
+  }).join('');
+}
+
+async function submitReceipt(){
+  const msg = document.getElementById('receivingMsg');
+  const product_id = parseInt(document.getElementById('rcvProduct').value);
+  const qty_received = parseInt(document.getElementById('rcvQtyReceived').value);
+  const qtyExpVal = document.getElementById('rcvQtyExpected').value;
+  const tempVal = document.getElementById('rcvTemperature').value;
+  const sellByVal = document.getElementById('rcvSellBy').value;
+  const received_by = document.getElementById('rcvReceivedBy').value.trim();
+
+  if(!product_id){ msg.textContent = 'Pick a product.'; msg.className = 'msg err'; msg.style.display = 'block'; return; }
+  if(!qty_received || qty_received <= 0){ msg.textContent = 'Enter a qty received greater than zero.'; msg.className = 'msg err'; msg.style.display = 'block'; return; }
+  if(!received_by){ msg.textContent = 'Enter who received it (staff name).'; msg.className = 'msg err'; msg.style.display = 'block'; return; }
+
+  const payload = {
+    product_id, qty_received, received_by,
+    qty_expected: qtyExpVal ? parseInt(qtyExpVal) : null,
+    vendor: document.getElementById('rcvVendor').value.trim() || null,
+    po_number: document.getElementById('rcvPO').value.trim() || null,
+    lot_code: document.getElementById('rcvLot').value.trim() || null,
+    sell_by_date: sellByVal || null,
+    condition: document.getElementById('rcvCondition').value,
+    temperature_f: tempVal ? parseFloat(tempVal) : null,
+    put_away_warehouse: document.getElementById('rcvWarehouse').value.trim() || null,
+    put_away_aisle: document.getElementById('rcvAisle').value.trim() || null,
+    put_away_bin_column: document.getElementById('rcvBin').value.trim() || null,
+    notes: document.getElementById('rcvNotes').value.trim() || null,
+  };
+
+  try {
+    const res = await fetch(`${API}/receipts`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const added = payload.condition === 'rejected'
+      ? 'Receipt logged. Rejected — inventory NOT changed.'
+      : `Receipt logged. Added ${qty_received} to on-hand inventory.`;
+    msg.textContent = added; msg.className = 'msg ok'; msg.style.display = 'block';
+    // Refresh recent-receipts table + main dashboard KPIs; keep the modal open so
+    // the receiver can log the next line without a click.
+    const recent = await fetchJSON('/receipts?since_days=7');
+    renderRecentReceipts(recent);
+    // Reset qty + lot for the next line, keep vendor/PO/received-by (multi-line delivery).
+    document.getElementById('rcvQtyReceived').value = 1;
+    document.getElementById('rcvQtyExpected').value = '';
+    document.getElementById('rcvLot').value = '';
+    document.getElementById('rcvNotes').value = '';
+    loadAll();
+  } catch(e){
+    msg.textContent = 'Could not log receipt: ' + e.message;
+    msg.className = 'msg err'; msg.style.display = 'block';
+  }
+}
+
+/* ---------------- Returns ---------------- */
+async function openReturnModal(){
+  openModal('returnModal');
+  const msg = document.getElementById('returnMsg');
+  msg.style.display = 'none';
+
+  // Reset form fields
+  document.getElementById('retOrderNumber').value = '';
+  document.getElementById('retQty').value = 1;
+  document.getElementById('retSellBy').value = '';
+  document.getElementById('retNotes').value = '';
+  document.getElementById('retReason').value = 'damaged';
+
+  // Populate product + customer dropdowns lazily (cached after first fetch).
+  try {
+    const [products, customers] = await Promise.all([
+      fetchJSON('/products?item_type=sellable'),
+      fetchJSON('/customers'),
+    ]);
+    document.getElementById('retProduct').innerHTML = products
+      .map(p => `<option value="${p.id}">${p.sku} — ${p.name}</option>`)
+      .join('') || '<option value="">— no products —</option>';
+    document.getElementById('retCustomer').innerHTML =
+      '<option value="">— none —</option>' +
+      customers.map(c => `<option value="${c.id}">${c.name}${c.company ? ' — ' + c.company : ''}</option>`).join('');
+  } catch(e){
+    msg.textContent = 'Could not load products/customers: ' + e.message;
+    msg.className = 'msg err';
+    msg.style.display = 'block';
+  }
+}
+
+async function submitReturn(){
+  const msg = document.getElementById('returnMsg');
+  const product_id = parseInt(document.getElementById('retProduct').value);
+  const qty = parseInt(document.getElementById('retQty').value);
+  const reason = document.getElementById('retReason').value;
+  const order_number = document.getElementById('retOrderNumber').value.trim() || null;
+  const customerVal = document.getElementById('retCustomer').value;
+  const customer_id = customerVal ? parseInt(customerVal) : null;
+  const sellByVal = document.getElementById('retSellBy').value;
+  const sell_by_date = sellByVal || null;
+  const notes = document.getElementById('retNotes').value.trim() || null;
+
+  if(!product_id){
+    msg.textContent = 'Pick a product.'; msg.className = 'msg err'; msg.style.display = 'block'; return;
+  }
+  if(!qty || qty <= 0){
+    msg.textContent = 'Enter a quantity greater than zero.'; msg.className = 'msg err'; msg.style.display = 'block'; return;
+  }
+  if(!order_number && !customer_id){
+    msg.textContent = 'Add an order # or select a customer so we can trace this return.';
+    msg.className = 'msg err'; msg.style.display = 'block'; return;
+  }
+
+  try {
+    const res = await fetch(`${API}/returns`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({product_id, qty, reason, order_number, customer_id, sell_by_date, notes}),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    msg.textContent = 'Return logged and added to inventory.';
+    msg.className = 'msg ok'; msg.style.display = 'block';
+    setTimeout(()=>{ closeModal('returnModal'); loadAll(); }, 900);
+  } catch(e){
+    msg.textContent = 'Could not log return: ' + e.message;
+    msg.className = 'msg err'; msg.style.display = 'block';
+  }
+}
 </script>
 
 </body>

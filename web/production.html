@@ -108,10 +108,23 @@
         <div>
           <label>Product</label>
           <select id="mProduct" onchange="previewMaterials()"></select>
+          <div id="mStockLine" style="margin-top:-8px;margin-bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);"></div>
         </div>
         <div>
           <label>Quantity Needed</label>
           <input type="number" id="mQty" min="1" value="50" oninput="previewMaterials()">
+        </div>
+        <div>
+          <label>Purpose</label>
+          <select id="mPurpose">
+            <option value="inventory">Pack for inventory (build stock)</option>
+            <option value="order">Pack for a specific order</option>
+            <option value="both">Both — fill order &amp; top up inventory</option>
+          </select>
+        </div>
+        <div>
+          <label>Order # / Inventory Reference</label>
+          <input type="text" id="mOrderNumber" placeholder="e.g. ORD-1042  or  INV-restock-Fri">
         </div>
         <div>
           <label>Assign To</label>
@@ -122,7 +135,7 @@
           <input type="text" id="mManagerName" placeholder="e.g. Warehouse Manager">
         </div>
       </div>
-      <label>Notes (optional)</label>
+      <label>Notes (optional) — emailed to the packing inbox on save</label>
       <textarea id="mNotes" placeholder="e.g. Pull from bulk room, priority for Friday delivery"></textarea>
 
       <div id="materialsPreview" style="display:none;background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:12px 14px;margin-bottom:14px;">
@@ -136,7 +149,7 @@
     <h2 class="section-title">All Assignments</h2>
     <div class="panel">
       <table>
-        <thead><tr><th>Product</th><th>Qty</th><th>Progress</th><th>Assigned To</th><th>Status</th><th>Materials Needed</th><th>Created</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Product</th><th>Progress</th><th>Purpose</th><th>Order / Ref</th><th>On Hand</th><th>Assigned To</th><th>Status</th><th>Materials</th><th>Created</th></tr></thead>
         <tbody id="assignmentRows"></tbody>
       </table>
     </div>
@@ -341,6 +354,21 @@ async function previewMaterials(){
   const productId = parseInt(document.getElementById('mProduct').value);
   const qty = parseInt(document.getElementById('mQty').value) || 0;
   const box = document.getElementById('materialsPreview');
+
+  // Live current-inventory readout next to the product picker.
+  const stockLine = document.getElementById('mStockLine');
+  if(productId){
+    try {
+      const inv = await api(`/production/inventory/${productId}`);
+      const low = inv.reorder_threshold && inv.qty_on_hand <= inv.reorder_threshold;
+      stockLine.innerHTML = `Current inventory: <b style="color:${low ? 'var(--rust-deep)' : 'var(--olive-deep)'};">${inv.qty_on_hand}</b> on hand · ${inv.qty_reserved} reserved · reorder at ${inv.reorder_threshold}`;
+    } catch(e){
+      stockLine.textContent = '';
+    }
+  } else {
+    stockLine.textContent = '';
+  }
+
   if(!productId || !qty){ box.style.display = 'none'; return; }
   try {
     const result = await api(`/packaging/materials-needed?product_id=${productId}&qty=${qty}`);
@@ -356,12 +384,18 @@ async function createAssignment(){
   const qty_assigned = parseInt(document.getElementById('mQty').value);
   const assigned_to = document.getElementById('mPacker').value;
   const assigned_by = document.getElementById('mManagerName').value || null;
+  const purpose = document.getElementById('mPurpose').value || 'inventory';
+  const order_number = document.getElementById('mOrderNumber').value.trim() || null;
   const notes = document.getElementById('mNotes').value || null;
   try {
-    await api('/production/assignments', {method:'POST', body: JSON.stringify({product_id, qty_assigned, assigned_to, assigned_by, notes})});
-    showMsg('managerMsg', `Assigned ${qty_assigned} units to ${assigned_to}.`, true);
+    await api('/production/assignments', {method:'POST', body: JSON.stringify({
+      product_id, qty_assigned, assigned_to, assigned_by, purpose, order_number, notes
+    })});
+    showMsg('managerMsg', `Assigned ${qty_assigned} units to ${assigned_to}. Notes emailed to the packing inbox.`, true);
     document.getElementById('mNotes').value = '';
+    document.getElementById('mOrderNumber').value = '';
     loadAssignments();
+    previewMaterials();
   } catch(e){
     showMsg('managerMsg', 'Could not create assignment: ' + e.message, false);
   }
@@ -370,18 +404,23 @@ async function createAssignment(){
 async function loadAssignments(){
   const rows = await api('/production/assignments');
   const tbody = document.getElementById('assignmentRows');
-  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="7" class="empty">No assignments yet.</td></tr>'; return; }
-  tbody.innerHTML = rows.map(a=>`
+  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="10" class="empty">No assignments yet.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(a=>{
+    const purposeLabel = a.purpose ? a.purpose.replace('_',' ') : 'inventory';
+    return `
     <tr>
       <td class="mono">${a.sku}</td>
       <td>${a.product_name}</td>
       <td>${a.qty_completed} / ${a.qty_assigned}</td>
+      <td style="text-transform:capitalize;">${purposeLabel}</td>
+      <td class="mono" style="font-size:0.8rem;">${a.order_number || '—'}</td>
+      <td class="mono">${a.inventory_on_hand ?? '—'}</td>
       <td>${a.assigned_to}</td>
       <td><span class="pill ${a.status}">${a.status.replace('_',' ')}</span></td>
       <td style="font-size:0.78rem;">${materialsListHtml(a.materials_needed)}</td>
       <td>${new Date(a.created_at).toLocaleDateString()}</td>
     </tr>
-  `).join('');
+  `;}).join('');
 }
 
 async function saveSpec(){

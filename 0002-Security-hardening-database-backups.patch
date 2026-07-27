@@ -1,0 +1,1163 @@
+From e5f68d0bb6126bf4768ef72244b4598f26b55371 Mon Sep 17 00:00:00 2001
+From: Rudy Cato <rudy@americanfoodbeverage.local>
+Date: Mon, 27 Jul 2026 00:23:14 +0000
+Subject: [PATCH 2/4] Security hardening + database backups
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Security:
+- CORS restricted to ALLOWED_ORIGINS env var instead of wildcard
+- Session cookie gets Secure flag automatically in production
+  (COOKIE_SECURE, defaults true unless running on local SQLite)
+- Staff accounts now carry must_change_password; login redirects to
+  a forced password-change screen until it's cleared
+- New /auth/change-password endpoint, /change-password page (also
+  usable voluntarily any time via dashboard header link)
+
+Backups:
+- New admin.py router: /admin/backup/local (download JSON snapshot
+  of every table), /admin/backup/cloud (push to S3-compatible
+  storage if BACKUP_S3_* env vars are set), /admin/backup/history
+- New BackupLog model tracks every attempt (who, when, size, status)
+- Dashboard: new 'Data & Backups' panel, admin-only, with both
+  buttons and a history table
+- Cloud backup fails with a clear actionable message (not a 500)
+  when storage isn't configured yet
+- render.yaml: added optional BACKUP_S3_* env var placeholders
+  (sync: false — fill in via Render dashboard when ready)
+---
+ afb.db                   | Bin 299008 -> 307200 bytes
+ app/backup.py            |  99 +++++++++++++++++++++++++++
+ app/main.py              |  34 +++++++++-
+ app/models.py            |  24 +++++++
+ app/routers/admin.py     |  93 ++++++++++++++++++++++++++
+ app/routers/auth.py      |  31 ++++++++-
+ app/schemas.py           |  25 +++++++
+ render.yaml              |  17 +++++
+ requirements.txt         |   1 +
+ web/change-password.html | 140 +++++++++++++++++++++++++++++++++++++++
+ web/dashboard.html       | 107 ++++++++++++++++++++++++++++++
+ web/login.html           |   7 +-
+ 12 files changed, 572 insertions(+), 6 deletions(-)
+ create mode 100644 app/backup.py
+ create mode 100644 app/routers/admin.py
+ create mode 100644 web/change-password.html
+
+diff --git a/afb.db b/afb.db
+index 7782f256e1f35c6fa77bf54d060cef8513572222..19c07e65b48d31df66c16d21ea103c23649a650a 100644
+GIT binary patch
+delta 24624
+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
+I<JRZ@0dklX6#xJL
+
+delta 24315
+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
+
+diff --git a/app/backup.py b/app/backup.py
+new file mode 100644
+index 0000000..876d4be
+--- /dev/null
++++ b/app/backup.py
+@@ -0,0 +1,99 @@
++"""
++Database backup: exports every table to a single JSON snapshot.
++
++Deliberately framework-light — no pg_dump dependency (not available on
++Render's free tier without shell access), just SQLAlchemy reading every
++row of every model and serializing it. Restoring from this file means
++writing a small loader script when the day comes; this module only
++covers taking the backup, not restoring it.
++"""
++import io
++import json
++import os
++from datetime import datetime, date
++
++from sqlalchemy import inspect
++
++from . import models
++from .database import Base, SessionLocal
++
++# Every mapped table gets backed up automatically — new models added later
++# are included without needing to touch this file.
++_ALL_MODELS = [
++    cls for cls in vars(models).values()
++    if isinstance(cls, type) and issubclass(cls, Base) and cls is not Base
++]
++
++
++def _serialize_value(value):
++    if isinstance(value, (datetime, date)):
++        return value.isoformat()
++    if hasattr(value, "value"):  # enum members
++        return value.value
++    return value
++
++
++def build_backup_json() -> bytes:
++    """Returns the full backup as UTF-8 JSON bytes, plus row counts."""
++    db = SessionLocal()
++    try:
++        snapshot = {
++            "generated_at": datetime.utcnow().isoformat(),
++            "tables": {},
++        }
++        for model_cls in _ALL_MODELS:
++            table_name = model_cls.__tablename__
++            columns = [c.key for c in inspect(model_cls).columns]
++            rows = db.query(model_cls).all()
++            snapshot["tables"][table_name] = [
++                {col: _serialize_value(getattr(row, col)) for col in columns}
++                for row in rows
++            ]
++        payload = json.dumps(snapshot, indent=2).encode("utf-8")
++        return payload
++    finally:
++        db.close()
++
++
++def backup_filename() -> str:
++    stamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
++    return f"afb-backup-{stamp}.json"
++
++
++def upload_to_s3(data: bytes, filename: str):
++    """
++    Uploads to any S3-compatible bucket (AWS S3, Backblaze B2, Cloudflare R2,
++    DigitalOcean Spaces). Configured entirely via env vars — raises a plain
++    RuntimeError with a clear message if it isn't set up yet, rather than a
++    boto3 stack trace.
++    """
++    bucket = os.environ.get("BACKUP_S3_BUCKET")
++    if not bucket:
++        raise RuntimeError(
++            "Cloud backup isn't configured yet. Set BACKUP_S3_BUCKET, "
++            "BACKUP_S3_ACCESS_KEY_ID, and BACKUP_S3_SECRET_ACCESS_KEY as "
++            "environment variables (BACKUP_S3_ENDPOINT_URL and "
++            "BACKUP_S3_REGION are optional, for non-AWS S3-compatible "
++            "storage like Backblaze B2 or Cloudflare R2)."
++        )
++
++    access_key = os.environ.get("BACKUP_S3_ACCESS_KEY_ID")
++    secret_key = os.environ.get("BACKUP_S3_SECRET_ACCESS_KEY")
++    if not access_key or not secret_key:
++        raise RuntimeError(
++            "BACKUP_S3_BUCKET is set but BACKUP_S3_ACCESS_KEY_ID / "
++            "BACKUP_S3_SECRET_ACCESS_KEY are missing."
++        )
++
++    import boto3  # imported lazily so the app still runs if boto3 isn't installed
++
++    client = boto3.client(
++        "s3",
++        aws_access_key_id=access_key,
++        aws_secret_access_key=secret_key,
++        region_name=os.environ.get("BACKUP_S3_REGION", "us-east-1"),
++        endpoint_url=os.environ.get("BACKUP_S3_ENDPOINT_URL") or None,
++    )
++    key = f"afb-backups/{filename}"
++    client.upload_fileobj(io.BytesIO(data), bucket, key)
++    return f"s3://{bucket}/{key}"
+diff --git a/app/main.py b/app/main.py
+index afe9900..85a5f0d 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -10,11 +10,31 @@ from .database import Base, engine
+ from .auth import get_current_staff_optional
+ from .routers import (
+     customers, products, inventory, orders, packing, shipping, reports, production, pallets,
+-    packaging, auth as auth_router, careers,
++    packaging, auth as auth_router, careers, admin,
+ )
+ 
+ Base.metadata.create_all(bind=engine)
+ 
++# ---------------------------------------------------------------------------
++# Security config, driven by environment so nothing has to change in code
++# between local dev and Render production.
++# ---------------------------------------------------------------------------
++# ALLOWED_ORIGINS: comma-separated list of origins allowed to call this API
++# from a browser (CORS). Set this to your real domain(s) in Render, e.g.
++#   ALLOWED_ORIGINS=https://afb-backend-58ys.onrender.com,https://americanfoodbeverage.com
++# Falls back to localhost + the known Render URL so local dev and the
++# current deployment keep working if it's not set yet.
++_default_origins = "http://localhost:8000,http://127.0.0.1:8000,https://afb-backend-58ys.onrender.com"
++ALLOWED_ORIGINS = [
++    o.strip() for o in os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()
++]
++
++# COOKIE_SECURE: whether the session cookie requires HTTPS. Defaults to
++# "on" whenever we're talking to a real Postgres database (i.e. production),
++# and "off" for local SQLite dev so testing over plain http still works.
++_is_local_sqlite = os.environ.get("DATABASE_URL", "sqlite:///./afb.db").startswith("sqlite")
++COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false" if _is_local_sqlite else "true").lower() == "true"
++
+ app = FastAPI(
+     title="American Food & Beverage — Operations API",
+     description="Backend for inventory, packing, customers, shipping/delivery tracking, reporting, and careers.",
+@@ -23,7 +43,7 @@ app = FastAPI(
+ 
+ app.add_middleware(
+     CORSMiddleware,
+-    allow_origins=["*"],
++    allow_origins=ALLOWED_ORIGINS,
+     allow_credentials=True,
+     allow_methods=["*"],
+     allow_headers=["*"],
+@@ -38,6 +58,7 @@ app.add_middleware(
+     session_cookie="afb_staff_session",
+     max_age=60 * 60 * 12,  # 12 hours
+     same_site="lax",
++    https_only=COOKIE_SECURE,
+ )
+ 
+ app.include_router(customers.router)
+@@ -52,6 +73,7 @@ app.include_router(pallets.router)
+ app.include_router(packaging.router)
+ app.include_router(auth_router.router)
+ app.include_router(careers.router)
++app.include_router(admin.router)
+ 
+ WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
+ 
+@@ -96,6 +118,14 @@ def login_page():
+     return FileResponse(os.path.join(WEB_DIR, "login.html"))
+ 
+ 
++@app.get("/change-password")
++def change_password_page(staff=Depends(get_current_staff_optional)):
++    gate = _staff_gate("/change-password", staff)
++    if gate:
++        return gate
++    return FileResponse(os.path.join(WEB_DIR, "change-password.html"))
++
++
+ @app.get("/careers", response_class=FileResponse)
+ def careers_page():
+     return FileResponse(os.path.join(WEB_DIR, "careers.html"))
+diff --git a/app/models.py b/app/models.py
+index 8f37f9b..0176b0b 100644
+--- a/app/models.py
++++ b/app/models.py
+@@ -276,6 +276,7 @@ class StaffUser(Base):
+     full_name = Column(String, nullable=False)
+     role = Column(Enum(StaffRole), default=StaffRole.packer, nullable=False)
+     active = Column(Boolean, default=True)
++    must_change_password = Column(Boolean, default=True, nullable=False)
+     created_at = Column(DateTime, default=datetime.utcnow)
+     last_login_at = Column(DateTime, nullable=True)
+ 
+@@ -333,6 +334,29 @@ class JobApplication(Base):
+     job = relationship("JobPosting", back_populates="applications")
+ 
+ 
++class BackupDestination(str, enum.Enum):
++    local = "local"     # downloaded to whoever clicked the button's own machine
++    cloud = "cloud"     # pushed to configured S3-compatible storage
++
++
++class BackupStatus(str, enum.Enum):
++    success = "success"
++    failed = "failed"
++
++
++class BackupLog(Base):
++    __tablename__ = "backup_logs"
++
++    id = Column(Integer, primary_key=True, index=True)
++    destination = Column(Enum(BackupDestination), nullable=False)
++    status = Column(Enum(BackupStatus), nullable=False)
++    filename = Column(String, nullable=True)
++    size_bytes = Column(Integer, nullable=True)
++    triggered_by = Column(String, nullable=True)   # staff username
++    error_message = Column(Text, nullable=True)
++    created_at = Column(DateTime, default=datetime.utcnow)
++
++
+ class PackagingSpec(Base):
+     """
+     Defines what indirect materials (container, lid, box) a sellable product
+diff --git a/app/routers/admin.py b/app/routers/admin.py
+new file mode 100644
+index 0000000..376d8c7
+--- /dev/null
++++ b/app/routers/admin.py
+@@ -0,0 +1,93 @@
++from fastapi import APIRouter, Depends, Response
++from sqlalchemy.orm import Session
++
++from .. import models, schemas
++from ..auth import require_role
++from ..backup import build_backup_json, backup_filename, upload_to_s3
++from ..database import get_db
++
++router = APIRouter(prefix="/admin/backup", tags=["admin"])
++
++
++@router.get("/local")
++def download_local_backup(
++    staff=Depends(require_role("admin")),
++    db: Session = Depends(get_db),
++):
++    """Streams a full JSON snapshot of every table as a file download —
++    this is the 'local' backup: it lands wherever the browser saves
++    downloads on whoever clicked the button's own machine."""
++    data = build_backup_json()
++    filename = backup_filename()
++
++    db.add(models.BackupLog(
++        destination=models.BackupDestination.local,
++        status=models.BackupStatus.success,
++        filename=filename,
++        size_bytes=len(data),
++        triggered_by=staff.username,
++    ))
++    db.commit()
++
++    return Response(
++        content=data,
++        media_type="application/json",
++        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
++    )
++
++
++@router.post("/cloud", response_model=schemas.CloudBackupResult)
++def push_cloud_backup(
++    staff=Depends(require_role("admin")),
++    db: Session = Depends(get_db),
++):
++    """Builds the same snapshot and uploads it to configured S3-compatible
++    storage. Returns a clear error (not a 500) if cloud storage isn't set
++    up yet, so the dashboard can show it directly."""
++    data = build_backup_json()
++    filename = backup_filename()
++
++    try:
++        location = upload_to_s3(data, filename)
++    except Exception as e:
++        db.add(models.BackupLog(
++            destination=models.BackupDestination.cloud,
++            status=models.BackupStatus.failed,
++            filename=filename,
++            size_bytes=len(data),
++            triggered_by=staff.username,
++            error_message=str(e),
++        ))
++        db.commit()
++        return schemas.CloudBackupResult(ok=False, detail=str(e))
++
++    db.add(models.BackupLog(
++        destination=models.BackupDestination.cloud,
++        status=models.BackupStatus.success,
++        filename=filename,
++        size_bytes=len(data),
++        triggered_by=staff.username,
++    ))
++    db.commit()
++    return schemas.CloudBackupResult(ok=True, detail=f"Uploaded to {location}", filename=filename)
++
++
++@router.get("/history", response_model=list[schemas.BackupLogOut])
++def backup_history(
++    staff=Depends(require_role("admin", "manager")),
++    db: Session = Depends(get_db),
++):
++    logs = (
++        db.query(models.BackupLog)
++        .order_by(models.BackupLog.created_at.desc())
++        .limit(20)
++        .all()
++    )
++    return [
++        schemas.BackupLogOut(
++            id=l.id, destination=l.destination.value, status=l.status.value,
++            filename=l.filename, size_bytes=l.size_bytes, triggered_by=l.triggered_by,
++            error_message=l.error_message, created_at=l.created_at,
++        )
++        for l in logs
++    ]
+diff --git a/app/routers/auth.py b/app/routers/auth.py
+index 9e93372..67d000f 100644
+--- a/app/routers/auth.py
++++ b/app/routers/auth.py
+@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
+ from sqlalchemy.orm import Session
+ 
+ from .. import models, schemas
+-from ..auth import verify_password, get_current_staff
++from ..auth import verify_password, hash_password, get_current_staff
+ from ..database import get_db
+ 
+ router = APIRouter(prefix="/auth", tags=["auth"])
+@@ -22,7 +22,10 @@ def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends
+     db.commit()
+ 
+     request.session["username"] = staff.username
+-    return schemas.StaffMeOut(username=staff.username, full_name=staff.full_name, role=staff.role)
++    return schemas.StaffMeOut(
++        username=staff.username, full_name=staff.full_name, role=staff.role,
++        must_change_password=staff.must_change_password,
++    )
+ 
+ 
+ @router.post("/logout")
+@@ -33,4 +36,26 @@ def logout(request: Request):
+ 
+ @router.get("/me", response_model=schemas.StaffMeOut)
+ def me(staff: models.StaffUser = Depends(get_current_staff)):
+-    return schemas.StaffMeOut(username=staff.username, full_name=staff.full_name, role=staff.role)
++    return schemas.StaffMeOut(
++        username=staff.username, full_name=staff.full_name, role=staff.role,
++        must_change_password=staff.must_change_password,
++    )
++
++
++@router.post("/change-password")
++def change_password(
++    payload: schemas.ChangePasswordRequest,
++    staff: models.StaffUser = Depends(get_current_staff),
++    db: Session = Depends(get_db),
++):
++    if not verify_password(payload.current_password, staff.password_hash):
++        raise HTTPException(401, "Current password is incorrect")
++    if len(payload.new_password) < 8:
++        raise HTTPException(400, "New password must be at least 8 characters")
++    if payload.new_password == payload.current_password:
++        raise HTTPException(400, "New password must be different from your current password")
++
++    staff.password_hash = hash_password(payload.new_password)
++    staff.must_change_password = False
++    db.commit()
++    return {"ok": True}
+diff --git a/app/schemas.py b/app/schemas.py
+index a0f2f0c..4debc40 100644
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -351,6 +351,12 @@ class StaffMeOut(BaseModel):
+     username: str
+     full_name: str
+     role: StaffRole
++    must_change_password: bool = False
++
++
++class ChangePasswordRequest(BaseModel):
++    current_password: str
++    new_password: str
+ 
+ 
+ class StaffUserCreate(BaseModel):
+@@ -444,3 +450,22 @@ class JobApplicationOut(BaseModel):
+ class JobApplicationStatusUpdate(BaseModel):
+     status: ApplicationStatus
+     reviewer_notes: Optional[str] = None
++
++
++# ---------- Backups ----------
++class BackupLogOut(BaseModel):
++    model_config = ConfigDict(from_attributes=True)
++    id: int
++    destination: str
++    status: str
++    filename: Optional[str]
++    size_bytes: Optional[int]
++    triggered_by: Optional[str]
++    error_message: Optional[str]
++    created_at: datetime
++
++
++class CloudBackupResult(BaseModel):
++    ok: bool
++    detail: str
++    filename: Optional[str] = None
+diff --git a/render.yaml b/render.yaml
+index e52de2f..2fbfc88 100644
+--- a/render.yaml
++++ b/render.yaml
+@@ -12,6 +12,23 @@ services:
+           property: connectionString
+       - key: SESSION_SECRET
+         generateValue: true
++      - key: ALLOWED_ORIGINS
++        value: "https://afb-backend-58ys.onrender.com"
++      - key: COOKIE_SECURE
++        value: "true"
++      # Optional — only needed if you use the "Backup to cloud" button.
++      # Leave blank in the Render dashboard until you have an S3-compatible
++      # bucket (AWS S3, Backblaze B2, Cloudflare R2, DigitalOcean Spaces).
++      - key: BACKUP_S3_BUCKET
++        sync: false
++      - key: BACKUP_S3_ACCESS_KEY_ID
++        sync: false
++      - key: BACKUP_S3_SECRET_ACCESS_KEY
++        sync: false
++      - key: BACKUP_S3_ENDPOINT_URL
++        sync: false
++      - key: BACKUP_S3_REGION
++        sync: false
+ 
+ databases:
+   - name: afb-db
+diff --git a/requirements.txt b/requirements.txt
+index 45236cb..70006af 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -5,3 +5,4 @@ pydantic[email]>=2.10
+ python-multipart>=0.0.20
+ psycopg2-binary>=2.9   # Postgres driver — used automatically when DATABASE_URL is set (e.g. on Render)
+ itsdangerous>=2.1       # signed cookie sessions for staff login (Starlette SessionMiddleware dependency)
++boto3>=1.34             # cloud backup upload (S3-compatible: AWS S3, Backblaze B2, Cloudflare R2, DO Spaces)
+diff --git a/web/change-password.html b/web/change-password.html
+new file mode 100644
+index 0000000..e1eedfc
+--- /dev/null
++++ b/web/change-password.html
+@@ -0,0 +1,140 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++<meta charset="UTF-8">
++<meta name="viewport" content="width=device-width, initial-scale=1.0">
++<title>Change Password — American Food & Beverage</title>
++<link rel="preconnect" href="https://fonts.googleapis.com">
++<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
++<style>
++  :root{
++    --kraft:#E8DCC3; --paper:#F4EDDB; --espresso:#2B1D12; --espresso-soft:#4A3626;
++    --amber-deep:#A2601C; --forest:#3F5738; --cranberry:#A23B34; --line:#C9B896;
++    --shadow:0 8px 24px rgba(43,29,18,0.14);
++  }
++  *{box-sizing:border-box;}
++  body{margin:0;background:var(--kraft);color:var(--espresso);font-family:'Inter',sans-serif;
++    min-height:100vh;display:flex;flex-direction:column;}
++  h1{font-family:'Fraunces',serif;margin:0;}
++  main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
++  .card{background:var(--paper);border:2px solid var(--espresso);border-radius:3px;box-shadow:var(--shadow);
++    padding:40px 36px;width:100%;max-width:420px;}
++  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;
++    color:var(--amber-deep);font-weight:600;margin-bottom:8px;}
++  .card h1{font-size:1.6rem;font-weight:800;margin-bottom:6px;}
++  .card p.sub{color:var(--espresso-soft);font-size:0.9rem;margin:0 0 26px;line-height:1.5;}
++  label{display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;color:var(--espresso-soft);}
++  input{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:2px;font-size:0.98rem;
++    background:#fff;color:var(--espresso);margin-bottom:16px;}
++  input:focus{outline:none;border-color:var(--espresso);}
++  .btn{width:100%;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;text-transform:uppercase;
++    letter-spacing:0.05em;padding:14px 24px;border-radius:2px;border:2px solid var(--espresso);
++    background:var(--espresso);color:var(--paper);font-weight:600;cursor:pointer;}
++  .btn:hover{background:var(--forest);border-color:var(--forest);}
++  .btn:disabled{opacity:0.6;cursor:default;}
++  .error{background:#fbeceb;border:1.5px solid var(--cranberry);color:var(--cranberry);padding:10px 14px;
++    border-radius:2px;font-size:0.85rem;margin-bottom:16px;display:none;}
++  .hint{margin-top:16px;font-size:0.78rem;color:var(--espresso-soft);}
++  .skip{margin-top:14px;text-align:center;font-size:0.82rem;}
++  .skip a{color:var(--espresso-soft);}
++</style>
++</head>
++<body>
++<main>
++  <div class="card">
++    <div class="eyebrow" id="modeLabel">Set a new password</div>
++    <h1 id="titleText">Change your password</h1>
++    <p class="sub" id="subText">You're on a shared starter password — set one only you know before continuing.</p>
++
++    <div class="error" id="err"></div>
++
++    <form id="pwForm">
++      <label for="current">Current password</label>
++      <input id="current" type="password" autocomplete="current-password" required>
++
++      <label for="new1">New password</label>
++      <input id="new1" type="password" autocomplete="new-password" required minlength="8">
++
++      <label for="new2">Confirm new password</label>
++      <input id="new2" type="password" autocomplete="new-password" required minlength="8">
++
++      <button class="btn" type="submit" id="submitBtn">Save password</button>
++    </form>
++    <div class="hint">At least 8 characters. Doesn't need to be fancy — just not the shared one.</div>
++    <div class="skip" id="skipRow" style="display:none;">
++      <a href="#" id="skipLink">Skip for now</a>
++    </div>
++  </div>
++</main>
++
++<script>
++  const params = new URLSearchParams(window.location.search);
++  const nextPath = params.get('next') || '/dashboard';
++
++  let forced = false;
++  fetch('/auth/me').then(r => r.json()).then(me => {
++    forced = !!me.must_change_password;
++    if (!forced) {
++      document.getElementById('modeLabel').textContent = 'Account settings';
++      document.getElementById('titleText').textContent = 'Change your password';
++      document.getElementById('subText').textContent = 'Update your password any time.';
++      document.getElementById('skipRow').style.display = 'block';
++    }
++  });
++
++  document.getElementById('skipLink').addEventListener('click', (e) => {
++    e.preventDefault();
++    window.location.href = nextPath;
++  });
++
++  const form = document.getElementById('pwForm');
++  const errBox = document.getElementById('err');
++  const submitBtn = document.getElementById('submitBtn');
++
++  form.addEventListener('submit', async (e) => {
++    e.preventDefault();
++    errBox.style.display = 'none';
++
++    const current = document.getElementById('current').value;
++    const new1 = document.getElementById('new1').value;
++    const new2 = document.getElementById('new2').value;
++
++    if (new1 !== new2) {
++      errBox.textContent = "New passwords don't match.";
++      errBox.style.display = 'block';
++      return;
++    }
++    if (new1.length < 8) {
++      errBox.textContent = 'New password must be at least 8 characters.';
++      errBox.style.display = 'block';
++      return;
++    }
++
++    submitBtn.disabled = true;
++    submitBtn.textContent = 'Saving…';
++
++    try {
++      const res = await fetch('/auth/change-password', {
++        method: 'POST',
++        headers: {'Content-Type': 'application/json'},
++        body: JSON.stringify({current_password: current, new_password: new1})
++      });
++      if (!res.ok) {
++        const data = await res.json().catch(() => ({}));
++        errBox.textContent = data.detail || 'Could not change password.';
++        errBox.style.display = 'block';
++        submitBtn.disabled = false;
++        submitBtn.textContent = 'Save password';
++        return;
++      }
++      window.location.href = nextPath;
++    } catch (err) {
++      errBox.textContent = 'Could not reach the server. Try again.';
++      errBox.style.display = 'block';
++      submitBtn.disabled = false;
++      submitBtn.textContent = 'Save password';
++    }
++  });
++</script>
++</body>
++</html>
+diff --git a/web/dashboard.html b/web/dashboard.html
+index ff8bf67..9d38c82 100644
+--- a/web/dashboard.html
++++ b/web/dashboard.html
+@@ -169,6 +169,7 @@
+     <div style="display:flex;align-items:center;gap:14px;">
+       <a href="/production" class="prod-link">Packing &amp; Production &rarr;</a>
+       <a href="/careers-admin" class="prod-link">Careers Admin &rarr;</a>
++      <a href="/change-password" class="prod-link">Change Password</a>
+       <span id="apiStatus" class="mono">checking API…</span>
+       <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+       <a href="#" class="prod-link" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
+@@ -222,6 +223,31 @@
+     </div>
+   </div>
+ 
++  <div id="backupSection" style="display:none;margin-top:8px;margin-bottom:26px;">
++    <h2 class="section-title" style="margin-top:0;">Data &amp; Backups</h2>
++    <div class="panel">
++      <p style="margin:0 0 14px;font-size:0.88rem;color:var(--ink-soft);">
++        A backup is a full snapshot of every table (customers, orders, inventory, staff, careers
++        applications — everything) as one JSON file. "Local" downloads it straight to this
++        computer. "Cloud" pushes it to your configured S3-compatible storage.
++      </p>
++      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
++        <a class="refresh-btn" href="/admin/backup/local" id="localBackupBtn" style="text-decoration:none;display:inline-block;">
++          &#8681; Download backup (local)
++        </a>
++        <button class="refresh-btn" onclick="runCloudBackup()" id="cloudBackupBtn">&#9729; Backup to cloud</button>
++      </div>
++      <div id="cloudBackupMsg" style="display:none;font-size:0.85rem;padding:10px 14px;border-radius:3px;margin-bottom:14px;"></div>
++
++      <table>
++        <thead><tr><th>When</th><th>Destination</th><th>Status</th><th>File</th><th>Size</th><th>By</th></tr></thead>
++        <tbody id="backupHistoryBody">
++          <tr><td colspan="6" class="mono" style="color:var(--ink-soft);">Loading&hellip;</td></tr>
++        </tbody>
++      </table>
++    </div>
++  </div>
++
+   <button class="toggle-link" onclick="toggleInventory()">+ View full product &amp; inventory list</button>
+   <div id="inventorySection">
+     <h2 class="section-title">Inventory</h2>
+@@ -714,6 +740,87 @@ async function submitAdjust(){
+   }
+ }
+ 
++// ---------------- Data & Backups (admin only) ----------------
++async function initBackupPanel(){
++  try {
++    const res = await fetch('/auth/me');
++    if (!res.ok) return;
++    const me = await res.json();
++    if (me.role !== 'admin') return; // managers/packers don't see this panel
++    document.getElementById('backupSection').style.display = 'block';
++    loadBackupHistory();
++  } catch(e) { /* fail quiet — panel just stays hidden */ }
++}
++
++async function loadBackupHistory(){
++  const body = document.getElementById('backupHistoryBody');
++  try {
++    const res = await fetch('/admin/backup/history');
++    if (!res.ok) throw new Error();
++    const logs = await res.json();
++    if (!logs.length) {
++      body.innerHTML = '<tr><td colspan="6" class="mono" style="color:var(--ink-soft);">No backups yet.</td></tr>';
++      return;
++    }
++    body.innerHTML = logs.map(l => `
++      <tr>
++        <td class="mono">${new Date(l.created_at).toLocaleString()}</td>
++        <td>${l.destination}</td>
++        <td style="color:${l.status === 'success' ? 'var(--olive-deep)' : 'var(--rust-deep)'};font-weight:600;">${l.status}${l.error_message ? ' — ' + escapeHtmlLocal(l.error_message) : ''}</td>
++        <td class="mono">${l.filename || '—'}</td>
++        <td class="mono">${l.size_bytes ? (l.size_bytes/1024).toFixed(1) + ' KB' : '—'}</td>
++        <td>${l.triggered_by || '—'}</td>
++      </tr>
++    `).join('');
++  } catch(e) {
++    body.innerHTML = '<tr><td colspan="6" class="mono" style="color:var(--ink-soft);">Could not load backup history.</td></tr>';
++  }
++}
++
++async function runCloudBackup(){
++  const btn = document.getElementById('cloudBackupBtn');
++  const msgEl = document.getElementById('cloudBackupMsg');
++  btn.disabled = true;
++  const originalText = btn.textContent;
++  btn.textContent = 'Uploading…';
++  msgEl.style.display = 'none';
++
++  try {
++    const res = await fetch('/admin/backup/cloud', {method: 'POST'});
++    const data = await res.json();
++    msgEl.style.display = 'block';
++    if (data.ok) {
++      msgEl.style.background = '#e3f0d8'; msgEl.style.color = 'var(--olive-deep)';
++      msgEl.textContent = data.detail;
++    } else {
++      msgEl.style.background = '#f7dcd8'; msgEl.style.color = 'var(--rust-deep)';
++      msgEl.textContent = data.detail;
++    }
++    loadBackupHistory();
++  } catch(e) {
++    msgEl.style.display = 'block';
++    msgEl.style.background = '#f7dcd8'; msgEl.style.color = 'var(--rust-deep)';
++    msgEl.textContent = 'Could not reach the server.';
++  } finally {
++    btn.disabled = false;
++    btn.textContent = originalText;
++  }
++}
++
++// Also log a backup_logs row for the local download — since it's a plain
++// <a href> the browser handles the download itself, so we just fire a
++// quick history refresh a moment after the click.
++document.getElementById('localBackupBtn').addEventListener('click', () => {
++  setTimeout(loadBackupHistory, 1500);
++});
++
++function escapeHtmlLocal(str){
++  const d = document.createElement('div');
++  d.textContent = str || '';
++  return d.innerHTML;
++}
++
++initBackupPanel();
+ loadAll();
+ </script>
+ 
+diff --git a/web/login.html b/web/login.html
+index 0169b1f..69a6334 100644
+--- a/web/login.html
++++ b/web/login.html
+@@ -123,7 +123,12 @@
+         submitBtn.textContent = 'Sign in';
+         return;
+       }
+-      window.location.href = nextPath;
++      const me = await res.json();
++      if (me.must_change_password) {
++        window.location.href = `/change-password?next=${encodeURIComponent(nextPath)}`;
++      } else {
++        window.location.href = nextPath;
++      }
+     } catch (err) {
+       errBox.textContent = 'Could not reach the server. Try again.';
+       errBox.style.display = 'block';
+-- 
+2.43.0
+

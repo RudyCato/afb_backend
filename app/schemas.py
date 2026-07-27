@@ -1,11 +1,12 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 from .models import (
-    OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus,
-    ProductType, OrderTaskType, OrderTaskStatus, StaffRole,
+    OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, AssignmentPurpose,
+    PalletStatus, ProductType, OrderTaskType, OrderTaskStatus, StaffRole, ReturnReason,
+    ReceiptCondition,
 )
 
 
@@ -207,6 +208,8 @@ class PackingAssignmentCreate(BaseModel):
     qty_assigned: int
     assigned_to: str
     assigned_by: Optional[str] = None
+    purpose: AssignmentPurpose = AssignmentPurpose.inventory
+    order_number: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -229,10 +232,13 @@ class PackingAssignmentOut(BaseModel):
     assigned_to: str
     assigned_by: Optional[str]
     status: AssignmentStatus
+    purpose: AssignmentPurpose = AssignmentPurpose.inventory
+    order_number: Optional[str] = None
     notes: Optional[str]
     created_at: datetime
     updated_at: datetime
     materials_needed: List[MaterialLine] = []
+    inventory_on_hand: int = 0
 
 
 class AssignmentStatusUpdate(BaseModel):
@@ -258,6 +264,76 @@ class ProductionLogOut(BaseModel):
     qty_completed: int
     notes: Optional[str]
     logged_at: datetime
+
+
+# ---------- Receipts ----------
+class ReceiptCreate(BaseModel):
+    product_id: int
+    qty_received: int
+    received_by: str
+    qty_expected: Optional[int] = None
+    vendor: Optional[str] = None
+    po_number: Optional[str] = None
+    lot_code: Optional[str] = None
+    sell_by_date: Optional[date] = None
+    condition: ReceiptCondition = ReceiptCondition.good
+    temperature_f: Optional[float] = None
+    put_away_warehouse: Optional[str] = None
+    put_away_aisle: Optional[str] = None
+    put_away_bin_column: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ReceiptOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    product_id: int
+    sku: str
+    product_name: str
+    qty_received: int
+    qty_expected: Optional[int]
+    discrepancy: int = 0   # qty_expected - qty_received; 0 if no PO qty given
+    vendor: Optional[str]
+    po_number: Optional[str]
+    lot_code: Optional[str]
+    sell_by_date: Optional[date]
+    condition: ReceiptCondition
+    temperature_f: Optional[float]
+    put_away_warehouse: Optional[str]
+    put_away_aisle: Optional[str]
+    put_away_bin_column: Optional[str]
+    received_by: str
+    notes: Optional[str]
+    created_at: datetime
+
+
+# ---------- Returns ----------
+class ReturnCreate(BaseModel):
+    product_id: int
+    qty: int
+    reason: ReturnReason
+    order_number: Optional[str] = None
+    customer_id: Optional[int] = None
+    sell_by_date: Optional[date] = None
+    notes: Optional[str] = None
+    created_by: Optional[str] = None
+
+
+class ReturnOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    order_number: Optional[str]
+    customer_id: Optional[int]
+    customer_name: Optional[str] = None
+    product_id: int
+    sku: str
+    product_name: str
+    qty: int
+    sell_by_date: Optional[date]
+    reason: ReturnReason
+    notes: Optional[str]
+    created_by: Optional[str]
+    created_at: datetime
 
 
 # ---------- Pallets & Manifests ----------

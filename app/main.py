@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import get_current_staff_optional
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan
 from .routers import auth as auth_router
 
 Base.metadata.create_all(bind=engine)
@@ -75,6 +75,10 @@ app.include_router(order_tasks.router)
 app.include_router(mixes.router)
 app.include_router(applications.router)
 app.include_router(sops.router)
+app.include_router(returns.router)
+app.include_router(receipts.router)
+app.include_router(report_pdfs.router)
+app.include_router(scan.router)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 

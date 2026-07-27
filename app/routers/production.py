@@ -1,13 +1,19 @@
 from datetime import datetime, date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
+from .. import mail
 from .packaging import compute_materials_needed
 
 router = APIRouter(prefix="/production", tags=["production"])
+
+
+def _inventory_on_hand(db: Session, product_id: int) -> int:
+    inv = db.query(models.Inventory).filter(models.Inventory.product_id == product_id).first()
+    return int(inv.qty_on_hand) if inv else 0
 
 
 # ---------- Packers ----------
@@ -26,24 +32,92 @@ def _assignment_to_out(a: models.PackingAssignment, db: Session) -> schemas.Pack
         id=a.id, product_id=a.product_id, sku=a.product.sku, product_name=a.product.name,
         qty_assigned=a.qty_assigned, qty_completed=a.qty_completed,
         assigned_to=a.assigned_to, assigned_by=a.assigned_by, status=a.status,
+        purpose=a.purpose or models.AssignmentPurpose.inventory,
+        order_number=a.order_number,
         notes=a.notes, created_at=a.created_at, updated_at=a.updated_at,
         materials_needed=compute_materials_needed(db, a.product_id, remaining or a.qty_assigned),
+        inventory_on_hand=_inventory_on_hand(db, a.product_id),
     )
 
 
+def _email_new_assignment(
+    *, product_sku: str, product_name: str, qty: int, on_hand: int,
+    assigned_to: str, assigned_by: str | None, purpose: str,
+    order_number: str | None, notes: str | None,
+):
+    """Fire-and-forget email to the packing inbox when a new assignment is created."""
+    lines = [
+        f"New packing assignment — {product_name} ({product_sku})",
+        "",
+        f"Quantity          {qty}",
+        f"Assigned to       {assigned_to}",
+        f"Assigned by       {assigned_by or '—'}",
+        f"Purpose           {purpose}",
+        f"Order / Ref       {order_number or '—'}",
+        f"Inventory on hand {on_hand}",
+        "",
+        "Notes:",
+        notes or "(none)",
+    ]
+    msg = mail.build_message(
+        subject=f"[Packing] {product_sku} — {qty} for {assigned_to}",
+        to=mail.inbox_for("PACKING_INBOX"),
+        body="\n".join(lines),
+    )
+    mail.send(msg)
+
+
+@router.get("/inventory/{product_id}")
+def current_inventory(product_id: int, db: Session = Depends(get_db)):
+    """Lightweight read of a product's on-hand quantity — used by the manager UI to
+    show current stock next to the assignment form as a product is selected."""
+    product = db.query(models.Product).get(product_id)
+    if not product:
+        raise HTTPException(404, "Product not found")
+    inv = db.query(models.Inventory).filter(models.Inventory.product_id == product_id).first()
+    return {
+        "product_id": product_id,
+        "sku": product.sku,
+        "product_name": product.name,
+        "qty_on_hand": int(inv.qty_on_hand) if inv else 0,
+        "qty_reserved": int(inv.qty_reserved) if inv else 0,
+        "reorder_threshold": int(inv.reorder_threshold) if inv else 0,
+    }
+
+
 @router.post("/assignments", response_model=schemas.PackingAssignmentOut)
-def create_assignment(payload: schemas.PackingAssignmentCreate, db: Session = Depends(get_db)):
+def create_assignment(
+    payload: schemas.PackingAssignmentCreate,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     product = db.query(models.Product).get(payload.product_id)
     if not product:
         raise HTTPException(404, "Product not found")
     assignment = models.PackingAssignment(
         product_id=payload.product_id, qty_assigned=payload.qty_assigned,
         assigned_to=payload.assigned_to, assigned_by=payload.assigned_by,
+        purpose=payload.purpose or models.AssignmentPurpose.inventory,
+        order_number=(payload.order_number or None),
         notes=payload.notes,
     )
     db.add(assignment)
     db.commit()
     db.refresh(assignment)
+
+    # Email the packing inbox in the background so the API response isn't blocked on SMTP.
+    background.add_task(
+        _email_new_assignment,
+        product_sku=product.sku,
+        product_name=product.name,
+        qty=assignment.qty_assigned,
+        on_hand=_inventory_on_hand(db, product.id),
+        assigned_to=assignment.assigned_to,
+        assigned_by=assignment.assigned_by,
+        purpose=assignment.purpose.value if assignment.purpose else "inventory",
+        order_number=assignment.order_number,
+        notes=assignment.notes,
+    )
     return _assignment_to_out(assignment, db)
 
 

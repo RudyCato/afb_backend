@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, Text
+    Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Enum, Text
 )
 from sqlalchemy.orm import relationship
 
@@ -44,6 +44,12 @@ class AssignmentStatus(str, enum.Enum):
     in_progress = "in_progress"
     completed = "completed"
     cancelled = "cancelled"
+
+
+class AssignmentPurpose(str, enum.Enum):
+    order = "order"           # packing to fulfill a specific customer order
+    inventory = "inventory"   # packing to build up finished-goods stock
+    both = "both"             # partial order fill + top up inventory
 
 
 class PalletStatus(str, enum.Enum):
@@ -302,6 +308,8 @@ class PackingAssignment(Base):
     assigned_to = Column(String, nullable=False)   # packer name
     assigned_by = Column(String, nullable=True)     # packing manager name
     status = Column(Enum(AssignmentStatus), default=AssignmentStatus.assigned)
+    purpose = Column(Enum(AssignmentPurpose), default=AssignmentPurpose.inventory, nullable=False)
+    order_number = Column(String, nullable=True)   # free-text — packing for an order OR internal pack-for-inventory tag
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -330,6 +338,7 @@ class Pallet(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     pallet_number = Column(String, unique=True, index=True, nullable=False)  # e.g. "PLT-000123" — barcode-ready
+    sscc = Column(String, unique=True, index=True, nullable=True)   # GS1 SSCC-18 for the pallet's GS1-128 barcode label
     loaded_by = Column(String, nullable=False)      # who placed packages on the pallet
     carrier = Column(String, nullable=True)
     status = Column(Enum(PalletStatus), default=PalletStatus.building)
@@ -411,3 +420,83 @@ class PackagingSpec(Base):
     container_product = relationship("Product", foreign_keys=[container_product_id])
     lid_product = relationship("Product", foreign_keys=[lid_product_id])
     box_product = relationship("Product", foreign_keys=[box_product_id])
+
+
+class ReturnReason(str, enum.Enum):
+    damaged = "damaged"
+    expired = "expired"
+    wrong_item = "wrong_item"
+    quality_issue = "quality_issue"
+    customer_refused = "customer_refused"
+    overshipment = "overshipment"
+    other = "other"
+
+
+class ReceiptCondition(str, enum.Enum):
+    good = "good"                        # accepted, no issues
+    partial_damage = "partial_damage"    # accepted, some units damaged (noted in notes)
+    damaged = "damaged"                  # accepted with reservation, mostly damaged
+    rejected = "rejected"                # refused, sent back with the driver — inventory NOT increased
+
+
+class Receipt(Base):
+    """A single line of product coming into the building — one product per receipt
+    (keeps the schema flat; multi-line receipts can be split into multiple rows).
+
+    Logging a Receipt (unless condition == rejected) automatically bumps the
+    product's on-hand inventory and writes a matching InventoryTransaction
+    (reason=received_stock), so there is never a second "adjust" step.
+
+    Lot code + sell-by date are captured for food-traceability and FIFO rotation.
+    Put-away location, if provided and different from the current Inventory row,
+    updates that row so /stock reflects where product actually lives.
+    """
+
+    __tablename__ = "receipts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    qty_received = Column(Integer, nullable=False)
+    qty_expected = Column(Integer, nullable=True)     # from PO if there was one, for discrepancy tracking
+
+    vendor = Column(String, nullable=True)            # supplier / vendor name (free-text for now — no vendor table yet)
+    po_number = Column(String, nullable=True, index=True)   # PO or vendor invoice number
+    lot_code = Column(String, nullable=True, index=True)    # manufacturer lot code — critical for food recalls
+    sell_by_date = Column(Date, nullable=True)              # or best-by / expiration
+    condition = Column(Enum(ReceiptCondition), nullable=False, default=ReceiptCondition.good)
+    temperature_f = Column(Float, nullable=True)            # temp at receipt (cold chain items)
+
+    put_away_warehouse = Column(String, nullable=True)      # if provided, overwrites Inventory.warehouse
+    put_away_aisle = Column(String, nullable=True)
+    put_away_bin_column = Column(String, nullable=True)
+
+    received_by = Column(String, nullable=False)            # staff name — always required for chain of custody
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    product = relationship("Product")
+
+
+class CustomerReturn(Base):
+    """A record of product coming back into the building from a customer or a
+    delivered order. Optional order_number and customer_id — one, both, or neither
+    may be known when a return is logged (e.g. driver returns something with only
+    a customer name but no paperwork). Logging a return also creates a matching
+    inventory transaction (reason=returned) so on-hand quantity is corrected in
+    a single step."""
+
+    __tablename__ = "customer_returns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_number = Column(String, nullable=True, index=True)   # free-text; may not match an order row
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    qty = Column(Integer, nullable=False)
+    sell_by_date = Column(Date, nullable=True)
+    reason = Column(Enum(ReturnReason), nullable=False, default=ReturnReason.other)
+    notes = Column(Text, nullable=True)
+    created_by = Column(String, nullable=True)   # staff who logged it
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    customer = relationship("Customer")
+    product = relationship("Product")

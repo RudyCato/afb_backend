@@ -1,0 +1,894 @@
+From a62e00087d12c8e0a3eed0b11b06fe0db5c52991 Mon Sep 17 00:00:00 2001
+From: Rudy Cato <rudy@americanfoodbeverage.local>
+Date: Mon, 27 Jul 2026 00:41:23 +0000
+Subject: [PATCH 4/4] Direct link to inventory + share options
+ (SMS/email/print)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- New dedicated /stock page: mobile-first, staff-gated, just the
+  inventory table (search, type filter, low-stock toggle) plus
+  Adjust/Location/History actions — nothing else to load first.
+  Deliberately a separate path from the /inventory JSON API router
+  to avoid a route collision.
+- Share bar on /stock: text (SMS) the link, email the link, print a
+  count sheet (adds a blank 'Counted qty' column via print stylesheet,
+  hides all navigation/buttons), copy link to clipboard.
+- Dashboard: same share bar (text/email/print/copy) added to the existing
+  inventory section, pointing at /stock. Print opens /stock?print=1 in
+  a new tab, which auto-triggers window.print() once data loads.
+- Dashboard: /dashboard#inventory now auto-expands the inventory section
+  and scrolls to it on load — the quick-deep-link option.
+- Nav links to /stock added from dashboard and production headers.
+---
+ afb.db              | Bin 339968 -> 339968 bytes
+ app/main.py         |  11 ++
+ web/dashboard.html  |  40 ++++
+ web/inventory.html  | 445 ++++++++++++++++++++++++++++++++++++++++++++
+ web/production.html |   1 +
+ 5 files changed, 497 insertions(+)
+ create mode 100644 web/inventory.html
+
+diff --git a/afb.db b/afb.db
+index 53a78368174dc04c57cfebf857bd86489eab1f10..8b41b1e0a8dee0cd0b54d83cb480b810e20a8cb3 100644
+GIT binary patch
+delta 18105
+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
+
+delta 18115
+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
+
+diff --git a/app/main.py b/app/main.py
+index 85a5f0d..94c76bf 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -113,6 +113,17 @@ def production_page(staff=Depends(get_current_staff_optional)):
+     return FileResponse(os.path.join(WEB_DIR, "production.html"))
+ 
+ 
++@app.get("/stock")
++def stock_page(staff=Depends(get_current_staff_optional)):
++    """Dedicated inventory/stock-count page — separate path from the
++    /inventory API router (list/adjust/location/transactions) mounted
++    below, so the two don't collide."""
++    gate = _staff_gate("/stock", staff)
++    if gate:
++        return gate
++    return FileResponse(os.path.join(WEB_DIR, "inventory.html"))
++
++
+ @app.get("/login", response_class=FileResponse)
+ def login_page():
+     return FileResponse(os.path.join(WEB_DIR, "login.html"))
+diff --git a/web/dashboard.html b/web/dashboard.html
+index 02333ff..0960fc9 100644
+--- a/web/dashboard.html
++++ b/web/dashboard.html
+@@ -168,6 +168,7 @@
+     </div>
+     <div style="display:flex;align-items:center;gap:14px;">
+       <a href="/production" class="prod-link">Packing &amp; Production &rarr;</a>
++      <a href="/stock" class="prod-link">Inventory (Stock Count) &rarr;</a>
+       <a href="/careers-admin" class="prod-link">Careers Admin &rarr;</a>
+       <a href="/change-password" class="prod-link">Change Password</a>
+       <span id="apiStatus" class="mono">checking API…</span>
+@@ -251,6 +252,17 @@
+   <button class="toggle-link" onclick="toggleInventory()">+ View full product &amp; inventory list</button>
+   <div id="inventorySection">
+     <h2 class="section-title">Inventory</h2>
++    <div class="share-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
++      <button class="refresh-btn" onclick="shareInventory('sms')">&#128172; Text link</button>
++      <button class="refresh-btn" onclick="shareInventory('email')">&#9993; Email link</button>
++      <button class="refresh-btn" onclick="shareInventory('print')">&#128424; Print count sheet</button>
++      <button class="refresh-btn" onclick="shareInventory('copy')">&#128279; Copy link</button>
++      <span id="invLinkCopied" style="display:none;font-size:0.8rem;color:var(--olive-deep);align-self:center;">Link copied</span>
++    </div>
++    <div class="sub" style="font-size:0.8rem;color:var(--ink-soft);margin-bottom:14px;">
++      For a focused, mobile-friendly page for taking a physical count, use the dedicated
++      <a href="/stock" style="color:var(--rust);font-weight:600;">Inventory page</a> instead of this dashboard section.
++    </div>
+     <div class="filter-row">
+       <select id="inventoryTypeFilter" onchange="renderInventory(LAST_INVENTORY)">
+         <option value="sellable">Products (sellable catalog)</option>
+@@ -486,6 +498,32 @@ function toggleInventory(){
+     el.classList.contains('show') ? '− Hide product & inventory list' : '+ View full product & inventory list';
+ }
+ 
++function openInventoryFromHash(){
++  if (window.location.hash === '#inventory') {
++    const el = document.getElementById('inventorySection');
++    el.classList.add('show');
++    document.querySelector('.toggle-link').textContent = '− Hide product & inventory list';
++    setTimeout(() => el.scrollIntoView({behavior: 'smooth', block: 'start'}), 150);
++  }
++}
++
++function shareInventory(kind){
++  const stockUrl = window.location.origin + '/stock';
++  if (kind === 'sms') {
++    window.location.href = `sms:?&body=${encodeURIComponent('AFB Inventory — stock count page: ' + stockUrl)}`;
++  } else if (kind === 'email') {
++    window.location.href = `mailto:?subject=${encodeURIComponent('AFB Inventory — Stock Count Link')}&body=${encodeURIComponent(stockUrl)}`;
++  } else if (kind === 'print') {
++    window.open(stockUrl + '?print=1', '_blank');
++  } else if (kind === 'copy') {
++    navigator.clipboard.writeText(stockUrl).then(() => {
++      const msg = document.getElementById('invLinkCopied');
++      msg.style.display = 'inline';
++      setTimeout(() => msg.style.display = 'none', 2000);
++    }).catch(() => prompt('Copy this link:', stockUrl));
++  }
++}
++
+ async function loadAll(){
+   const statusEl = document.getElementById('apiStatus');
+   try{
+@@ -949,6 +987,8 @@ function escapeHtmlLocal(str){
+ 
+ initBackupPanel();
+ loadAll();
++openInventoryFromHash();
++window.addEventListener('hashchange', openInventoryFromHash);
+ </script>
+ 
+ </body>
+diff --git a/web/inventory.html b/web/inventory.html
+new file mode 100644
+index 0000000..3d751b4
+--- /dev/null
++++ b/web/inventory.html
+@@ -0,0 +1,445 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++<meta charset="UTF-8">
++<meta name="viewport" content="width=device-width, initial-scale=1.0">
++<title>American Food &amp; Beverage — Inventory</title>
++<link rel="preconnect" href="https://fonts.googleapis.com">
++<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
++<style>
++  :root{
++    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
++    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
++    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
++  }
++  *{box-sizing:border-box;}
++  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
++  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
++  .mono{font-family:'IBM Plex Mono',monospace;}
++  a{color:inherit;}
++  .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
++
++  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:14px 0;}
++  header .wrap{padding:0 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
++  header .top{font-weight:900;font-size:1.15rem;}
++  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.18em;color:var(--gold);text-transform:uppercase;}
++  .nav-link{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;}
++
++  /* Share bar */
++  .share-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
++  .share-btn{
++    display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
++    text-transform:uppercase;letter-spacing:0.04em;padding:9px 14px;border-radius:20px;border:1.5px solid var(--ink);
++    background:var(--paper);color:var(--ink);cursor:pointer;text-decoration:none;font-weight:600;
++  }
++  .share-btn:hover{background:var(--ink);color:var(--paper);}
++  #linkCopiedMsg{font-size:0.78rem;color:var(--olive-deep);font-weight:600;display:none;align-self:center;}
++
++  /* Controls */
++  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
++  .controls input[type="search"]{
++    flex:1;min-width:180px;padding:11px 14px;border:1.5px solid var(--line-strong);border-radius:3px;
++    font-family:'IBM Plex Sans',sans-serif;font-size:0.92rem;background:var(--paper);color:var(--ink);
++  }
++  .controls select{padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink);font-size:0.85rem;}
++  .toggle-chip{
++    display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:20px;border:1.5px solid var(--line-strong);
++    background:var(--paper);font-size:0.82rem;cursor:pointer;user-select:none;
++  }
++  .toggle-chip.active{background:var(--rust);color:var(--paper);border-color:var(--rust);}
++
++  .summary-row{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;font-size:0.85rem;color:var(--ink-soft);}
++  .summary-row strong{color:var(--ink);}
++
++  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;overflow:hidden;box-shadow:var(--shadow);}
++  th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);padding:9px 10px;border-bottom:2px solid var(--ink);background:var(--cream);white-space:nowrap;}
++  td{padding:10px;border-bottom:1px solid var(--line);font-size:0.85rem;vertical-align:top;}
++  tr:last-child td{border-bottom:none;}
++  tr.low{background:#fbe9d8;}
++  .pill{font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:12px;background:#e3f0d8;color:var(--olive-deep);}
++  .pill.low{background:#f7dcd8;color:var(--rust-deep);}
++  .count-input{width:64px;padding:6px 8px;border:1.5px solid var(--line-strong);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;}
++  .action-btn{
++    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;padding:6px 10px;
++    border-radius:3px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer;margin:1px;
++  }
++  .action-btn:hover{background:var(--ink);color:var(--paper);}
++  .empty{color:var(--ink-soft);font-style:italic;padding:20px;text-align:center;}
++
++  /* Modals — same pattern as dashboard.html */
++  .modal-backdrop{position:fixed;inset:0;background:rgba(36,26,16,0.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:200;overflow-y:auto;}
++  .modal-backdrop.show{display:flex;}
++  .modal{background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;box-shadow:var(--shadow);width:100%;max-width:480px;padding:24px 26px;margin-top:10px;position:relative;}
++  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--ink-soft);}
++  .modal h3{font-size:1.1rem;margin-bottom:4px;}
++  .modal .sub{color:var(--ink-soft);font-size:0.85rem;margin-bottom:14px;}
++  .modal .modal-field{display:flex;justify-content:space-between;padding:6px 0;font-size:0.88rem;border-bottom:1px solid var(--line);}
++  .modal label{display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;color:var(--ink-soft);}
++  .modal input, .modal select{width:100%;padding:9px 11px;border:1.5px solid var(--line-strong);border-radius:3px;font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;background:#fff;color:var(--ink);}
++  .adjust-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
++  .adjust-row button{width:38px;height:38px;border:1.5px solid var(--ink);background:var(--paper);border-radius:3px;font-size:1.1rem;cursor:pointer;}
++  .modal-btn{width:100%;margin-top:6px;padding:12px;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;text-transform:uppercase;cursor:pointer;font-weight:600;}
++  .msg{font-size:0.82rem;margin-top:8px;display:none;}
++  .msg.ok{color:var(--olive-deep);display:block;}
++  .msg.err{color:var(--rust-deep);display:block;}
++
++  /* Print stylesheet — a clean physical count sheet: hide chrome, add a
++     blank "Counted Qty" column to write real numbers against system numbers */
++  @media print {
++    header, .share-bar, .controls, .action-col, th.action-col, .no-print { display:none !important; }
++    body{background:#fff;color:#000;}
++    table{box-shadow:none;border:1px solid #000;}
++    th{background:#eee;color:#000;border-bottom:2px solid #000;}
++    tr.low{background:#f4f4f4;}
++    .print-count-col{display:table-cell !important;}
++    .wrap{max-width:100%;padding:0;margin:0;}
++    .print-title{display:block !important;margin-bottom:12px;}
++  }
++  .print-count-col{display:none;}
++  .print-title{display:none;font-family:'Bitter',serif;font-size:1.3rem;}
++</style>
++</head>
++<body>
++
++<header class="no-print">
++  <div class="wrap">
++    <div>
++      <div class="top">American Food &amp; Beverage</div>
++      <div class="bottom">Inventory &amp; Stock Count</div>
++    </div>
++    <div style="display:flex;align-items:center;gap:14px;">
++      <a href="/dashboard" class="nav-link">&larr; Dashboard</a>
++      <a href="#" class="nav-link" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
++    </div>
++  </div>
++</header>
++
++<div class="wrap">
++
++  <h1 class="print-title">American Food &amp; Beverage — Stock Count Sheet</h1>
++  <div class="print-title mono" style="font-size:0.8rem;margin-bottom:16px;" id="printDate"></div>
++
++  <div class="share-bar no-print">
++    <button class="share-btn" onclick="shareVia('sms')">&#128172; Text this page</button>
++    <button class="share-btn" onclick="shareVia('email')">&#9993; Email this page</button>
++    <button class="share-btn" onclick="window.print()">&#128424; Print count sheet</button>
++    <button class="share-btn" onclick="copyLink()">&#128279; Copy link</button>
++    <span id="linkCopiedMsg">Link copied</span>
++  </div>
++
++  <div class="controls no-print">
++    <input type="search" id="searchBox" placeholder="Search SKU, name, description, category…" oninput="renderTable()">
++    <select id="typeFilter" onchange="renderTable()">
++      <option value="sellable">Products (sellable)</option>
++      <option value="indirect_material">Packaging &amp; Supplies</option>
++      <option value="all">All items</option>
++    </select>
++    <div class="toggle-chip" id="lowStockToggle" onclick="toggleLowStock()">Low stock only</div>
++  </div>
++
++  <div class="summary-row no-print" id="summaryRow"></div>
++
++  <table>
++    <thead>
++      <tr>
++        <th>SKU</th><th>Product</th><th>Description</th><th>Location</th>
++        <th>On hand</th><th>Reserved</th><th>Available</th><th>Min qty</th>
++        <th class="print-count-col">Counted qty</th>
++        <th>Status</th><th class="action-col no-print"></th>
++      </tr>
++    </thead>
++    <tbody id="rows"><tr><td colspan="11" class="empty">Loading inventory…</td></tr></tbody>
++  </table>
++
++</div>
++
++<!-- ADJUST MODAL -->
++<div class="modal-backdrop" id="adjustModal">
++  <div class="modal">
++    <button class="modal-close" onclick="closeModal('adjustModal')">&times;</button>
++    <h3 id="adjSku">Adjust Inventory</h3>
++    <div class="sub" id="adjProductName"></div>
++    <div class="modal-field"><span>Current on hand</span><span id="adjCurrentQty"></span></div>
++    <label style="margin-top:14px;">Change amount</label>
++    <div class="adjust-row">
++      <button onclick="stepAdjust(-1)">&minus;</button>
++      <input type="number" id="adjAmount" value="1" style="flex:1;">
++      <button onclick="stepAdjust(1)">&plus;</button>
++    </div>
++    <div class="sub" id="adjPreview" style="margin-bottom:12px;"></div>
++    <label>Reason</label>
++    <select id="adjReason" style="margin-bottom:6px;">
++      <option value="adjustment">Manual adjustment</option>
++      <option value="received_stock">Received stock</option>
++      <option value="production_completed">Production completed</option>
++      <option value="removed">Removed (damaged / lost / samples)</option>
++      <option value="returned">Returned to stock</option>
++    </select>
++    <div class="sub" style="margin-bottom:12px;font-size:0.72rem;">"Removed" always subtracts and "Returned" always adds, no matter which sign you type above.</div>
++    <label>Note (optional)</label>
++    <input type="text" id="adjNote" style="margin-bottom:14px;" placeholder="e.g. Physical count correction">
++    <div id="adjMsg" class="msg"></div>
++    <button class="modal-btn" onclick="submitAdjust()">Save Adjustment</button>
++  </div>
++</div>
++
++<!-- LOCATION MODAL -->
++<div class="modal-backdrop" id="locationModal">
++  <div class="modal">
++    <button class="modal-close" onclick="closeModal('locationModal')">&times;</button>
++    <h3 id="locSku">Edit Location</h3>
++    <div class="sub" id="locProductName"></div>
++    <label>Warehouse</label>
++    <input type="text" id="locWarehouse" placeholder="e.g. Main, Supplies" style="margin-bottom:12px;">
++    <div style="display:flex;gap:10px;">
++      <div style="flex:1;">
++        <label>Aisle</label>
++        <input type="text" id="locAisle" placeholder="e.g. A" style="margin-bottom:12px;">
++      </div>
++      <div style="flex:1;">
++        <label>Bin / Column</label>
++        <input type="text" id="locBinColumn" placeholder="e.g. 12" style="margin-bottom:12px;">
++      </div>
++    </div>
++    <label>Min qty (reorder point)</label>
++    <input type="number" id="locMinQty" style="margin-bottom:14px;">
++    <div id="locMsg" class="msg"></div>
++    <button class="modal-btn" onclick="submitLocation()">Save Location</button>
++  </div>
++</div>
++
++<!-- HISTORY MODAL -->
++<div class="modal-backdrop" id="historyModal">
++  <div class="modal" style="max-width:520px;">
++    <button class="modal-close" onclick="closeModal('historyModal')">&times;</button>
++    <h3 id="histSku">Transaction History</h3>
++    <div class="sub" id="histProductName" style="margin-bottom:14px;"></div>
++    <table>
++      <thead><tr><th>Date</th><th>Change</th><th>Reason</th><th>Note</th></tr></thead>
++      <tbody id="histRows"><tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading&hellip;</td></tr></tbody>
++    </table>
++  </div>
++</div>
++
++<script>
++  const API = '';
++  let ALL_ITEMS = [];
++  let lowStockOnly = false;
++
++  document.getElementById('printDate').textContent = 'Printed ' + new Date().toLocaleString();
++
++  async function loadInventory(){
++    try {
++      const res = await fetch('/reports/inventory');
++      const data = await res.json();
++      ALL_ITEMS = data.items || [];
++      renderTable();
++      if (new URLSearchParams(window.location.search).get('print') === '1') {
++        setTimeout(() => window.print(), 400);
++      }
++    } catch(e) {
++      document.getElementById('rows').innerHTML = '<tr><td colspan="11" class="empty">Could not load inventory.</td></tr>';
++    }
++  }
++
++  function toggleLowStock(){
++    lowStockOnly = !lowStockOnly;
++    document.getElementById('lowStockToggle').classList.toggle('active', lowStockOnly);
++    renderTable();
++  }
++
++  function renderTable(){
++    const q = document.getElementById('searchBox').value.trim().toLowerCase();
++    const typeFilter = document.getElementById('typeFilter').value;
++
++    let items = ALL_ITEMS.slice();
++    if (typeFilter !== 'all') items = items.filter(i => (i.item_type || 'sellable') === typeFilter);
++    if (lowStockOnly) items = items.filter(i => i.low_stock);
++    if (q) {
++      items = items.filter(i =>
++        (i.sku || '').toLowerCase().includes(q) ||
++        (i.name || '').toLowerCase().includes(q) ||
++        (i.description || '').toLowerCase().includes(q) ||
++        (i.category || '').toLowerCase().includes(q)
++      );
++    }
++
++    const lowCount = items.filter(i => i.low_stock).length;
++    document.getElementById('summaryRow').innerHTML = `
++      <span><strong>${items.length}</strong> items shown</span>
++      <span><strong>${lowCount}</strong> at or below min qty</span>
++    `;
++
++    if (!items.length) {
++      document.getElementById('rows').innerHTML = '<tr><td colspan="11" class="empty">No items match.</td></tr>';
++      return;
++    }
++
++    document.getElementById('rows').innerHTML = items.map(i => {
++      const locLabel = [i.warehouse, i.aisle ? `Aisle ${i.aisle}` : '', i.bin_column ? `Bin ${i.bin_column}` : '']
++        .filter(Boolean).join(' / ') || (i.location || '—');
++      return `
++        <tr class="${i.low_stock ? 'low' : ''}">
++          <td class="mono">${escapeHtml(i.sku)}</td>
++          <td>${escapeHtml(i.name)}</td>
++          <td style="max-width:200px;font-size:0.8rem;color:var(--ink-soft);">${escapeHtml(i.description || '')}</td>
++          <td style="font-size:0.8rem;">${escapeHtml(locLabel)}</td>
++          <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
++          <td class="print-count-col"><input class="count-input" type="text"></td>
++          <td><span class="pill ${i.low_stock ? 'low' : ''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
++          <td class="action-col no-print">
++            <button class="action-btn" onclick="openAdjustModal(${i.product_id}, '${escJs(i.sku)}', '${escJs(i.name)}', ${i.qty_on_hand})">Adjust</button>
++            <button class="action-btn" onclick="openLocationModal(${i.product_id}, '${escJs(i.sku)}', '${escJs(i.name)}', ${JSON.stringify(i.warehouse || '')}, ${JSON.stringify(i.aisle || '')}, ${JSON.stringify(i.bin_column || '')}, ${i.reorder_threshold})">Location</button>
++            <button class="action-btn" onclick="openHistoryModal(${i.product_id}, '${escJs(i.sku)}')">History</button>
++          </td>
++        </tr>
++      `;
++    }).join('');
++  }
++
++  function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
++  function escJs(str){ return (str || '').replace(/'/g, "\\'"); }
++
++  function openModal(id){ document.getElementById(id).classList.add('show'); }
++  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
++
++  /* ---------------- Share bar ---------------- */
++  function pageUrl(){ return window.location.origin + '/stock'; }
++
++  function shareVia(kind){
++    const url = pageUrl();
++    const text = `AFB Inventory — stock count page: ${url}`;
++    if (kind === 'sms') {
++      window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
++    } else if (kind === 'email') {
++      const subject = encodeURIComponent('AFB Inventory — Stock Count Link');
++      const body = encodeURIComponent(text);
++      window.location.href = `mailto:?subject=${subject}&body=${body}`;
++    }
++  }
++
++  function copyLink(){
++    navigator.clipboard.writeText(pageUrl()).then(() => {
++      const msg = document.getElementById('linkCopiedMsg');
++      msg.style.display = 'inline';
++      setTimeout(() => msg.style.display = 'none', 2000);
++    }).catch(() => {
++      prompt('Copy this link:', pageUrl());
++    });
++  }
++
++  /* ---------------- Adjust ---------------- */
++  let ADJ_PRODUCT_ID = null, ADJ_CURRENT_QTY = 0;
++  function openAdjustModal(productId, sku, name, currentQty){
++    ADJ_PRODUCT_ID = productId; ADJ_CURRENT_QTY = currentQty;
++    document.getElementById('adjSku').textContent = sku;
++    document.getElementById('adjProductName').textContent = name;
++    document.getElementById('adjCurrentQty').textContent = currentQty;
++    document.getElementById('adjAmount').value = 1;
++    document.getElementById('adjNote').value = '';
++    document.getElementById('adjMsg').style.display = 'none';
++    updateAdjPreview();
++    openModal('adjustModal');
++  }
++  function stepAdjust(dir){
++    const input = document.getElementById('adjAmount');
++    input.value = (parseInt(input.value) || 0) + dir;
++    updateAdjPreview();
++  }
++  document.getElementById('adjAmount').addEventListener('input', updateAdjPreview);
++  function updateAdjPreview(){
++    const change = parseInt(document.getElementById('adjAmount').value) || 0;
++    document.getElementById('adjPreview').textContent =
++      `New on-hand quantity will be ${ADJ_CURRENT_QTY + change} (${change >= 0 ? '+' : ''}${change})`;
++  }
++  async function submitAdjust(){
++    let change_qty = parseInt(document.getElementById('adjAmount').value);
++    const reason = document.getElementById('adjReason').value;
++    const reference = document.getElementById('adjNote').value || null;
++    const msgEl = document.getElementById('adjMsg');
++    if (!change_qty) { msgEl.textContent = 'Enter a non-zero amount.'; msgEl.className = 'msg err'; return; }
++    if (reason === 'removed') change_qty = -Math.abs(change_qty);
++    if (reason === 'returned') change_qty = Math.abs(change_qty);
++    try {
++      const res = await fetch(`${API}/inventory/${ADJ_PRODUCT_ID}/adjust`, {
++        method: 'POST', headers: {'Content-Type': 'application/json'},
++        body: JSON.stringify({change_qty, reason, reference}),
++      });
++      if (!res.ok) throw new Error(await res.text());
++      msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok';
++      setTimeout(() => { closeModal('adjustModal'); loadInventory(); }, 700);
++    } catch (e) {
++      msgEl.textContent = 'Could not save: ' + e.message; msgEl.className = 'msg err';
++    }
++  }
++
++  /* ---------------- Location ---------------- */
++  let LOC_PRODUCT_ID = null;
++  function openLocationModal(productId, sku, name, warehouse, aisle, binColumn, reorderThreshold){
++    LOC_PRODUCT_ID = productId;
++    document.getElementById('locSku').textContent = sku;
++    document.getElementById('locProductName').textContent = name;
++    document.getElementById('locWarehouse').value = warehouse || '';
++    document.getElementById('locAisle').value = aisle || '';
++    document.getElementById('locBinColumn').value = binColumn || '';
++    document.getElementById('locMinQty').value = reorderThreshold;
++    document.getElementById('locMsg').style.display = 'none';
++    openModal('locationModal');
++  }
++  async function submitLocation(){
++    const msgEl = document.getElementById('locMsg');
++    const payload = {
++      warehouse: document.getElementById('locWarehouse').value.trim() || null,
++      aisle: document.getElementById('locAisle').value.trim() || null,
++      bin_column: document.getElementById('locBinColumn').value.trim() || null,
++      reorder_threshold: parseInt(document.getElementById('locMinQty').value) || 0,
++    };
++    try {
++      const res = await fetch(`${API}/inventory/${LOC_PRODUCT_ID}/location`, {
++        method: 'PATCH', headers: {'Content-Type': 'application/json'},
++        body: JSON.stringify(payload),
++      });
++      if (!res.ok) throw new Error(await res.text());
++      msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok'; msgEl.style.display = 'block';
++      setTimeout(() => { closeModal('locationModal'); loadInventory(); }, 700);
++    } catch (e) {
++      msgEl.textContent = 'Could not save: ' + e.message; msgEl.className = 'msg err'; msgEl.style.display = 'block';
++    }
++  }
++
++  /* ---------------- History ---------------- */
++  async function openHistoryModal(productId, sku){
++    document.getElementById('histSku').textContent = sku;
++    document.getElementById('histProductName').textContent = 'Every change to this item — received, removed, returned, adjusted.';
++    document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading…</td></tr>';
++    openModal('historyModal');
++    try {
++      const res = await fetch(`/inventory/${productId}/transactions`);
++      const rows = await res.json();
++      if (!rows.length) {
++        document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">No transactions logged yet.</td></tr>';
++        return;
++      }
++      const reasonLabels = {
++        received_stock: 'Received stock', order_reserved: 'Order reserved', order_released: 'Order released',
++        order_shipped: 'Order shipped', adjustment: 'Manual adjustment', production_completed: 'Production completed',
++        removed: 'Removed', returned: 'Returned',
++      };
++      document.getElementById('histRows').innerHTML = rows.map(r => `
++        <tr>
++          <td class="mono">${new Date(r.created_at).toLocaleString()}</td>
++          <td style="color:${r.change_qty >= 0 ? 'var(--olive-deep)' : 'var(--rust-deep)'};font-weight:600;">${r.change_qty >= 0 ? '+' : ''}${r.change_qty}</td>
++          <td>${reasonLabels[r.reason] || r.reason}</td>
++          <td class="mono" style="font-size:0.8rem;">${r.reference || '—'}</td>
++        </tr>
++      `).join('');
++    } catch (e) {
++      document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">Could not load history.</td></tr>';
++    }
++  }
++
++  loadInventory();
++</script>
++
++</body>
++</html>
+diff --git a/web/production.html b/web/production.html
+index 39b59c4..e249143 100644
+--- a/web/production.html
++++ b/web/production.html
+@@ -85,6 +85,7 @@
+     </div>
+     <div style="display:flex;align-items:center;gap:14px;">
+       <a href="/dashboard" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">&larr; Dashboard</a>
++      <a href="/stock" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">Inventory</a>
+       <a href="#" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
+     </div>
+   </div>
+-- 
+2.43.0
+
