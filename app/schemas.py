@@ -432,3 +432,28 @@ class StaffMeOut(BaseModel):
     username: str
     full_name: str
     role: StaffRole
+    must_change_password: bool = False
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+# ---------- Backups ----------
+class BackupLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    destination: str
+    status: str
+    filename: Optional[str]
+    size_bytes: Optional[int]
+    triggered_by: Optional[str]
+    error_message: Optional[str]
+    created_at: datetime
+
+
+class CloudBackupResult(BaseModel):
+    ok: bool
+    detail: str
+    filename: Optional[str] = None

@@ -193,8 +193,10 @@
     <div style="display:flex;align-items:center;gap:14px;">
       <a href="/production" class="prod-link">Packing &amp; Production &rarr;</a>
       <a href="/applications-admin" class="prod-link">Job Applications &rarr;</a>
+      <a href="/change-password" class="prod-link">Change Password</a>
       <span id="apiStatus" class="mono">checking API…</span>
       <button class="refresh-btn" onclick="loadAll()">Refresh</button>
+      <a href="#" class="prod-link" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
     </div>
   </div>
 </header>
@@ -248,6 +250,31 @@
       <h3>Staff Assignment Board</h3>
       <p>Who's working on what, right now — orders and stock.</p>
       <div class="cta">View staff board &rarr;</div>
+    </div>
+  </div>
+
+  <div id="backupSection" style="display:none;margin-top:8px;margin-bottom:26px;">
+    <h2 class="section-title" style="margin-top:0;">Data &amp; Backups</h2>
+    <div class="panel">
+      <p style="margin:0 0 14px;font-size:0.88rem;color:var(--ink-soft);">
+        A backup is a full snapshot of every table (customers, orders, inventory, staff, job
+        applications — everything) as one JSON file. "Local" downloads it straight to this
+        computer. "Cloud" pushes it to your configured S3-compatible storage.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <a class="refresh-btn" href="/admin/backup/local" id="localBackupBtn" style="text-decoration:none;display:inline-block;">
+          &#8681; Download backup (local)
+        </a>
+        <button class="refresh-btn" onclick="runCloudBackup()" id="cloudBackupBtn">&#9729; Backup to cloud</button>
+      </div>
+      <div id="cloudBackupMsg" style="display:none;font-size:0.85rem;padding:10px 14px;border-radius:3px;margin-bottom:14px;"></div>
+
+      <table>
+        <thead><tr><th>When</th><th>Destination</th><th>Status</th><th>File</th><th>Size</th><th>By</th></tr></thead>
+        <tbody id="backupHistoryBody">
+          <tr><td colspan="6" class="mono" style="color:var(--ink-soft);">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -999,6 +1026,87 @@ async function submitAdjust(){
   }
 }
 
+// ---------------- Data & Backups (admin only) ----------------
+async function initBackupPanel(){
+  try {
+    const res = await fetch('/auth/me');
+    if (!res.ok) return;
+    const me = await res.json();
+    if (me.role !== 'admin') return; // managers/packers don't see this panel
+    document.getElementById('backupSection').style.display = 'block';
+    loadBackupHistory();
+  } catch(e) { /* fail quiet — panel just stays hidden */ }
+}
+
+async function loadBackupHistory(){
+  const body = document.getElementById('backupHistoryBody');
+  try {
+    const res = await fetch('/admin/backup/history');
+    if (!res.ok) throw new Error();
+    const logs = await res.json();
+    if (!logs.length) {
+      body.innerHTML = '<tr><td colspan="6" class="mono" style="color:var(--ink-soft);">No backups yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = logs.map(l => `
+      <tr>
+        <td class="mono">${new Date(l.created_at).toLocaleString()}</td>
+        <td>${l.destination}</td>
+        <td style="color:${l.status === 'success' ? 'var(--olive-deep)' : 'var(--rust-deep)'};font-weight:600;">${l.status}${l.error_message ? ' — ' + escapeHtmlLocal(l.error_message) : ''}</td>
+        <td class="mono">${l.filename || '—'}</td>
+        <td class="mono">${l.size_bytes ? (l.size_bytes/1024).toFixed(1) + ' KB' : '—'}</td>
+        <td>${l.triggered_by || '—'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    body.innerHTML = '<tr><td colspan="6" class="mono" style="color:var(--ink-soft);">Could not load backup history.</td></tr>';
+  }
+}
+
+async function runCloudBackup(){
+  const btn = document.getElementById('cloudBackupBtn');
+  const msgEl = document.getElementById('cloudBackupMsg');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Uploading…';
+  msgEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/admin/backup/cloud', {method: 'POST'});
+    const data = await res.json();
+    msgEl.style.display = 'block';
+    if (data.ok) {
+      msgEl.style.background = '#e3f0d8'; msgEl.style.color = 'var(--olive-deep)';
+      msgEl.textContent = data.detail;
+    } else {
+      msgEl.style.background = '#f7dcd8'; msgEl.style.color = 'var(--rust-deep)';
+      msgEl.textContent = data.detail;
+    }
+    loadBackupHistory();
+  } catch(e) {
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#f7dcd8'; msgEl.style.color = 'var(--rust-deep)';
+    msgEl.textContent = 'Could not reach the server.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+// Also log a backup_logs row for the local download — since it's a plain
+// <a href> the browser handles the download itself, so we just fire a
+// quick history refresh a moment after the click.
+document.getElementById('localBackupBtn').addEventListener('click', () => {
+  setTimeout(loadBackupHistory, 1500);
+});
+
+function escapeHtmlLocal(str){
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+initBackupPanel();
 loadAll();
 </script>
 

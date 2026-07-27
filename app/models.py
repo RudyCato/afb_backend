@@ -349,8 +349,32 @@ class StaffUser(Base):
     full_name = Column(String, nullable=False)
     role = Column(Enum(StaffRole), default=StaffRole.packer, nullable=False)
     active = Column(Boolean, default=True)
+    must_change_password = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login_at = Column(DateTime, nullable=True)
+
+
+class BackupDestination(str, enum.Enum):
+    local = "local"     # downloaded to whoever clicked the button's own machine
+    cloud = "cloud"     # pushed to configured S3-compatible storage
+
+
+class BackupStatus(str, enum.Enum):
+    success = "success"
+    failed = "failed"
+
+
+class BackupLog(Base):
+    __tablename__ = "backup_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    destination = Column(Enum(BackupDestination), nullable=False)
+    status = Column(Enum(BackupStatus), nullable=False)
+    filename = Column(String, nullable=True)
+    size_bytes = Column(Integer, nullable=True)
+    triggered_by = Column(String, nullable=True)   # staff username
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class PackagingSpec(Base):

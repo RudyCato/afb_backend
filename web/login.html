@@ -123,7 +123,12 @@
         submitBtn.textContent = 'Sign in';
         return;
       }
-      window.location.href = nextPath;
+      const me = await res.json();
+      if (me.must_change_password) {
+        window.location.href = `/change-password?next=${encodeURIComponent(nextPath)}`;
+      } else {
+        window.location.href = nextPath;
+      }
     } catch (err) {
       errBox.textContent = 'Could not reach the server. Try again.';
       errBox.style.display = 'block';

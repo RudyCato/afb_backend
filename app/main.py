@@ -8,10 +8,30 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import get_current_staff_optional
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin
 from .routers import auth as auth_router
 
 Base.metadata.create_all(bind=engine)
+
+# ---------------------------------------------------------------------------
+# Security config, driven by environment so nothing has to change in code
+# between local dev and Render production.
+# ---------------------------------------------------------------------------
+# ALLOWED_ORIGINS: comma-separated list of origins allowed to call this API
+# from a browser (CORS). Set this to your real domain(s) in Render, e.g.
+#   ALLOWED_ORIGINS=https://afb-backend-58ys.onrender.com,https://americanfoodbeverage.com
+# Falls back to localhost + the known Render URL so local dev and the
+# current deployment keep working if it's not set yet.
+_default_origins = "http://localhost:8000,http://127.0.0.1:8000,https://afb-backend-58ys.onrender.com"
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()
+]
+
+# COOKIE_SECURE: whether the session cookie requires HTTPS. Defaults to
+# "on" whenever we're talking to a real Postgres database (i.e. production),
+# and "off" for local SQLite dev so testing over plain http still works.
+_is_local_sqlite = os.environ.get("DATABASE_URL", "sqlite:///./afb.db").startswith("sqlite")
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "false" if _is_local_sqlite else "true").lower() == "true"
 
 app = FastAPI(
     title="American Food & Beverage — Operations API",
@@ -21,7 +41,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,9 +56,11 @@ app.add_middleware(
     session_cookie="afb_staff_session",
     max_age=60 * 60 * 12,  # 12 hours
     same_site="lax",
+    https_only=COOKIE_SECURE,
 )
 
 app.include_router(auth_router.router)
+app.include_router(admin.router)
 app.include_router(customers.router)
 app.include_router(products.router)
 app.include_router(inventory.router)
@@ -95,6 +117,14 @@ def production_page(staff=Depends(get_current_staff_optional)):
 @app.get("/login", response_class=FileResponse)
 def login_page():
     return FileResponse(os.path.join(WEB_DIR, "login.html"))
+
+
+@app.get("/change-password")
+def change_password_page(staff=Depends(get_current_staff_optional)):
+    gate = _staff_gate("/change-password", staff)
+    if gate:
+        return gate
+    return FileResponse(os.path.join(WEB_DIR, "change-password.html"))
 
 
 @app.get("/applications-admin")
