@@ -84,6 +84,8 @@
   .pill.low{background:var(--rust-deep);}
   .pill.received,.pill.assigned{background:var(--gold);color:var(--ink);}
   .pill.confirmed{background:#8a9a6b;}
+  .pill.on_hold{background:var(--rust-deep);}
+  .pill.picking{background:#a37c22;}
   .pill.packing,.pill.in_progress,.pill.building{background:var(--rust);}
   .pill.packed,.pill.staged{background:#7a6a3f;}
   .pill.out_for_delivery{background:#b8703f;}
@@ -132,6 +134,28 @@
   .modal-btn:hover{background:var(--rust-deep);}
   .modal-btn.secondary{background:var(--olive);}
   .modal-btn.secondary:hover{background:var(--olive-deep);}
+  .om-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;}
+  .om-actions .btn, #holdForm .btn, #packingCheck .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;
+    padding:8px 16px;border-radius:16px;border:none;cursor:pointer;background:var(--rust);color:#fff;
+  }
+  .om-actions .btn:hover, #holdForm .btn:hover, #packingCheck .btn:hover{background:var(--rust-deep);}
+  .om-actions .btn.secondary, #holdForm .btn.secondary{background:var(--gold);color:var(--ink);}
+  .om-actions .btn.secondary:hover, #holdForm .btn.secondary:hover{background:#a37c22;}
+  .om-actions .btn.ghost, #holdForm .btn.ghost, #packingCheck .btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-strong);}
+  .om-actions .btn.ghost:hover, #holdForm .btn.ghost:hover, #packingCheck .btn.ghost:hover{background:var(--ink);color:#fff;}
+  .avail-ok{color:var(--olive-deep);font-weight:600;}
+  .avail-short{color:var(--rust-deep);font-weight:700;}
+  .task-row{background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:10px 14px;margin-bottom:8px;}
+  .task-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .task-meta{font-size:0.82rem;color:var(--ink-soft);margin-bottom:8px;}
+  .task-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .task-actions input, .task-assign-row input{
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;padding:6px 10px;border:1px solid var(--line-strong);
+    border-radius:3px;background:var(--paper);
+  }
+  .task-assign-row{display:flex;gap:8px;}
+  .task-assign-row input{flex:1;}
   .adjust-row{display:flex;gap:8px;margin-bottom:14px;}
   .adjust-row button{
     font-family:'IBM Plex Mono',monospace;font-size:0.85rem;width:38px;height:38px;border-radius:6px;
@@ -218,6 +242,12 @@
       <p>Who loaded each pallet, and its order manifest.</p>
       <div class="cta">View pallets &rarr;</div>
     </div>
+    <div class="ov-card" onclick="openStaffBoardModal()">
+      <div class="icon">&#128101;</div>
+      <h3>Staff Assignment Board</h3>
+      <p>Who's working on what, right now — orders and stock.</p>
+      <div class="cta">View staff board &rarr;</div>
+    </div>
   </div>
 
   <button class="toggle-link" onclick="toggleInventory()">+ View full product &amp; inventory list</button>
@@ -284,6 +314,7 @@
         <option value="">All orders</option>
         <option value="received">Received</option>
         <option value="confirmed">Confirmed</option>
+        <option value="on_hold">On Hold</option>
         <option value="packing">Packing</option>
         <option value="packed">Packed</option>
         <option value="out_for_delivery">Out for delivery</option>
@@ -308,6 +339,38 @@
     <div class="modal-field"><span class="k">Status</span><span id="omStatus"></span></div>
     <div class="modal-field"><span class="k">Pallet</span><span id="omPallet"></span></div>
     <div class="modal-field"><span class="k">Packed by</span><span id="omPackedBy"></span></div>
+
+    <div id="omMsg" class="msg"></div>
+
+    <div class="om-actions" id="omActions">
+      <button class="btn" onclick="setOrderStatus('confirmed')">Receive / Confirm</button>
+      <button class="btn secondary" onclick="showHoldForm()">Put On Hold</button>
+      <button class="btn" onclick="sendToPacking()">Release to Warehouse</button>
+      <button class="btn ghost" onclick="setOrderStatus('cancelled')">Cancel Order</button>
+    </div>
+
+    <div id="holdForm" style="display:none;margin:12px 0;">
+      <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Reason for hold</label>
+      <input type="text" id="holdNote" placeholder="e.g. Awaiting customer credit approval" style="width:100%;margin-bottom:10px;">
+      <button class="btn secondary" onclick="submitHold()">Confirm Hold</button>
+      <button class="btn ghost" onclick="hideHoldForm()">Cancel</button>
+    </div>
+
+    <div id="packingCheck" style="display:none;margin:12px 0;background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:12px 14px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:8px;">Products required from inventory</div>
+      <table>
+        <thead><tr><th>SKU</th><th>Product</th><th>Needed</th><th>Available</th><th></th></tr></thead>
+        <tbody id="packingCheckRows"></tbody>
+      </table>
+      <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:12px 0 4px;">Assign warehouse picker</label>
+      <input type="text" id="pickerName" placeholder="e.g. Warehouse Manager name" style="width:100%;margin-bottom:10px;">
+      <button class="btn" onclick="confirmSendToPacking()">Confirm &amp; Send to Warehouse</button>
+      <button class="btn ghost" onclick="hidePackingCheck()">Cancel</button>
+    </div>
+
+    <h3 style="margin-top:18px;font-size:1rem;">Order Tasks</h3>
+    <div id="orderTasksPanel"></div>
+
     <h3 style="margin-top:18px;font-size:1rem;">Timeline</h3>
     <ul class="timeline" id="omTimeline"></ul>
     <h3 style="margin-top:18px;font-size:1rem;">Items</h3>
@@ -335,6 +398,19 @@
     <table>
       <thead><tr><th>Packed by</th><th>Orders packed</th><th>Boxes</th><th>Avg hours to pack</th></tr></thead>
       <tbody id="prodOverallRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- STAFF BOARD MODAL -->
+<div class="modal-backdrop" id="staffBoardModal">
+  <div class="modal wide">
+    <button class="modal-close" onclick="closeModal('staffBoardModal')">&times;</button>
+    <h3>Staff Assignment Board</h3>
+    <div class="sub">Everyone currently working on something — order tasks and bulk production, combined.</div>
+    <table>
+      <thead><tr><th>Staff</th><th>Working On</th><th>Type</th><th>Status</th></tr></thead>
+      <tbody id="staffBoardRows"></tbody>
     </table>
   </div>
 </div>
@@ -557,7 +633,7 @@ async function openCustomerModal(customerId){
 async function loadOrdersList(){
   const filter = document.getElementById('orderStatusFilter').value;
   const all = await fetchJSON('/orders');
-  const openStatuses = ['received','confirmed','packing','packed','out_for_delivery'];
+  const openStatuses = ['received','confirmed','on_hold','packing','packed','out_for_delivery'];
   let filtered = all;
   if(filter === 'open') filtered = all.filter(o => openStatuses.includes(o.status));
   else if(filter) filtered = all.filter(o => o.status === filter);
@@ -580,11 +656,19 @@ function openOrdersModal(){
   loadOrdersList();
 }
 
+let CURRENT_ORDER_NUMBER = null;
+let CURRENT_ORDER_ID = null;
+
 async function openOrderModal(orderNumber){
   openModal('orderModal');
+  CURRENT_ORDER_NUMBER = orderNumber;
   document.getElementById('omNumber').textContent = orderNumber;
+  document.getElementById('omMsg').className = 'msg';
+  hideHoldForm();
+  hidePackingCheck();
   try {
     const o = await fetchJSON(`/orders/${orderNumber}`);
+    CURRENT_ORDER_ID = o.id;
     document.getElementById('omNumber').textContent = o.order_number;
     document.getElementById('omCustomer').textContent = `${o.customer.name}${o.customer.company ? ' — ' + o.customer.company : ''}`;
     document.getElementById('omStatus').innerHTML = `<span class="pill ${o.status}">${o.status.replace(/_/g,' ')}</span>`;
@@ -600,9 +684,190 @@ async function openOrderModal(orderNumber){
     document.getElementById('omItemRows').innerHTML = o.items.map(i => `
       <tr><td class="mono">${i.sku}</td><td>${i.name}</td><td>${i.qty_ordered}</td><td>${i.qty_packed}</td></tr>
     `).join('');
+
+    // disable actions once an order is terminal
+    const terminal = ['delivered','cancelled'].includes(o.status);
+    document.getElementById('omActions').style.display = terminal ? 'none' : 'flex';
+
+    loadOrderTasks(o.id);
   } catch(e){
     document.getElementById('omCustomer').textContent = 'Could not load order.';
   }
+}
+
+async function setOrderStatusSilent(status){
+  const res = await fetch(`${API}/orders/${CURRENT_ORDER_NUMBER}/status`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status, note: null}),
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function showOmMsg(text, ok){
+  const el = document.getElementById('omMsg');
+  el.textContent = text;
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+}
+
+async function setOrderStatus(status, note){
+  try {
+    const res = await fetch(`${API}/orders/${CURRENT_ORDER_NUMBER}/status`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({status, note: note || null}),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    showOmMsg(`Order marked ${status.replace(/_/g,' ')}.`, true);
+    hideHoldForm(); hidePackingCheck();
+    setTimeout(()=>{ openOrderModal(CURRENT_ORDER_NUMBER); loadAll(); }, 500);
+  } catch(e){
+    showOmMsg('Could not update order: ' + e.message, false);
+  }
+}
+
+function showHoldForm(){
+  document.getElementById('holdForm').style.display = 'block';
+  document.getElementById('packingCheck').style.display = 'none';
+  document.getElementById('holdNote').value = '';
+}
+function hideHoldForm(){
+  document.getElementById('holdForm').style.display = 'none';
+}
+function submitHold(){
+  const note = document.getElementById('holdNote').value.trim();
+  if(!note){ showOmMsg('Add a reason for the hold.', false); return; }
+  setOrderStatus('on_hold', note);
+}
+
+async function sendToPacking(){
+  document.getElementById('holdForm').style.display = 'none';
+  const panel = document.getElementById('packingCheck');
+  panel.style.display = 'block';
+  document.getElementById('packingCheckRows').innerHTML = '<tr><td colspan="5" class="empty">Checking availability…</td></tr>';
+  try {
+    const [order, inv] = await Promise.all([
+      fetchJSON(`/orders/${CURRENT_ORDER_NUMBER}`),
+      fetchJSON('/inventory'),
+    ]);
+    const invBySku = {};
+    inv.forEach(i => { invBySku[i.sku] = i; });
+
+    document.getElementById('packingCheckRows').innerHTML = order.items.map(item => {
+      const rec = invBySku[item.sku];
+      const avail = rec ? rec.qty_available : 0;
+      const ok = avail >= item.qty_ordered;
+      return `<tr>
+        <td class="mono">${item.sku}</td><td>${item.name}</td><td>${item.qty_ordered}</td>
+        <td class="${ok?'avail-ok':'avail-short'}">${avail}</td>
+        <td>${ok ? '✓' : '⚠ short'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e){
+    document.getElementById('packingCheckRows').innerHTML = `<tr><td colspan="5" class="empty">Could not check inventory: ${e.message}</td></tr>`;
+  }
+}
+function hidePackingCheck(){
+  document.getElementById('packingCheck').style.display = 'none';
+}
+async function confirmSendToPacking(){
+  const picker = document.getElementById('pickerName').value.trim();
+  if(!picker){ showOmMsg('Enter who the warehouse picking task goes to.', false); return; }
+  try {
+    await setOrderStatusSilent('picking');
+    await fetch(`${API}/order-tasks`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        order_id: CURRENT_ORDER_ID, task_type: 'picking',
+        assigned_to: picker, assigned_by: 'Front Office',
+      }),
+    });
+    showOmMsg(`Sent to warehouse — picking assigned to ${picker}.`, true);
+    hidePackingCheck();
+    setTimeout(()=>{ openOrderModal(CURRENT_ORDER_NUMBER); loadAll(); }, 500);
+  } catch(e){
+    showOmMsg('Could not send to warehouse: ' + e.message, false);
+  }
+}
+
+/* ---------------- Order Tasks (picking, raw material packaging, labeling, boxing) ---------------- */
+const TASK_TYPES = [
+  {key:'picking', label:'Picking (Warehouse)'},
+  {key:'raw_material_packaging', label:'Raw Material Packaging'},
+  {key:'labeling', label:'Labeling'},
+  {key:'boxing', label:'Boxing'},
+];
+
+async function loadOrderTasks(orderId){
+  const panel = document.getElementById('orderTasksPanel');
+  panel.innerHTML = '<p class="empty">Loading tasks…</p>';
+  try {
+    const tasks = await fetchJSON(`/order-tasks?order_id=${orderId}`);
+    const byType = {};
+    tasks.forEach(t => { byType[t.task_type] = t; });
+
+    panel.innerHTML = TASK_TYPES.map(tt => {
+      const t = byType[tt.key];
+      if(!t){
+        return `
+          <div class="task-row">
+            <div class="task-row-head"><b>${tt.label}</b><span class="pill" style="background:var(--line-strong);color:var(--ink-soft);">not started</span></div>
+            <div class="task-assign-row">
+              <input type="text" id="assign-${tt.key}" placeholder="Assign to…">
+              <button class="btn" onclick="assignTask(${orderId}, '${tt.key}')">Assign</button>
+            </div>
+          </div>`;
+      }
+      const durText = t.duration_minutes != null ? `${t.duration_minutes} min` : '';
+      return `
+        <div class="task-row">
+          <div class="task-row-head">
+            <b>${tt.label}</b>
+            <span class="pill ${t.status}">${t.status.replace('_',' ')}</span>
+          </div>
+          <div class="task-meta">Assigned to <b>${t.assigned_to}</b>${durText ? ' · ' + durText : ''}</div>
+          <div class="task-actions">
+            ${t.status === 'assigned' ? `<button class="btn" onclick="startTask(${t.id})">Start</button>` : ''}
+            ${t.status === 'in_progress' ? `<button class="btn" onclick="completeTask(${t.id})">Complete</button>` : ''}
+            ${t.status !== 'completed' ? `
+              <input type="text" id="reassign-${t.id}" placeholder="Reassign to…" style="width:120px;">
+              <button class="btn ghost" onclick="reassignTask(${t.id})">Reassign</button>
+            ` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e){
+    panel.innerHTML = '<p class="empty">Could not load tasks.</p>';
+  }
+}
+
+async function assignTask(orderId, taskType){
+  const input = document.getElementById(`assign-${taskType}`);
+  const assignedTo = input.value.trim();
+  if(!assignedTo) return;
+  await fetch(`${API}/order-tasks`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({order_id: orderId, task_type: taskType, assigned_to: assignedTo, assigned_by: 'Packing Room Manager'}),
+  });
+  loadOrderTasks(orderId);
+}
+async function startTask(taskId){
+  await fetch(`${API}/order-tasks/${taskId}/start`, {method:'PATCH'});
+  loadOrderTasks(CURRENT_ORDER_ID);
+}
+async function completeTask(taskId){
+  await fetch(`${API}/order-tasks/${taskId}/complete`, {method:'PATCH'});
+  loadOrderTasks(CURRENT_ORDER_ID);
+  loadAll();
+}
+async function reassignTask(taskId){
+  const input = document.getElementById(`reassign-${taskId}`);
+  const assignedTo = input.value.trim();
+  if(!assignedTo) return;
+  await fetch(`${API}/order-tasks/${taskId}/reassign`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({assigned_to: assignedTo}),
+  });
+  loadOrderTasks(CURRENT_ORDER_ID);
 }
 
 /* ---------------- Production ---------------- */
@@ -622,6 +887,27 @@ async function openProductionModal(){
 }
 
 /* ---------------- Pallets & Manifests ---------------- */
+/* ---------------- Staff Assignment Board ---------------- */
+async function openStaffBoardModal(){
+  openModal('staffBoardModal');
+  const rows = document.getElementById('staffBoardRows');
+  rows.innerHTML = '<tr><td colspan="4" class="empty">Loading…</td></tr>';
+  try {
+    const board = await fetchJSON('/order-tasks/staff-board');
+    if(!board.length){ rows.innerHTML = '<tr><td colspan="4" class="empty">No one is actively assigned to anything right now.</td></tr>'; return; }
+    rows.innerHTML = board.map(e => `
+      <tr>
+        <td><b>${e.packer_name}</b></td>
+        <td>${e.label}</td>
+        <td class="mono" style="font-size:0.75rem;">${e.kind === 'order_task' ? 'Order Task' : 'Bulk Production'}</td>
+        <td><span class="pill ${e.status}">${e.status.replace('_',' ')}</span></td>
+      </tr>
+    `).join('');
+  } catch(e){
+    rows.innerHTML = '<tr><td colspan="4" class="empty">Could not load staff board.</td></tr>';
+  }
+}
+
 async function openPalletsModal(){
   openModal('palletsModal');
   const data = await fetchJSON('/pallets');

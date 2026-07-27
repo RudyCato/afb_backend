@@ -1,0 +1,295 @@
+{
+ "_note": "Generated from sop-library/*.md by tools/sync_sops.py. Do not hand-edit — edit the markdown and re-run. Blank control fields are genuinely blank in the source and must be filled by the owner before issue.",
+ "documents": [
+  {
+   "code": "SOP-CS-001",
+   "title": "In-house sales and customer support",
+   "version": "1.0",
+   "status": "active",
+   "pendingApproval": true,
+   "scope": "business",
+   "docType": "role_sop",
+   "department": "Front Office",
+   "roles": [
+    "Customer Service Representative",
+    "Accounting Clerk"
+   ],
+   "owner": "Customer Support Manager",
+   "approver": null,
+   "effectiveDate": null,
+   "reviewCycle": "Annual",
+   "supersedes": "SOP_for_In-House_Sales_and_Customer_Support_Personnel.pdf",
+   "generatesRecord": null,
+   "criticalControl": false,
+   "confidential": false,
+   "sourceFile": "SOP-CS-001.md",
+   "body": "<!-- Controlled document. The current version lives in the AFB operations\nportal. A printed copy is uncontrolled once it leaves the screen. -->\n\n# SOP-CS-001 · In-house sales and customer support\n\n| Field | Value |\n|---|---|\n| Document code | `SOP-CS-001` |\n| Version | 1.0 |\n| Status | Active — pending approval |\n| Scope | Business process. Not SQF-scoped. |\n| Department | Front Office |\n| Applies to | Customer Service Representative · Accounting Clerk |\n| Owner | Customer Support Manager |\n| Approved by | ______________________  *(signature required before issue)* |\n| Effective date | ______________________ |\n| Review cycle | Annual |\n| Supersedes | SOP_for_In-House_Sales_and_Customer_Support_Personnel.pdf |\n| Records generated | Customer interaction log (Badger) · Orders (Pepperi) · Escalation record |\n\n---\n\n## 1. Purpose\n\nTo set expectations for in-house sales and customer support so that customers get a\nconsistent answer regardless of who picks up the phone.\n\n## 2. Responsibilities\n\n### 2.1 In-house sales\n- Handle inbound sales inquiries.\n- Follow up on leads and close sales.\n- Maintain accurate records in Badger.\n- Work with marketing so sales effort and promotion line up.\n\n### 2.2 Customer support\n- Address customer inquiries and resolve issues promptly.\n- Provide product information and support.\n- Document every customer interaction — the next person to speak to that customer relies on it.\n- Escalate what you cannot resolve, rather than sitting on it.\n\n## 3. What we handle and what the rep handles\n\n| Support team handles | Sales rep handles |\n|---|---|\n| Routine order entry and reorders | Prospecting and new accounts |\n| Shipment tracking and delivery confirmation | Strategic account relationships |\n| Basic service inquiries | In-person visits |\n| New customer paperwork and setup | Pricing and contract discussion |\n| Order status updates | Merchandising audits |\n\nCollaborative: complex issue resolution, new customer onboarding, large or custom orders,\ncustomer complaints.\n\n## 4. Guidelines\n\n- Follow company policy on client interactions.\n- Use Badger and Pepperi rather than personal notes or spreadsheets.\n- Professional and courteous at all times, including when the customer is not.\n- Return calls and emails within one business day, same day where possible.\n- If you commit to something, do it — or call back and say you can't.\n\n## 5. Escalation\n\n| Urgency | Examples | Route | Response expected |\n|---|---|---|---|\n| **Immediate** | Damaged or wrong product delivered · safety or health concern · billing error · failed delivery · customer threatening to leave | Sales Manager or Customer Support Manager, by phone | Within 1 hour |\n| **Same day** | Quality complaint · service dissatisfaction · unresolved recurring issue · return or refund request | Manager, by phone or email | Same business day |\n| **Standard** | Process suggestions · documentation gaps · system issues · material requests | Email or portal ticket | 1–2 business days |\n\nA useful escalation names the customer, states the problem in facts, says what you have\nalready done, makes a specific request and gives the deadline. \"Customer is upset, please\ncall them\" is not an escalation.\n\n## 6. Records\n\nEvery interaction is documented in Badger while it is fresh. Feedback and recurring complaints\nare flagged for the Customer Support Manager, because three customers reporting the same thing\nis a process problem, not three incidents.\n\n---\n\n## Revision history\n\n| Version | Date | Author | Change |\n|---|---|---|---|\n| 1.0 | *(pending)* | Customer Support Manager | First controlled issue. Consolidates and supersedes `SOP_for_In-House_Sales_and_Customer_Support_Personnel.pdf`, which carried no version, owner, approval or review date. Escalation timeframes added, and the sales/support split made explicit to match `TRN-SLS-001`. |\n",
+   "sections": [
+    "Purpose",
+    "Responsibilities",
+    "What we handle and what the rep handles",
+    "Guidelines",
+    "Escalation",
+    "Records",
+    "Revision history"
+   ],
+   "derivedDuties": [
+    "Handle inbound sales inquiries.",
+    "Follow up on leads and close sales.",
+    "Maintain accurate records in Badger.",
+    "Work with marketing so sales effort and promotion line up.",
+    "Address customer inquiries and resolve issues promptly."
+   ]
+  },
+  {
+   "code": "SOP-PKG-001",
+   "title": "Cleaning tables between packing different products",
+   "version": "1.0",
+   "status": "active",
+   "pendingApproval": true,
+   "scope": "sqf",
+   "docType": "procedure",
+   "department": "Packing Room",
+   "roles": [
+    "Packer — Production",
+    "Sanitation Technician",
+    "Packing Room Manager"
+   ],
+   "owner": "SQF Practitioner",
+   "approver": null,
+   "effectiveDate": null,
+   "reviewCycle": "Annual, or on any change to products, chemicals or equipment",
+   "supersedes": "Standard_Operating_Procedure_For_Cleaning_Packing_Room.docx",
+   "generatesRecord": "cleaning_log",
+   "criticalControl": true,
+   "confidential": false,
+   "sourceFile": "SOP-PKG-001.md",
+   "body": "<!-- Controlled document. The current version lives in the AFB operations\nportal. A printed copy is uncontrolled once it leaves the screen. -->\n\n# SOP-PKG-001 · Cleaning tables between packing different products\n\n| Field | Value |\n|---|---|\n| Document code | `SOP-PKG-001` |\n| Version | 1.0 |\n| Status | Active — pending approval |\n| Scope | **SQF — food safety.** This is a food safety control. Deviation is a deviation, not a preference. |\n| Department | Packing Room |\n| Applies to | Packer — Production · Sanitation Technician · Packing Room Manager |\n| Owner | SQF Practitioner |\n| Approved by | ______________________  *(signature required before issue)* |\n| Effective date | ______________________ |\n| Review cycle | Annual, or on any change to products, chemicals or equipment |\n| Supersedes | Standard_Operating_Procedure_For_Cleaning_Packing_Room.docx |\n| Records generated | Cleaning log — one entry per changeover and per end of day |\n\n---\n\n## 1. Purpose\n\nTo ensure a hygienic, contamination-free packing area by thoroughly cleaning tables and\nequipment between different food products.\n\n## 2. Why this matters\n\nThis facility handles **peanuts, tree nuts, sesame, milk and soy**. A changeover between two\nproducts is therefore an allergen control point, not a housekeeping task. Product packed on an\ninadequately cleaned table can injure a consumer and will be recalled.\n\n## 3. Responsibilities\n\n| Who | Does what |\n|---|---|\n| Packer / Sanitation Technician | Performs the clean and records it |\n| Packing Room Manager | Verifies allergen changeovers before the line restarts |\n| SQF Practitioner | Owns this procedure, reviews records, retains them |\n\n## 4. Materials\n\n- Cleaning cloths\n- Brushes, assorted sizes\n- Detergent — spray bottle labelled **Table Cleaner**\n- Sanitizer — spray bottle labelled **Sanitizing Cleaner**\n- Water spray bottles\n- Face mask, protective gloves, safety goggles\n- Cleaning log (portal, or paper backup)\n\nChemicals are used only from correctly labelled bottles. An unlabelled bottle is not used.\n\n## 5. Procedure\n\n### 5.1 Preparation\n1. Put on PPE: gloves, safety goggles, face mask.\n2. Remove all food product from the packing area.\n3. Disconnect packing equipment from power.\n4. Remove equipment from the tables, including scales.\n\n### 5.2 Initial cleaning\n5. Remove visible food residue using brushes or cloths.\n6. Dispose of residue in the appropriate waste containers.\n\n### 5.3 Wash\n7. Apply **Table Cleaner** to all surfaces and parts.\n8. Brush into crevices and hard-to-reach areas.\n9. Rinse all surfaces with clean water until no soap residue remains.\n\n### 5.4 Sanitize\n10. Apply **Sanitizing Cleaner** to all surfaces and parts, to full coverage.\n11. **Leave for a contact time of 10 minutes.** Do not wipe, rinse or reassemble early.\n    Shortening contact time invalidates the clean.\n\n### 5.5 Reassembly and inspection\n12. Air-dry, or dry with clean towels.\n13. Reassemble only once every part is completely dry.\n14. Inspect for cleanliness. Any residue means return to 5.2.\n\n### 5.6 Record\n15. Record in the cleaning log, before the line restarts:\n    date and time, area and equipment, product before, product after, whether this was an\n    allergen changeover, sanitizer contact time, who performed it.\n16. On an allergen changeover, the Packing Room Manager verifies and signs.\n\n### 5.7 Restart\n17. Reconnect power.\n18. Run a test batch with water or empty to confirm no cleaning residue carries over.\n19. Resume packing with the new product.\n\n### 5.8 End of day\n20. Repeat 5.1 to 5.7.\n21. Additionally: clean and sanitize floors and surrounding work surfaces; empty and sanitize\n    waste containers; clean and store all cleaning equipment.\n22. Verify the whole packing area is clean, sanitized and ready for the next day.\n\n## 6. Records\n\n| Record | Where | Retained |\n|---|---|---|\n| Cleaning log — changeover | Operations portal | Per retention schedule |\n| Cleaning log — end of day | Operations portal | Per retention schedule |\n\nRecords are entered as the work is done, not reconstructed at the end of a shift.\n\n## 7. If something goes wrong\n\n| Situation | Do this |\n|---|---|\n| Contact time was cut short | Do not restart. Re-sanitize with full contact time. Record what happened. |\n| Residue found after reassembly | Strip down and return to 5.2. Record it. |\n| Test batch is not clear | Do not restart. Notify the Packing Room Manager. |\n| Chemical unlabelled or missing | Stop. Notify the Packing Room Manager. Do not substitute. |\n\nAny of the above is reported to the Packing Room Manager the same shift, and to the SQF\nPractitioner the same day.\n\n---\n\n## Revision history\n\n| Version | Date | Author | Change |\n|---|---|---|---|\n| 1.0 | *(pending)* | SQF Practitioner | First controlled issue. Consolidates and supersedes `Standard_Operating_Procedure_For_Cleaning_Packing_Room.docx`, which carried no version, owner, approval or review date. Wording unchanged in substance; structure, responsibilities and record requirements made explicit. |\n",
+   "sections": [
+    "Purpose",
+    "Why this matters",
+    "Responsibilities",
+    "Materials",
+    "Procedure",
+    "Records",
+    "If something goes wrong",
+    "Revision history"
+   ],
+   "derivedDuties": [
+    "Put on PPE: gloves, safety goggles, face mask.",
+    "Remove all food product from the packing area.",
+    "Disconnect packing equipment from power.",
+    "Remove equipment from the tables, including scales.",
+    "Remove visible food residue using brushes or cloths."
+   ]
+  },
+  {
+   "code": "SOP-SLS-001",
+   "title": "Sales representative — routine and targets",
+   "version": "1.0",
+   "status": "active",
+   "pendingApproval": true,
+   "scope": "business",
+   "docType": "role_sop",
+   "department": "Sales",
+   "roles": [
+    "Sales Representative"
+   ],
+   "owner": "Sales Director",
+   "approver": null,
+   "effectiveDate": null,
+   "reviewCycle": "Annual, or on any change to targets",
+   "supersedes": "SOP_for_Sales_Team_Members.pdf",
+   "generatesRecord": null,
+   "criticalControl": false,
+   "confidential": false,
+   "sourceFile": "SOP-SLS-001.md",
+   "body": "<!-- Controlled document. The current version lives in the AFB operations\nportal. A printed copy is uncontrolled once it leaves the screen. -->\n\n# SOP-SLS-001 · Sales representative — routine and targets\n\n| Field | Value |\n|---|---|\n| Document code | `SOP-SLS-001` |\n| Version | 1.0 |\n| Status | Active — pending approval |\n| Scope | Business process. Not SQF-scoped. |\n| Department | Sales |\n| Applies to | Sales Representative |\n| Owner | Sales Director |\n| Approved by | ______________________  *(signature required before issue)* |\n| Effective date | ______________________ |\n| Review cycle | Annual, or on any change to targets |\n| Supersedes | SOP_for_Sales_Team_Members.pdf |\n| Records generated | CRM activity log (Badger) · Orders (Pepperi) · Weekly report |\n\n---\n\n## 1. Purpose\n\nTo set out what a Sales Representative does daily, weekly and monthly, and the targets the\nrole is measured against.\n\n## 2. Systems\n\nTwo systems, one job. Use both; neither is optional.\n\n| System | Used for |\n|---|---|\n| **Badger** | Customers, territory, routes, visit logging, activity tracking |\n| **Pepperi** | Product catalog, pricing, order entry, customer portal |\n\nBadger is the master record for customer information. Enter it there first; Pepperi syncs.\n\n## 3. Targets\n\n> **Reconciliation note.** The superseded version of this SOP set 30 new customers per\n> quarter. `TRN-SLS-001` sets 5 per week, which is about 65 per quarter — more than double.\n> Revenue reconciled; customer count did not. The figures below adopt the Train the Trainers\n> rate, because it is the one derived from the stated $3M to $6M business case.\n> **The Sales Director must confirm this before issue.**\n\nEverything derives from one weekly number.\n\n| Period | New customers | Sales volume |\n|---|---|---|\n| **Weekly** | 5 | $12,500 |\n| Monthly *(derived, 4 weeks)* | 20 | $50,000 |\n| Quarterly *(derived, 13 weeks)* | 65 | $162,500 |\n\nTo reach 5 new customers a week, the funnel is: 25 prospects identified → 15 discovery calls\n→ 10 proposals → 5 closed. Falling short at the end usually means falling short at the start.\n\n## 4. Daily\n\n- Visit your assigned territory.\n- Meet at least 5 clients or prospects in person.\n- Complete 10 meaningful customer touchpoints (the Daily 10 — see `TRN-SLS-001`).\n- Spend one hour prospecting, ideally first thing.\n- Log every activity in Badger the same day, not the next.\n\n## 5. Weekly\n\n- Submit your weekly report.\n- Attend the team meeting.\n- Identify 25 new qualified prospects.\n- Review your funnel against target with your Sales Team Leader.\n\n## 6. Monthly\n\n- Attend the monthly sales training session.\n- Review territory coverage: which customers have not been touched, and why.\n\n## 7. Records\n\nNothing counts unless it is logged. A visit not recorded in Badger did not happen, an order\nnot entered in Pepperi cannot be picked, and neither can be credited to you.\n\n## 8. Escalation\n\n| Raise it to | When |\n|---|---|\n| Sales Team Leader | Anything blocking your territory, targets or accounts |\n| Support team | Order, delivery, billing or service problems — see `SOP-CS-001` |\n| Sales Director | Escalated by your Team Leader, or a risk of losing a major account |\n\n---\n\n## Revision history\n\n| Version | Date | Author | Change |\n|---|---|---|---|\n| 1.0 | *(pending)* | Sales Director | First controlled issue. Consolidates and supersedes `SOP_for_Sales_Team_Members.pdf`, which carried no version, owner, approval or review date. **Targets reconciled with `TRN-SLS-001`, which previously disagreed — see section 3. Requires Sales Director sign-off.** |\n",
+   "sections": [
+    "Purpose",
+    "Systems",
+    "Targets",
+    "Daily",
+    "Weekly",
+    "Monthly",
+    "Records",
+    "Escalation",
+    "Revision history"
+   ],
+   "derivedDuties": [
+    "Visit your assigned territory.",
+    "Meet at least 5 clients or prospects in person.",
+    "Complete 10 meaningful customer touchpoints (the Daily 10 — see TRN-SLS-001).",
+    "Spend one hour prospecting, ideally first thing.",
+    "Log every activity in Badger the same day, not the next."
+   ]
+  },
+  {
+   "code": "SOP-SLS-002",
+   "title": "New Jersey sales territories",
+   "version": "1.0",
+   "status": "draft",
+   "pendingApproval": false,
+   "scope": "business",
+   "docType": "role_sop",
+   "department": "Sales",
+   "roles": [
+    "Sales Representative",
+    "Sales Team Leader — New Jersey"
+   ],
+   "owner": "Sales Team Leader — New Jersey",
+   "approver": null,
+   "effectiveDate": null,
+   "reviewCycle": "Annual, or whenever an assignment changes",
+   "supersedes": "SOP_for_New_Jersey_Sales_Territories.pdf",
+   "generatesRecord": null,
+   "criticalControl": false,
+   "confidential": false,
+   "sourceFile": "SOP-SLS-002.md",
+   "body": "<!-- Controlled document. The current version lives in the AFB operations\nportal. A printed copy is uncontrolled once it leaves the screen. -->\n\n# SOP-SLS-002 · New Jersey sales territories\n\n| Field | Value |\n|---|---|\n| Document code | `SOP-SLS-002` |\n| Version | 1.0 |\n| Status | **Draft — cannot be issued until territories are assigned to named people** |\n| Scope | Business process. Not SQF-scoped. |\n| Department | Sales |\n| Applies to | Sales Representative · Sales Team Leader — New Jersey |\n| Owner | Sales Team Leader — New Jersey |\n| Approved by | ______________________  *(signature required before issue)* |\n| Effective date | ______________________ |\n| Review cycle | Annual, or whenever an assignment changes |\n| Supersedes | SOP_for_New_Jersey_Sales_Territories.pdf |\n| Records generated | CRM territory assignment (Badger) |\n\n---\n\n## 1. Purpose\n\nTo define the New Jersey territories, who owns each, and how coverage is maintained.\n\n## 2. Territories\n\n| Territory | Assigned to | Covers |\n|---|---|---|\n| North Jersey | ______________________ | *(define — counties or ZIP ranges)* |\n| Central Jersey | ______________________ | *(define)* |\n| South Jersey | ______________________ | *(define)* |\n| Jersey Shore | ______________________ | *(define)* |\n| Western NJ | ______________________ | *(define)* |\n\n> The superseded document assigned these to \"Sales Rep 1\" through \"Sales Rep 5\". Placeholders\n> are not assignments. Until real names and boundaries are entered, this document stays in\n> draft and is not issued to the team.\n\nBoundaries matter as much as names. Two reps calling the same grocer is worse than neither\ncalling.\n\n## 3. Expectations within a territory\n\n- Visit your assigned territory daily.\n- Build and maintain relationships with local retailers and distributors.\n- Meet the targets in `SOP-SLS-001`.\n- Keep Badger's territory assignment accurate — routing depends on it.\n\n## 4. Coverage gaps\n\nReview territory coverage monthly. Any customer not touched in 30 days is flagged and either\nvisited or reassigned. An account nobody has called in a quarter is not a customer, it is a\nprospect a competitor is working.\n\n## 5. Records\n\nTerritory assignment lives in Badger and is the single source of truth. Changes are made\nthere, then reflected here at the next revision.\n\n## 6. Escalation\n\nIssues, disputes over account ownership, or coverage that cannot be met go to the\n**Sales Team Leader — New Jersey**, then to the Sales Director.\n\n---\n\n## Revision history\n\n| Version | Date | Author | Change |\n|---|---|---|---|\n| 1.0 | *(pending)* | Sales Team Leader — New Jersey | First controlled issue. Consolidates and supersedes `SOP_for_New_Jersey_Sales_Territories.pdf`, which carried no version, owner, approval or review date. Placeholder assignments (\\\"Sales Rep 1\\\" to \\\"Sales Rep 5\\\") retained as blanks rather than invented. Document held in draft until filled. |\n",
+   "sections": [
+    "Purpose",
+    "Territories",
+    "Expectations within a territory",
+    "Coverage gaps",
+    "Records",
+    "Escalation",
+    "Revision history"
+   ],
+   "derivedDuties": []
+  },
+  {
+   "code": "SOP-SLS-003",
+   "title": "Sales Director",
+   "version": "1.0",
+   "status": "active",
+   "pendingApproval": true,
+   "scope": "business",
+   "docType": "role_sop",
+   "department": "Sales",
+   "roles": [
+    "Sales Director"
+   ],
+   "owner": "Senior management",
+   "approver": null,
+   "effectiveDate": null,
+   "reviewCycle": "Annual",
+   "supersedes": "SOP_for_Sales_Director.pdf",
+   "generatesRecord": null,
+   "criticalControl": false,
+   "confidential": false,
+   "sourceFile": "SOP-SLS-003.md",
+   "body": "<!-- Controlled document. The current version lives in the AFB operations\nportal. A printed copy is uncontrolled once it leaves the screen. -->\n\n# SOP-SLS-003 · Sales Director\n\n| Field | Value |\n|---|---|\n| Document code | `SOP-SLS-003` |\n| Version | 1.0 |\n| Status | Active — pending approval |\n| Scope | Business process. Not SQF-scoped. |\n| Department | Sales |\n| Applies to | Sales Director |\n| Owner | Senior management |\n| Approved by | ______________________  *(signature required before issue)* |\n| Effective date | ______________________ |\n| Review cycle | Annual |\n| Supersedes | SOP_for_Sales_Director.pdf |\n| Records generated | Monthly performance report · Quarterly development update |\n\n---\n\n## 1. Purpose\n\nTo define the responsibilities, reporting and escalation of the Sales Director.\n\n## 2. Scope of the role\n\nSales operations across **NYC, New Jersey and surrounding areas**.\n\n## 3. Responsibilities\n\n1. Develop and implement sales strategy against company goals.\n2. Monitor and evaluate the performance of Sales Team Leaders and their teams.\n3. Meet Sales Team Leaders regularly to review progress and address obstacles.\n4. Align sales and promotional effort with marketing.\n5. Approve budgets and resource allocation for sales activity.\n6. Ensure compliance with company policy and industry regulation.\n7. Own the targets in `SOP-SLS-001` — including approving any change to them.\n\n## 4. Where this role sits\n\n```\nSenior management\n      ↑\nSales Director  ────────────────┐\n      ↑                         │\nSales Team Leaders              │  (in-house sales and customer\n      ↑                         │   support escalate via SOP-CS-001)\nSales Representatives           │\n                                ↓\n                        Support team managers\n```\n\n## 5. Reporting\n\n| What | To whom | When |\n|---|---|---|\n| Sales performance report | Senior management | Monthly |\n| Team development and market expansion update | Senior management | Quarterly |\n| Critical issues or risks | Senior management | Immediately |\n\n## 6. Guidelines\n\n- Keep communication open with Sales Team Leaders; provide guidance rather than waiting to be\n  asked.\n- Use Badger and Pepperi reporting for overall performance rather than assembled spreadsheets.\n- Address issues escalated by Sales Team Leaders promptly, and close the loop with the person\n  who raised them.\n\n## 7. Escalation\n\nCritical issues or risks go to senior management immediately, not in the next monthly report.\n\n---\n\n## Revision history\n\n| Version | Date | Author | Change |\n|---|---|---|---|\n| 1.0 | *(pending)* | Senior management | First controlled issue. Consolidates and supersedes `SOP_for_Sales_Director.pdf`, which carried no version, owner, approval or review date. Reporting lines aligned with `SOP-SLS-001`, `SOP-SLS-002` and `SOP-CS-001`. |\n",
+   "sections": [
+    "Purpose",
+    "Scope of the role",
+    "Responsibilities",
+    "Where this role sits",
+    "Reporting",
+    "Guidelines",
+    "Escalation",
+    "Revision history"
+   ],
+   "derivedDuties": [
+    "Develop and implement sales strategy against company goals.",
+    "Monitor and evaluate the performance of Sales Team Leaders and their teams.",
+    "Meet Sales Team Leaders regularly to review progress and address obstacles.",
+    "Align sales and promotional effort with marketing.",
+    "Approve budgets and resource allocation for sales activity."
+   ]
+  },
+  {
+   "code": "TRN-SLS-001",
+   "title": "Sales training and certification program",
+   "version": "2.0",
+   "status": "active",
+   "pendingApproval": true,
+   "scope": "business",
+   "docType": "training_program",
+   "department": "Sales",
+   "roles": [
+    "Sales Director",
+    "Sales Representative",
+    "Customer Service Representative"
+   ],
+   "owner": "Sales Director",
+   "approver": null,
+   "effectiveDate": null,
+   "reviewCycle": "Quarterly review of content, annual full refresh",
+   "supersedes": "Train_The_Trainers_Guide.docx v1.0",
+   "generatesRecord": null,
+   "criticalControl": false,
+   "confidential": true,
+   "sourceFile": "TRN-SLS-001.md",
+   "body": "<!-- Controlled document. The current version lives in the AFB operations\nportal. A printed copy is uncontrolled once it leaves the screen. -->\n\n# TRN-SLS-001 · Sales training and certification program\n\n| Field | Value |\n|---|---|\n| Document code | `TRN-SLS-001` |\n| Version | 2.0 |\n| Status | Active — pending approval |\n| Scope | Business process. Not SQF-scoped. **Confidential — internal use only.** |\n| Department | Sales |\n| Applies to | Sales Director · Sales Representative · Customer Service Representative |\n| Owner | Sales Director |\n| Approved by | ______________________  *(signature required before issue)* |\n| Effective date | ______________________ |\n| Review cycle | Quarterly review of content, annual full refresh |\n| Supersedes | Train_The_Trainers_Guide.docx v1.0 |\n| Records generated | Training record per person, per module, with score and expiry |\n\n---\n\n## 1. Purpose\n\nTo define how sales staff are trained, assessed, certified and re-certified — and what\nrecords that produces.\n\n> The superseded guide runs to about forty pages and mixes three things: the commitments\n> (targets, pass marks, certification rules), the curriculum, and facilitation notes for\n> trainers. Only the commitments belong in a controlled document, because only they get\n> audited and only they need version control. The curriculum and facilitation notes continue\n> as **Trainer Annex A**, uncontrolled and free to change between sessions.\n\n## 2. Business case\n\n| | |\n|---|---|\n| Current annual volume | $3M |\n| Target annual volume | $6M |\n| Route | 5 new customers per rep per week, systematically prospected |\n\nThis is the source of the target in `SOP-SLS-001`. If this number changes, that SOP changes\nwith it.\n\n## 3. Cascade structure\n\n| Tier | Who | How many | Certified in |\n|---|---|---|---|\n| 1 | Master trainers | 2–3 | Weeks 1–2 |\n| 2 | Regional trainers | 9 | Weeks 3–4 |\n| 3 | Sales representatives | 27+ | Weeks 5–8 |\n\nEach tier certifies the one below it. A trainer may not train a tier until certified.\n\n## 4. Competency areas\n\n1. Platform mastery — Badger and Pepperi\n2. Customer engagement — the Daily 10, visits, merchandising audits\n3. Prospecting — qualification, discovery, closing\n4. Product knowledge and positioning\n5. Support team collaboration\n\n## 5. Certification\n\n### Stage 1 — Knowledge\n| Assessment | Pass mark |\n|---|---|\n| Badger platform exam | 90% |\n| Pepperi platform exam | 90% |\n| Sales strategy assessment | 85% |\n\n### Stage 2 — Skills\n| Assessment | Pass mark |\n|---|---|\n| Badger skills demonstration | 90% |\n| Pepperi skills demonstration | 90% |\n| Role-play scenarios (3) | 72% average |\n\n### Stage 3 — Field\n| Assessment | Requirement |\n|---|---|\n| Observed customer visits | 3 visits, 85% average |\n| Daily 10 | 5 consecutive days, logged in Badger |\n| New customers closed | 1–2, prospecting through to close |\n\n**Retakes:** two per stage. After a second failure, the participant, their manager and a\nmaster trainer review whether further coaching, a different role, or an external obstacle is\nthe right answer.\n\n## 6. Maintaining certification\n\n| Check | Frequency |\n|---|---|\n| Competency spot-check | Quarterly |\n| Recertification | Annual |\n\nMinimum standing to remain certified:\n\n- 5 new customers per week, averaged\n- Daily 10 achieved on 80% or more of working days\n- 95%+ daily platform usage\n- Customer satisfaction 4.5 / 5 or better\n\n## 7. Records\n\nEvery assessment produces a training record: person, module, score, pass mark, outcome,\nassessor, date, expiry. Certification expires twelve months from the date of the last passing\nStage 3 assessment, and the holder and their manager are alerted 60 days ahead.\n\n## 8. Definitions\n\n| Term | Meaning |\n|---|---|\n| **Daily 10** | Ten meaningful customer touchpoints per day. Mass email, voicemail without a conversation, and generic social likes do not count. |\n| **BANT** | Budget, Authority, Need, Timing — prospect qualification. |\n| **SPIN** | Situation, Problem, Implication, Need-payoff — discovery questioning. |\n| **ICP** | Ideal customer profile. |\n| **Badger** | CRM: customers, territory, routes, activity. |\n| **Pepperi** | Orders: catalog, pricing, order entry, customer portal. |\n\n---\n\n## Revision history\n\n| Version | Date | Author | Change |\n|---|---|---|---|\n| 1.0 | *(pending)* | Sales Director | First controlled issue. Consolidates and supersedes `Train_The_Trainers_Guide.docx v1.0`, which carried no version, owner, approval or review date. Reduced from a 40-page guide to the parts that are auditable commitments. Full facilitation content retained as a separate trainer annex. Targets now match `SOP-SLS-001`. |\n",
+   "sections": [
+    "Purpose",
+    "Business case",
+    "Cascade structure",
+    "Competency areas",
+    "Certification",
+    "Maintaining certification",
+    "Records",
+    "Definitions",
+    "Revision history"
+   ],
+   "derivedDuties": []
+  }
+ ],
+ "openItems": {
+  "awaitingControlFields": [
+   {
+    "code": "SOP-CS-001",
+    "missing": [
+     "approver",
+     "effective date"
+    ]
+   },
+   {
+    "code": "SOP-PKG-001",
+    "missing": [
+     "approver",
+     "effective date"
+    ]
+   },
+   {
+    "code": "SOP-SLS-001",
+    "missing": [
+     "approver",
+     "effective date"
+    ]
+   },
+   {
+    "code": "SOP-SLS-002",
+    "missing": [
+     "approver",
+     "effective date"
+    ]
+   },
+   {
+    "code": "SOP-SLS-003",
+    "missing": [
+     "approver",
+     "effective date"
+    ]
+   },
+   {
+    "code": "TRN-SLS-001",
+    "missing": [
+     "approver",
+     "effective date"
+    ]
+   }
+  ],
+  "awaitingDecision": [
+   {
+    "code": "SOP-SLS-001",
+    "item": "New customer target reconciled to 5/week (65/quarter) from the previous 30/quarter. Sales Director must confirm."
+   },
+   {
+    "code": "SOP-SLS-002",
+    "item": "Five NJ territories have no named owner and no defined boundaries. Held in draft."
+   }
+  ]
+ }
+}

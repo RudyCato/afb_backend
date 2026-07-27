@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="retail">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Careers — American Food &amp; Beverage</title>
+<meta name="description" content="Open roles at American Food & Beverage in Paterson, NJ: warehouse, packing, CDL drivers, customer service, accounting and sales. Apply from your phone in two minutes.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .joblist{display:grid;gap:1rem;margin-top:1.5rem}
+  .job{
+    border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);
+    padding:1.1rem 1.25rem;
+  }
+  .job-head{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:baseline}
+  .job-head h3{margin:0;font-size:1.2rem}
+  .job .pay{
+    font-family:"IBM Plex Mono",monospace;font-size:.85rem;color:var(--terra-deep);
+    margin-left:auto;white-space:nowrap;font-weight:500;
+  }
+  .job .tags{
+    font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-faint);margin:.4rem 0 .7rem;
+  }
+  .job p.sum{margin:0 0 .9rem;color:var(--ink-soft);font-size:.95rem}
+  .job details{margin-bottom:.9rem}
+  .job details summary{
+    cursor:pointer;font-family:"IBM Plex Mono",monospace;font-size:.7rem;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);
+  }
+  .job details ul{margin:.7rem 0 0;padding-left:1.1rem;font-size:.92rem;color:var(--ink-soft)}
+  .job details li{margin-bottom:.3rem}
+  .job details h4{margin:.9rem 0 0;font-family:"Karla",sans-serif;font-size:.85rem}
+  .langbar{display:flex;gap:.4rem;margin-bottom:1rem}
+  #applyPanel{scroll-margin-top:90px}
+  .req{color:var(--terra-deep)}
+  .checkrow{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.8rem}
+  .checkrow input{width:1.15rem;height:1.15rem;margin-top:.15rem;flex:0 0 auto}
+  .checkrow label{
+    font-family:"Karla",sans-serif;font-size:.92rem;text-transform:none;
+    letter-spacing:0;color:var(--ink);margin:0;
+  }
+  .filehint{font-family:"IBM Plex Mono",monospace;font-size:.66rem;color:var(--ink-faint);margin-top:.35rem}
+  @media(max-width:640px){ .job .pay{margin-left:0;width:100%} }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main" class="shell">
+
+  <section class="hero" style="padding-block:clamp(2.5rem,6vw,4rem) 1rem">
+    <span class="eyebrow">Careers &middot; Paterson, New Jersey</span>
+    <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);max-width:20ch" data-t="h1">Everything we sell, we pack ourselves.</h1>
+    <p class="lede" data-t="lede">Sixty thousand square feet, our own trucks, and about 370 products that
+    get roasted, blended and packed under this roof. If you'd rather work somewhere that makes
+    something than somewhere that just moves boxes, read on.</p>
+    <div class="langbar">
+      <button class="chip" type="button" data-lang="en" aria-pressed="true">English</button>
+      <button class="chip" type="button" data-lang="es" aria-pressed="false">Español</button>
+    </div>
+  </section>
+
+  <section class="band" style="border-top:1px solid var(--rule);padding-block:2rem">
+    <span class="eyebrow" data-t="openroles">Open roles</span>
+    <div class="joblist" id="jobs"></div>
+    <p class="count" style="margin-top:1.25rem" data-t="nofit">Don't see your role? Apply anyway
+    and tell us what you do &mdash; we hire ahead of the posting more often than not.</p>
+  </section>
+
+  <section class="band" id="applyPanel" style="border-top:1px solid var(--rule)">
+    <span class="eyebrow" data-t="applyeyebrow">Application</span>
+    <h2 data-t="applyh2">Two minutes, from your phone</h2>
+    <p style="color:var(--ink-soft)" data-t="applysub">No account, no login. A resume helps but
+    isn't required &mdash; tell us what you've done and we'll follow up.</p>
+
+    <div class="panel" style="margin-top:1.25rem">
+      <form id="applyForm" novalidate>
+        <div class="field">
+          <label for="role" data-t="l_role">Role you're applying for <span class="req">*</span></label>
+          <select id="role" name="role" required></select>
+        </div>
+
+        <div class="formgrid">
+          <div class="field"><label for="full_name" data-t="l_name">Full name <span class="req">*</span></label>
+            <input id="full_name" name="full_name" type="text" autocomplete="name" required></div>
+          <div class="field"><label for="phone" data-t="l_phone">Phone <span class="req">*</span></label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required></div>
+          <div class="field"><label for="email" data-t="l_email">Email <span class="req">*</span></label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required></div>
+          <div class="field"><label for="city" data-t="l_city">Town you live in</label>
+            <input id="city" name="city" type="text" autocomplete="address-level2"></div>
+          <div class="field"><label for="earliest_start" data-t="l_start">Earliest you could start</label>
+            <input id="earliest_start" name="earliest_start" type="text" placeholder="Right away, two weeks…"></div>
+          <div class="field"><label for="shift_preference" data-t="l_shift">Shift preference</label>
+            <select id="shift_preference" name="shift_preference">
+              <option value="">No preference</option>
+              <option>1st shift</option><option>2nd shift</option><option>Either</option>
+            </select></div>
+        </div>
+
+        <div id="driverFields" hidden>
+          <div class="formgrid">
+            <div class="field"><label for="cdl_class" data-t="l_cdl">CDL class</label>
+              <select id="cdl_class" name="cdl_class">
+                <option value="">Select</option><option>Class A</option><option>Class B</option>
+                <option>Class C</option><option>None yet</option>
+              </select></div>
+            <div class="field" style="display:flex;align-items:flex-end">
+              <div class="checkrow" style="margin:0">
+                <input type="checkbox" id="clean_license" name="clean_license">
+                <label for="clean_license" data-t="l_clean">Clean driving record</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="experience" data-t="l_exp">What have you done before?</label>
+          <textarea id="experience" name="experience" data-ph="ph_exp"
+            placeholder="Where you've worked, what you did, anything you're good at. A few lines is fine."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="resume" data-t="l_resume">Resume (optional)</label>
+          <input id="resume" name="resume" type="file"
+                 accept=".pdf,.doc,.docx,.rtf,.txt,.jpg,.jpeg,.png,.heic">
+          <div class="filehint" data-t="l_resumehint">PDF, Word, or a photo of a printed resume. Up to 5 MB.</div>
+        </div>
+
+        <div class="field">
+          <label for="referred_by" data-t="l_ref">Did someone here refer you?</label>
+          <input id="referred_by" name="referred_by" type="text" data-ph="ph_ref" placeholder="Their name">
+        </div>
+
+        <div style="margin:1.25rem 0">
+          <div class="checkrow">
+            <input type="checkbox" id="authorized_to_work" name="authorized_to_work" required>
+            <label for="authorized_to_work" data-t="l_auth">I am legally authorized to work in the United States <span class="req">*</span></label>
+          </div>
+          <div class="checkrow">
+            <input type="checkbox" id="over_18" name="over_18" required>
+            <label for="over_18" data-t="l_18">I am 18 or older <span class="req">*</span></label>
+          </div>
+        </div>
+
+        <button class="btn" type="submit" id="submitBtn" data-t="l_submit">Send application</button>
+        <p class="count" style="margin-top:.75rem" id="formErr" role="alert"></p>
+        <p class="count" style="margin-top:1rem" data-t="l_privacy">We use what you send here to
+        consider you for work and nothing else. We don't sell it or share it outside the company.</p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer data-footer></footer>
+
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  // AFB_API prefixes API CALLS ONLY. Static data files sit next to this page —
+  // prefixing them breaks the moment the site and API are on separate origins.
+  var API = window.AFB_API || "";
+  var JOBS = [], META = {}, LANG = "en";
+
+  var T = {
+    es: {
+      h1: "Todo lo que vendemos, lo empacamos nosotros.",
+      lede: "Sesenta mil pies cuadrados, nuestros propios camiones y unos 370 productos que se tuestan, mezclan y empacan bajo este techo. Si prefiere trabajar donde se fabrica algo en vez de solo mover cajas, siga leyendo.",
+      openroles: "Puestos disponibles",
+      nofit: "¿No ve su puesto? Postúlese de todas formas y díganos qué hace — muchas veces contratamos antes de publicar.",
+      applyeyebrow: "Solicitud",
+      applyh2: "Dos minutos, desde su teléfono",
+      applysub: "Sin cuenta, sin contraseña. El currículum ayuda pero no es obligatorio — cuéntenos su experiencia y nos comunicaremos.",
+      l_role: "Puesto que solicita *", l_name: "Nombre completo *", l_phone: "Teléfono *",
+      l_email: "Correo electrónico *", l_city: "Ciudad donde vive",
+      l_start: "¿Cuándo podría empezar?", l_shift: "Turno preferido",
+      l_cdl: "Clase de CDL", l_clean: "Récord de manejo limpio",
+      l_exp: "¿Qué ha hecho antes?",
+      ph_exp: "Dónde ha trabajado, qué hacía, en qué es bueno. Unas líneas bastan.",
+      l_resume: "Currículum (opcional)",
+      l_resumehint: "PDF, Word o una foto de un currículum impreso. Hasta 5 MB.",
+      l_ref: "¿Alguien de aquí lo recomendó?", ph_ref: "Su nombre",
+      l_auth: "Tengo autorización legal para trabajar en los Estados Unidos *",
+      l_18: "Tengo 18 años o más *",
+      l_submit: "Enviar solicitud",
+      l_privacy: "Usamos esta información solo para considerarlo para un empleo. No la vendemos ni la compartimos fuera de la empresa.",
+      benefits: "Beneficios", does: "Qué hará", needs: "Qué necesita",
+      sending: "Enviando…",
+      ok_h: "Solicitud recibida",
+      ok_p: "Le enviamos una confirmación por correo. Si su perfil encaja, nos comunicaremos con usted.",
+      err_required: "Complete los campos marcados con *",
+      err_send: "No se pudo enviar. Intente de nuevo o llame al (908) 345-6345."
+    },
+    en: {
+      benefits: "Benefits", does: "What you'll do", needs: "What you need",
+      sending: "Sending…",
+      ok_h: "Application received",
+      ok_p: "We've emailed you a confirmation. If it looks like a fit, someone will reach out.",
+      err_required: "Fill in the fields marked *",
+      err_send: "That didn't send. Try again, or call (908) 345-6345."
+    }
+  };
+
+  function t(k, fallback){ return (T[LANG] && T[LANG][k]) || fallback; }
+
+  function money(n, unit){
+    return unit === "year"
+      ? "$" + n.toLocaleString("en-US") + "/yr"
+      : "$" + n.toFixed(2) + "/hr";
+  }
+
+  (window.AFB_JOBS ? Promise.resolve(window.AFB_JOBS)
+                   : fetch("jobs.json").then(function(r){ return r.json(); })
+  ).then(function(d){
+    JOBS = d.jobs; META = d;
+    renderJobs(); renderRoleOptions();
+    var pre = new URLSearchParams(location.search).get("role");
+    if (pre) { document.getElementById("role").value = pre; toggleDriver(); }
+  }).catch(function(){
+    document.getElementById("jobs").innerHTML =
+      '<div class="notice"><p>Openings couldn\'t load. Call (908) 345-6345 and ask what\'s available.</p></div>';
+  });
+
+  function renderJobs(){
+    document.getElementById("jobs").innerHTML = JOBS.map(function(j){
+      return '<article class="job">' +
+        '<div class="job-head"><h3>'+esc(j.title)+'</h3>' +
+          '<span class="pay">'+money(j.payMin,j.payUnit)+' – '+money(j.payMax,j.payUnit)+'</span></div>' +
+        '<div class="tags">'+esc(j.department)+' &middot; '+esc(j.type)+' &middot; '+esc(j.shift)+'</div>' +
+        '<p class="sum">'+esc(j.summary)+'</p>' +
+        '<details><summary>'+t("does","What you\'ll do")+' / '+t("needs","what you need")+'</summary>' +
+          '<h4>'+t("does","What you\'ll do")+'</h4><ul>' +
+          j.does.map(function(x){ return "<li>"+esc(x)+"</li>"; }).join("") + '</ul>' +
+          '<h4>'+t("needs","What you need")+'</h4><ul>' +
+          j.needs.map(function(x){ return "<li>"+esc(x)+"</li>"; }).join("") + '</ul>' +
+          '<h4>'+t("benefits","Benefits")+'</h4>' +
+          '<ul><li>'+esc(META.benefits||"")+'</li>' +
+          '<li>'+esc(j.extraComp || META.otherCompensation || "")+'</li></ul>' +
+        '</details>' +
+        '<button class="btn small" type="button" data-apply="'+j.title+'" data-id="'+j.id+'">Apply</button>' +
+      '</article>';
+    }).join("");
+  }
+
+  function renderRoleOptions(){
+    document.getElementById("role").innerHTML =
+      JOBS.map(function(j){ return '<option value="'+esc(j.title)+'">'+esc(j.title)+'</option>'; }).join("") +
+      '<option value="General application">General application — tell us what you do</option>';
+  }
+
+  function toggleDriver(){
+    var v = document.getElementById("role").value.toLowerCase();
+    document.getElementById("driverFields").hidden = v.indexOf("driver") < 0;
+  }
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-apply]");
+    if (b){
+      document.getElementById("role").value = b.dataset.apply;
+      toggleDriver();
+      document.getElementById("applyPanel").scrollIntoView({behavior:"smooth"});
+      setTimeout(function(){ document.getElementById("full_name").focus(); }, 400);
+    }
+    var l = e.target.closest("[data-lang]");
+    if (l){ setLang(l.dataset.lang); }
+  });
+
+  document.getElementById("role").addEventListener("change", toggleDriver);
+
+  function setLang(lang){
+    LANG = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-lang]").forEach(function(b){
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    });
+    document.querySelectorAll("[data-t]").forEach(function(el){
+      var v = T[lang] && T[lang][el.dataset.t];
+      if (v) { el.textContent = v; el.innerHTML = v.replace(/\*/g, '<span class="req">*</span>'); }
+    });
+    document.querySelectorAll("[data-ph]").forEach(function(el){
+      var v = T[lang] && T[lang][el.dataset.ph];
+      if (v) el.placeholder = v;
+    });
+    if (lang === "en") location.reload();
+    else renderJobs();
+  }
+
+  document.getElementById("applyForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var form = this, err = document.getElementById("formErr"), btn = document.getElementById("submitBtn");
+
+    var missing = Array.prototype.filter.call(form.querySelectorAll("[required]"), function(i){
+      return i.type === "checkbox" ? !i.checked : !i.value.trim();
+    });
+    if (missing.length){
+      err.style.color = "var(--terra-deep)";
+      err.textContent = t("err_required", "Fill in the fields marked *");
+      missing[0].focus();
+      return;
+    }
+
+    var fd = new FormData();
+    ["role","full_name","email","phone","city","earliest_start","shift_preference",
+     "cdl_class","experience","referred_by"].forEach(function(k){
+      var el = document.getElementById(k);
+      fd.append(k, el ? el.value : "");
+    });
+    fd.append("authorized_to_work", document.getElementById("authorized_to_work").checked);
+    fd.append("over_18", document.getElementById("over_18").checked);
+    fd.append("clean_license", document.getElementById("clean_license").checked);
+    fd.append("language", LANG);
+    var f = document.getElementById("resume").files[0];
+    if (f) fd.append("resume", f);
+
+    btn.disabled = true; btn.textContent = t("sending","Sending…"); err.textContent = "";
+
+    (window.AFB_DEMO
+      ? new Promise(function(res){ setTimeout(function(){ res({ ok:true, json:function(){ return Promise.resolve({ok:true}); } }); }, 600); })
+      : fetch(API + "/api/applications", { method: "POST", body: fd })
+    )
+      .then(function(r){ if (!r.ok) return r.json().then(function(j){ throw new Error(j.detail || r.status); }); return r.json(); })
+      .then(function(){
+        form.parentElement.innerHTML =
+          '<h3 style="margin-bottom:.4em">'+t("ok_h","Application received")+'</h3>' +
+          '<p>'+t("ok_p","We\'ve emailed you a confirmation. If it looks like a fit, someone will reach out.")+'</p>';
+        window.scrollTo({ top: document.getElementById("applyPanel").offsetTop - 80, behavior: "smooth" });
+      })
+      .catch(function(ex){
+        btn.disabled = false; btn.textContent = t("l_submit","Send application");
+        err.style.color = "var(--terra-deep)";
+        err.textContent = (ex.message && ex.message.length < 120 ? ex.message + " " : "") +
+                          t("err_send","That didn't send. Try again, or call (908) 345-6345.");
+      });
+  });
+
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+})();
+</script>
+</body>
+</html>

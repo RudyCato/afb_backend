@@ -12,6 +12,8 @@ from .database import Base
 class OrderStatus(str, enum.Enum):
     received = "received"
     confirmed = "confirmed"
+    on_hold = "on_hold"
+    picking = "picking"
     packing = "packing"
     packed = "packed"
     out_for_delivery = "out_for_delivery"
@@ -65,6 +67,77 @@ class Customer(Base):
 class ProductType(str, enum.Enum):
     sellable = "sellable"
     indirect_material = "indirect_material"
+    raw_material = "raw_material"
+
+
+class OrderTaskType(str, enum.Enum):
+    picking = "picking"                                 # warehouse manager: pull raw bulk + packaging materials
+    raw_material_packaging = "raw_material_packaging"    # packer: fill containers from bulk
+    labeling = "labeling"                                # packer: apply labels
+    boxing = "boxing"                                    # packer: box for shipment
+
+
+class OrderTaskStatus(str, enum.Enum):
+    assigned = "assigned"
+    in_progress = "in_progress"
+    completed = "completed"
+
+
+class OrderTask(Base):
+    """
+    One granular, timed step in fulfilling a specific order — picking, then
+    raw material packaging, labeling, and boxing. Each step is independently
+    assignable/reassignable to a packer or helper, and timed for end-of-day
+    production reporting.
+    """
+    __tablename__ = "order_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    task_type = Column(Enum(OrderTaskType), nullable=False)
+    assigned_to = Column(String, nullable=False)
+    assigned_by = Column(String, nullable=True)
+    status = Column(Enum(OrderTaskStatus), default=OrderTaskStatus.assigned)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    duration_minutes = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    order = relationship("Order")
+
+
+class MixRecipe(Base):
+    """
+    Defines the ingredient composition of a mix/blended product (e.g. a
+    granola or trail mix), so required ingredient amounts can be computed
+    from an order quantity (e.g. 1 case of Crispy Granola -> 33 lbs -> broken
+    down into lbs of each ingredient).
+    """
+    __tablename__ = "mix_recipes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), unique=True, nullable=False)
+    unit_weight_lb = Column(Float, nullable=False)   # total weight per sellable unit (e.g. per case)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    product = relationship("Product", foreign_keys=[product_id])
+    ingredients = relationship("MixIngredient", back_populates="recipe", cascade="all, delete-orphan")
+
+
+class MixIngredient(Base):
+    __tablename__ = "mix_ingredients"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_id = Column(Integer, ForeignKey("mix_recipes.id"), nullable=False)
+    ingredient_name = Column(String, nullable=False)
+    ingredient_product_id = Column(Integer, ForeignKey("products.id"), nullable=True)  # optional link to tracked raw material stock
+    percentage = Column(Float, nullable=False)   # % of total mix weight
+
+    recipe = relationship("MixRecipe", back_populates="ingredients")
+    ingredient_product = relationship("Product", foreign_keys=[ingredient_product_id])
 
 
 class Product(Base):

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="retail">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Product — American Food &amp; Beverage</title>
+<meta name="description" content="Product detail, packaging format, case pack and certifications.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main" class="shell">
+  <p class="count" style="padding-top:1.5rem"><a href="shop.html">&larr; Back to the catalog</a></p>
+  <div id="pdp"></div>
+  <div id="related"></div>
+</main>
+
+<footer data-footer></footer>
+
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  var item = new URLSearchParams(location.search).get("item");
+  var P = null;
+
+  AFB.catalog().then(function(data){
+    P = data.products.filter(function(p){ return p.item === item; })[0];
+    if (!P){
+      document.getElementById("pdp").innerHTML =
+        '<div class="empty"><h3>That item number isn\'t in the catalog</h3>' +
+        '<p>It may have been discontinued or repacked. Search the catalog, or ask us directly.</p>' +
+        '<a class="btn ghost" href="shop.html">Back to the catalog</a></div>';
+      return;
+    }
+    document.title = P.name + " — American Food & Beverage";
+    render();
+    document.addEventListener("afb:mode", render);
+    related(data.products);
+  });
+
+  function render(){
+    var mode = AFB.getMode();
+    var el = document.getElementById("pdp");
+    el.innerHTML =
+      '<div class="pdp">' +
+        '<div class="pdp-visual"><span class="glyph" aria-hidden="true">'+AFB.glyph(P.category)+'</span></div>' +
+        '<div>' +
+          '<span class="eyebrow">'+esc(P.category)+' &middot; '+esc(P.format)+'</span>' +
+          '<h1>'+esc(P.name)+'</h1>' +
+          '<p style="color:var(--ink-soft)">'+esc(P.blurb)+'</p>' +
+          '<div style="margin:.75rem 0 1.25rem">' +
+            (P.organic ? '<span class="flag organic">USDA Organic</span>' : '') +
+            '<span class="flag kosher">OU Kosher</span>' +
+            '<span class="flag kosher">SQF facility</span>' +
+          '</div>' +
+          (mode === "retail" ? retailBlock() : wholesaleBlock()) +
+          specs(mode) +
+        '</div>' +
+      '</div>';
+    wire(mode);
+  }
+
+  function retailBlock(){
+    return '<div class="price">'+AFB.money(P.price)+'</div>' +
+      '<div class="per">'+P.unitOz+' oz container &middot; '+
+        AFB.money(P.price / P.unitOz)+' per oz</div>' +
+      '<div class="buyrow">' +
+        '<label for="qty" class="skip">Quantity</label>' +
+        '<input type="text" inputmode="numeric" id="qty" value="1" aria-label="Quantity">' +
+        '<button class="btn" type="button" id="addcart">Add to cart</button>' +
+      '</div>' +
+      '<p class="count">Ships from Paterson, NJ. Orders in by 2pm go out the same day.</p>';
+  }
+
+  function wholesaleBlock(){
+    return '<div class="notice"><p><b>Pricing is set per account.</b> Case cost depends on volume, ' +
+      'delivery frequency and whether you\'re taking it in our label or yours. ' +
+      'Add it to a quote and we\'ll come back with a number and a lead time.</p></div>' +
+      '<div class="buyrow">' +
+        '<label for="cases" class="skip">Cases</label>' +
+        '<input type="text" inputmode="numeric" id="cases" value="1" aria-label="Number of cases">' +
+        '<button class="btn" type="button" id="addquote">Add to quote</button>' +
+        '<a class="btn ghost" href="quote.html">Request pricing access</a>' +
+      '</div>';
+  }
+
+  function specs(mode){
+    var open = mode === "wholesale" ? " open" : "";
+    return '<details class="specs"'+open+'>' +
+      '<summary>Wholesale specs</summary>' +
+      '<div class="inner"><dl class="spec">' +
+        '<dt>Item #</dt><dd>'+P.item+'</dd>' +
+        '<dt>Case qty</dt><dd>'+P.caseQty+' units</dd>' +
+        '<dt>Unit weight</dt><dd>'+P.unitOz+' oz</dd>' +
+        '<dt>Case weight</dt><dd>'+(P.caseWeightOz/16).toFixed(2)+' lb</dd>' +
+        '<dt>Packaging</dt><dd>'+esc(P.format)+'</dd>' +
+        '<dt>Category</dt><dd>'+esc(P.category)+'</dd>' +
+        '<dt>Organic</dt><dd>'+(P.organic ? "Certified USDA Organic" : "Conventional")+'</dd>' +
+        '<dt>Kosher</dt><dd>OU certified</dd>' +
+        '<dt>Facility</dt><dd>SQF certified, Paterson NJ</dd>' +
+        '<dt>Private label</dt><dd>Available &mdash; <a href="private-label.html">see options</a></dd>' +
+      '</dl></div></details>';
+  }
+
+  function wire(mode){
+    var b = document.getElementById(mode === "retail" ? "addcart" : "addquote");
+    if (!b) return;
+    b.addEventListener("click", function(){
+      var input = document.getElementById(mode === "retail" ? "qty" : "cases");
+      var n = Math.max(1, parseInt(input.value, 10) || 1);
+      if (mode === "retail") AFB.addToCart(P.item, n); else AFB.addToQuote(P.item, n);
+      b.textContent = mode === "retail" ? "Added to cart" : "Added to quote";
+      setTimeout(function(){ b.textContent = mode === "retail" ? "Add to cart" : "Add to quote"; }, 1200);
+    });
+  }
+
+  function related(all){
+    var near = all.filter(function(p){
+      return p.category === P.category && p.item !== P.item;
+    }).slice(0,4);
+    if (!near.length) return;
+    var html = '<section class="band"><span class="eyebrow">Also in '+esc(P.category)+'</span>' +
+      '<div class="grid">' + near.map(function(p){
+        return '<article class="card">' +
+          '<a class="thumb" href="product.html?item='+encodeURIComponent(p.item)+'">' +
+          '<span class="glyph" aria-hidden="true">'+AFB.glyph(p.category)+'</span></a>' +
+          '<div class="body"><h3><a href="product.html?item='+encodeURIComponent(p.item)+'">'+esc(p.name)+'</a></h3>' +
+          '<div class="meta">'+p.unitOz+' oz &middot; '+esc(p.format)+'</div></div></article>';
+      }).join("") + '</div></section>';
+    document.getElementById("related").innerHTML = html;
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+})();
+</script>
+</body>
+</html>

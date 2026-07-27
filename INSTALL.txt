@@ -1,0 +1,36 @@
+AFB package — extract this INTO your afb_backend folder
+=======================================================
+
+  E:\data\claude\afb_website\afb_backend
+
+Extracting there puts every file where it belongs:
+
+  app\routers\sops.py           new router
+  app\routers\applications.py   new router
+  app\sops.json                 SOP library seed
+  afb-site\                     the website (12 pages + assets)
+  sop-library\                  the six SOPs, markdown source
+  afb-demo.html                 standalone demo, just double-click it
+  docs\                         REVIEW, HOSTING, brief, pitch, careers setup
+
+Nothing here overwrites main.py, database.py or any existing router.
+The app\ folder merges with the one you already have.
+
+AFTER EXTRACTING
+----------------
+1. Confirm:
+       dir app\routers\sops.py, app\routers\applications.py, app\sops.json
+       dir afb-site\assets
+
+2. In app\main.py add to the router import line:
+       from .routers import (..., applications, sops)
+   and next to the other includes:
+       app.include_router(applications.router)
+       app.include_router(sops.router)
+
+3. Run it:
+       .\venv\Scripts\Activate.ps1
+       python -m uvicorn app.main:app --reload
+
+4. Read docs\HOSTING.md before deploying. Do the database.py change first —
+   it is the one that silently loses data on Render.

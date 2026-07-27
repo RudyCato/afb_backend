@@ -1,0 +1,224 @@
+{
+  "_note": "PLACEHOLDER PAY RANGES. New Jersey requires a wage or range, a general description of benefits, and any other compensation programs in every posting. Proposed rules bar open-ended ranges and cap the spread at 60% of the minimum. Replace every payMin/payMax with AFB's real numbers before this page goes public.",
+  "benefits": "Health coverage, paid time off, paid holidays, and employee product discount. Details provided at offer.",
+  "otherCompensation": "Overtime at time-and-a-half over 40 hours. Referral bonus for successful hires.",
+  "jobs": [
+    {
+      "id": "warehouse-associate",
+      "title": "Warehouse Associate",
+      "department": "Warehouse Operations",
+      "type": "Full time",
+      "shift": "1st shift, Monday–Friday",
+      "payMin": 18.0,
+      "payMax": 24.0,
+      "payUnit": "hour",
+      "summary": "Picking, staging and loading orders for next-day delivery across the Tri-State area.",
+      "does": [
+        "Pick orders from the item sheet and stage them by route",
+        "Build and wrap pallets, check counts against the manifest",
+        "Load trucks in delivery order",
+        "Keep your area clean — we're an SQF certified facility"
+      ],
+      "needs": [
+        "Able to lift 50 lb repeatedly through a shift",
+        "Reliable — the trucks leave whether or not everyone showed up",
+        "Forklift experience helps but we'll train the right person"
+      ],
+      "sopCodes": []
+    },
+    {
+      "id": "packer",
+      "title": "Packer — Production",
+      "department": "Packing Room",
+      "type": "Full time",
+      "shift": "1st and 2nd shift available",
+      "payMin": 17.0,
+      "payMax": 22.0,
+      "payUnit": "hour",
+      "summary": "Filling, weighing, labeling and boxing our own products on the packing line.",
+      "does": [
+        "Put on PPE: gloves, safety goggles, face mask.",
+        "Remove all food product from the packing area.",
+        "Disconnect packing equipment from power.",
+        "Remove equipment from the tables, including scales.",
+        "Remove visible food residue using brushes or cloths."
+      ],
+      "needs": [
+        "Careful with weights and counts — this is a food safety job",
+        "Comfortable on your feet through a shift",
+        "No experience required; we train on the line"
+      ],
+      "sopCodes": [
+        "SOP-PKG-001"
+      ],
+      "dutiesDerivedFrom": [
+        "SOP-PKG-001"
+      ]
+    },
+    {
+      "id": "cdl-driver",
+      "title": "CDL Driver — Class A or B",
+      "department": "Delivery Fleet",
+      "type": "Full time",
+      "shift": "Early start, home every night",
+      "payMin": 26.0,
+      "payMax": 38.0,
+      "payUnit": "hour",
+      "summary": "Running our own trucks across NJ, NY and CT. Local routes — you sleep at home.",
+      "does": [
+        "Deliver to supermarkets, grocers, restaurants and hotels",
+        "Check the manifest and confirm delivery counts",
+        "Represent us at the customer's dock — you're often the only person they see"
+      ],
+      "needs": [
+        "Valid CDL Class A or B with clean driving record",
+        "Current DOT medical card",
+        "Comfortable with a hand truck and a tight loading dock"
+      ],
+      "sopCodes": []
+    },
+    {
+      "id": "forklift-operator",
+      "title": "Forklift Operator",
+      "department": "Warehouse Operations",
+      "type": "Full time",
+      "shift": "1st shift",
+      "payMin": 20.0,
+      "payMax": 27.0,
+      "payUnit": "hour",
+      "summary": "Moving raw material and finished pallets between receiving, storage and the line.",
+      "does": [
+        "Receive inbound and put away to location",
+        "Feed the packing room and pull finished goods",
+        "Cycle counts and inventory accuracy"
+      ],
+      "needs": [
+        "Current forklift certification, or willing to certify",
+        "Careful operator — we run tight aisles",
+        "Basic recordkeeping"
+      ],
+      "sopCodes": []
+    },
+    {
+      "id": "customer-service",
+      "title": "Customer Service Representative",
+      "department": "Front Office",
+      "type": "Full time",
+      "shift": "Monday–Friday, office hours",
+      "payMin": 21.0,
+      "payMax": 29.0,
+      "payUnit": "hour",
+      "summary": "The voice buyers hear. Taking orders, solving delivery problems, keeping accounts happy.",
+      "does": [
+        "Handle inbound sales inquiries.",
+        "Follow up on leads and close sales.",
+        "Maintain accurate records in Badger.",
+        "Work with marketing so sales effort and promotion line up.",
+        "Address customer inquiries and resolve issues promptly."
+      ],
+      "needs": [
+        "Patient and organized under a ringing phone",
+        "Comfortable in spreadsheets and order systems",
+        "Spanish a real plus"
+      ],
+      "sopCodes": [
+        "SOP-CS-001",
+        "TRN-SLS-001"
+      ],
+      "dutiesDerivedFrom": [
+        "SOP-CS-001"
+      ]
+    },
+    {
+      "id": "accounting-clerk",
+      "title": "Accounting Clerk",
+      "department": "Front Office",
+      "type": "Full time",
+      "shift": "Monday–Friday, office hours",
+      "payMin": 23.0,
+      "payMax": 32.0,
+      "payUnit": "hour",
+      "summary": "Accounts payable and receivable for a business that ships every day.",
+      "does": [
+        "Handle inbound sales inquiries.",
+        "Follow up on leads and close sales.",
+        "Maintain accurate records in Badger.",
+        "Work with marketing so sales effort and promotion line up.",
+        "Address customer inquiries and resolve issues promptly."
+      ],
+      "needs": [
+        "Bookkeeping or AP/AR experience",
+        "Accurate — the numbers have to tie",
+        "Discreet with financial information"
+      ],
+      "sopCodes": [
+        "SOP-CS-001"
+      ],
+      "dutiesDerivedFrom": [
+        "SOP-CS-001"
+      ]
+    },
+    {
+      "id": "sales-representative",
+      "title": "Sales Representative",
+      "department": "Sales",
+      "type": "Full time",
+      "shift": "Field and office",
+      "payMin": 60000,
+      "payMax": 90000,
+      "payUnit": "year",
+      "summary": "Opening and growing wholesale accounts across the Tri-State area and beyond.",
+      "does": [
+        "Visit your assigned territory.",
+        "Meet at least 5 clients or prospects in person.",
+        "Complete 10 meaningful customer touchpoints (the Daily 10 — see TRN-SLS-001).",
+        "Spend one hour prospecting, ideally first thing.",
+        "Log every activity in Badger the same day, not the next."
+      ],
+      "needs": [
+        "Food, grocery or distribution sales experience",
+        "Willing to be on the road and on the phone",
+        "Understands margin, not just volume"
+      ],
+      "extraComp": "Commission on new and grown accounts, paid monthly, in addition to base salary.",
+      "sopCodes": [
+        "SOP-SLS-001",
+        "SOP-SLS-002",
+        "TRN-SLS-001"
+      ],
+      "dutiesDerivedFrom": [
+        "SOP-SLS-001"
+      ]
+    },
+    {
+      "id": "sanitation",
+      "title": "Sanitation Technician",
+      "department": "Packing Room",
+      "type": "Full time",
+      "shift": "2nd shift",
+      "payMin": 18.0,
+      "payMax": 24.0,
+      "payUnit": "hour",
+      "summary": "Keeping an SQF certified plant clean enough to pass an unannounced audit.",
+      "does": [
+        "Put on PPE: gloves, safety goggles, face mask.",
+        "Remove all food product from the packing area.",
+        "Disconnect packing equipment from power.",
+        "Remove equipment from the tables, including scales.",
+        "Remove visible food residue using brushes or cloths."
+      ],
+      "needs": [
+        "Methodical — this job is done properly or not at all",
+        "Comfortable with cleaning chemicals and safety procedures",
+        "Food plant experience preferred, not required"
+      ],
+      "sopCodes": [
+        "SOP-PKG-001"
+      ],
+      "dutiesDerivedFrom": [
+        "SOP-PKG-001"
+      ]
+    }
+  ],
+  "_dutiesNote": "Where sopCodes is present, 'does' is generated from the SOP by tools/sync_sops.py — edit the SOP, not this file. Roles with an empty sopCodes list have no SOP yet."
+}

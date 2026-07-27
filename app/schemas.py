@@ -3,7 +3,10 @@ from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 
-from .models import OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus, ProductType
+from .models import (
+    OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus,
+    ProductType, OrderTaskType, OrderTaskStatus,
+)
 
 
 # ---------- Customers ----------
@@ -336,3 +339,84 @@ class MaterialsNeededOut(BaseModel):
     qty_ordered: int
     has_spec: bool
     materials: List[MaterialLine]
+
+
+# ---------- Order Tasks (picking, raw material packaging, labeling, boxing) ----------
+class OrderTaskCreate(BaseModel):
+    order_id: int
+    task_type: OrderTaskType
+    assigned_to: str
+    assigned_by: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class OrderTaskReassign(BaseModel):
+    assigned_to: str
+
+
+class OrderTaskOut(BaseModel):
+    id: int
+    order_id: int
+    order_number: str
+    task_type: OrderTaskType
+    assigned_to: str
+    assigned_by: Optional[str]
+    status: OrderTaskStatus
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    duration_minutes: Optional[float]
+    notes: Optional[str]
+    created_at: datetime
+
+
+class StaffBoardEntry(BaseModel):
+    packer_name: str
+    kind: str            # "order_task" | "bulk_assignment"
+    label: str           # human-readable description of what they're doing
+    status: str
+    reference: str       # order number or product name, for click-through
+
+
+# ---------- Product Mixer (recipes & ingredient scaling) ----------
+class MixIngredientIn(BaseModel):
+    ingredient_name: str
+    ingredient_product_id: Optional[int] = None
+    percentage: float
+
+
+class MixRecipeCreate(BaseModel):
+    product_id: int
+    unit_weight_lb: float
+    notes: Optional[str] = None
+    ingredients: List[MixIngredientIn]
+
+
+class MixIngredientOut(BaseModel):
+    ingredient_name: str
+    ingredient_product_id: Optional[int]
+    percentage: float
+
+
+class MixRecipeOut(BaseModel):
+    id: int
+    product_id: int
+    product_name: str
+    unit_weight_lb: float
+    notes: Optional[str]
+    ingredients: List[MixIngredientOut]
+
+
+class IngredientAmount(BaseModel):
+    ingredient_name: str
+    ingredient_product_id: Optional[int]
+    percentage: float
+    amount_lb: float
+
+
+class MixRequirementOut(BaseModel):
+    product_id: int
+    product_name: str
+    qty_ordered: int
+    unit_weight_lb: float
+    total_weight_lb: float
+    ingredients: List[IngredientAmount]

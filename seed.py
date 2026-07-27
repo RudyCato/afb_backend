@@ -405,6 +405,59 @@ def seed_packaging_materials(db, products):
     return len(created), specs_created
 
 
+def seed_mix_recipes(db, products):
+    """
+    Adds a handful of raw-bulk-ingredient stock items, and a sample mix recipe
+    for Crispy Granola so the Product Mixer has real data to demo against.
+    """
+    raw_materials = [
+        ("RAW-OATS", "Rolled Oats (Bulk)", "Raw Materials - Grains"),
+        ("RAW-ALMOND", "Raw Almonds (Bulk)", "Raw Materials - Nuts"),
+        ("RAW-CRANBERRY", "Dried Cranberries (Bulk)", "Raw Materials - Dried Fruit"),
+        ("RAW-HONEY", "Honey (Bulk)", "Raw Materials - Sweeteners"),
+        ("RAW-SUNFLOWER-OIL", "Sunflower Oil (Bulk)", "Raw Materials - Oils"),
+        ("RAW-CINNAMON", "Cinnamon (Bulk)", "Raw Materials - Spices"),
+    ]
+    created = {}
+    for sku, name, category in raw_materials:
+        p = models.Product(
+            sku=sku, name=name, category=category,
+            item_type=models.ProductType.raw_material, active=True,
+        )
+        db.add(p)
+        db.flush()
+        qty = random.randint(500, 3000)
+        db.add(models.Inventory(product_id=p.id, qty_on_hand=qty, reorder_threshold=200))
+        db.add(models.InventoryTransaction(
+            product_id=p.id, change_qty=qty,
+            reason=models.InventoryReason.received_stock, reference="initial stock"
+        ))
+        created[sku] = p
+    db.commit()
+
+    granola = next((p for p in products if p.name == "Granola - Crispy"), None)
+    if granola:
+        recipe = models.MixRecipe(
+            product_id=granola.id, unit_weight_lb=33.0,
+            notes="Seeded sample recipe — adjust weight/ratios to match the real formulation.",
+        )
+        db.add(recipe)
+        db.flush()
+        ingredient_pcts = [
+            ("RAW-OATS", 55.0), ("RAW-ALMOND", 20.0), ("RAW-CRANBERRY", 12.0),
+            ("RAW-HONEY", 8.0), ("RAW-SUNFLOWER-OIL", 4.0), ("RAW-CINNAMON", 1.0),
+        ]
+        for sku, pct in ingredient_pcts:
+            ing_product = created[sku]
+            db.add(models.MixIngredient(
+                recipe_id=recipe.id, ingredient_name=ing_product.name,
+                ingredient_product_id=ing_product.id, percentage=pct,
+            ))
+        db.commit()
+
+    return len(created), (1 if granola else 0)
+
+
 def run(catalog_only=False):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -428,10 +481,12 @@ def run(catalog_only=False):
     customers = seed_customers_and_orders(db, products)
     packers = seed_packers_and_production(db, products)
     material_count, spec_count = seed_packaging_materials(db, products)
+    raw_material_count, recipe_count = seed_mix_recipes(db, products)
     db.close()
     print(f"Seeded {len(products)} products, {len(customers)} customers, 6 sample orders, "
           f"{len(packers)} packers with sample assignments, {material_count} packaging/PPE "
-          f"materials, {spec_count} packaging specs.")
+          f"materials, {spec_count} packaging specs, {raw_material_count} raw materials, "
+          f"{recipe_count} mix recipe(s).")
 
 
 if __name__ == "__main__":

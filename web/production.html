@@ -92,6 +92,7 @@
   <nav class="tabs">
     <button id="tabManagerBtn" class="active" onclick="switchTab('manager')">Packing Manager</button>
     <button id="tabPackerBtn" onclick="switchTab('packer')">Packer Portal</button>
+    <button id="tabMixerBtn" onclick="switchTab('mixer')">Product Mixer</button>
   </nav>
 
   <!-- MANAGER VIEW -->
@@ -216,6 +217,50 @@
     </div>
   </div>
 
+  <!-- PRODUCT MIXER VIEW -->
+  <div id="mixerView" class="view">
+    <div class="panel">
+      <h2 class="section-title" style="margin-top:0;">Check Required Ingredients</h2>
+      <div class="form-grid">
+        <div>
+          <label>Mix Product</label>
+          <select id="mixerProduct" onchange="previewMixRequirement()"></select>
+        </div>
+        <div>
+          <label>Order Quantity (cases/units)</label>
+          <input type="number" id="mixerQty" min="1" value="1" oninput="previewMixRequirement()">
+        </div>
+      </div>
+      <div id="mixerResult"></div>
+    </div>
+
+    <h2 class="section-title">Define / Edit a Mix Recipe</h2>
+    <p style="font-size:0.85rem;color:var(--ink-soft);margin-top:-6px;">Set the total weight per unit, then list ingredients as a percentage of that weight. Percentages must add up to 100.</p>
+    <div class="panel">
+      <div id="mixerSpecMsg" class="msg"></div>
+      <div class="form-grid">
+        <div>
+          <label>Mix Product</label>
+          <select id="recipeProduct"></select>
+        </div>
+        <div>
+          <label>Total Weight Per Unit (lb)</label>
+          <input type="number" id="recipeUnitWeight" min="0" step="0.1" value="33">
+        </div>
+      </div>
+      <label>Ingredients</label>
+      <div id="ingredientRows"></div>
+      <button class="btn secondary" onclick="addIngredientRow()" style="margin-bottom:12px;">+ Add Ingredient</button>
+      <div id="ingredientTotal" style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:var(--ink-soft);margin-bottom:12px;"></div>
+      <button class="btn" onclick="saveMixRecipe()">Save Recipe</button>
+
+      <table style="margin-top:20px;">
+        <thead><tr><th>Product</th><th>Unit Weight</th><th>Ingredients</th></tr></thead>
+        <tbody id="recipeRows"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -238,10 +283,13 @@ let PACKERS = [];
 function switchTab(tab){
   document.getElementById('managerView').classList.toggle('active', tab==='manager');
   document.getElementById('packerView').classList.toggle('active', tab==='packer');
+  document.getElementById('mixerView').classList.toggle('active', tab==='mixer');
   document.getElementById('tabManagerBtn').classList.toggle('active', tab==='manager');
   document.getElementById('tabPackerBtn').classList.toggle('active', tab==='packer');
+  document.getElementById('tabMixerBtn').classList.toggle('active', tab==='mixer');
   if(tab==='manager'){ loadAssignments(); loadSpecs(); }
   if(tab==='packer') loadPackerTasks();
+  if(tab==='mixer'){ loadMixRecipes(); }
 }
 
 function productOptions(list){
@@ -270,6 +318,8 @@ async function init(){
   document.getElementById('sContainer').innerHTML = matOpts;
   document.getElementById('sLid').innerHTML = matOpts;
   document.getElementById('sBox').innerHTML = matOpts;
+  document.getElementById('recipeProduct').innerHTML = productOptions(PRODUCTS);
+  addIngredientRow(); addIngredientRow();
 
   loadAssignments();
   loadSpecs();
@@ -443,6 +493,98 @@ async function logAdHocProduction(){
     loadPackerTasks();
   } catch(e){
     showMsg('packerMsg', 'Could not log production: ' + e.message, false);
+  }
+}
+
+/* ---------------- Product Mixer ---------------- */
+let INGREDIENT_ROW_ID = 0;
+
+function addIngredientRow(name, pct){
+  const id = INGREDIENT_ROW_ID++;
+  const div = document.createElement('div');
+  div.className = 'form-grid';
+  div.id = `ing-row-${id}`;
+  div.style.marginBottom = '4px';
+  div.innerHTML = `
+    <div><input type="text" class="ing-name" placeholder="Ingredient name (e.g. Rolled Oats)" value="${name||''}"></div>
+    <div style="display:flex;gap:8px;">
+      <input type="number" class="ing-pct" min="0" max="100" step="0.1" value="${pct||''}" placeholder="%" oninput="updateIngredientTotal()">
+      <button class="btn ghost" onclick="document.getElementById('ing-row-${id}').remove(); updateIngredientTotal();" type="button">&times;</button>
+    </div>
+  `;
+  document.getElementById('ingredientRows').appendChild(div);
+  updateIngredientTotal();
+}
+
+function updateIngredientTotal(){
+  const pcts = [...document.querySelectorAll('.ing-pct')].map(i => parseFloat(i.value) || 0);
+  const total = pcts.reduce((a,b)=>a+b, 0);
+  const el = document.getElementById('ingredientTotal');
+  el.textContent = `Total: ${total.toFixed(1)}%` + (Math.abs(total-100) > 0.5 ? ' — must equal 100%' : ' ✓');
+  el.style.color = Math.abs(total-100) > 0.5 ? 'var(--rust-deep)' : 'var(--olive-deep)';
+}
+
+async function saveMixRecipe(){
+  const product_id = parseInt(document.getElementById('recipeProduct').value);
+  const unit_weight_lb = parseFloat(document.getElementById('recipeUnitWeight').value);
+  const names = [...document.querySelectorAll('.ing-name')].map(i => i.value.trim());
+  const pcts = [...document.querySelectorAll('.ing-pct')].map(i => parseFloat(i.value) || 0);
+  const ingredients = names.map((n,idx) => ({ingredient_name: n, percentage: pcts[idx]})).filter(i => i.ingredient_name);
+
+  if(!ingredients.length){ showMsg('mixerSpecMsg', 'Add at least one ingredient.', false); return; }
+
+  try {
+    await api('/mixes/recipes', {method:'POST', body: JSON.stringify({product_id, unit_weight_lb, ingredients})});
+    showMsg('mixerSpecMsg', 'Recipe saved.', true);
+    loadMixRecipes();
+  } catch(e){
+    showMsg('mixerSpecMsg', 'Could not save recipe: ' + e.message, false);
+  }
+}
+
+async function loadMixRecipes(){
+  const recipes = await api('/mixes/recipes');
+
+  const mixerSelect = document.getElementById('mixerProduct');
+  if(!recipes.length){
+    mixerSelect.innerHTML = '<option value="">— no recipes defined yet —</option>';
+    document.getElementById('mixerResult').innerHTML = '<p class="empty">Define a recipe below first.</p>';
+  } else {
+    mixerSelect.innerHTML = recipes.map(r => `<option value="${r.product_id}">${r.product_name}</option>`).join('');
+    previewMixRequirement();
+  }
+
+  document.getElementById('recipeRows').innerHTML = recipes.map(r => `
+    <tr>
+      <td>${r.product_name}</td>
+      <td>${r.unit_weight_lb} lb</td>
+      <td style="font-size:0.82rem;">${r.ingredients.map(i => `${i.ingredient_name} (${i.percentage}%)`).join(', ')}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="3" class="empty">No recipes defined yet.</td></tr>';
+}
+
+async function previewMixRequirement(){
+  const productId = document.getElementById('mixerProduct').value;
+  const qty = parseInt(document.getElementById('mixerQty').value) || 1;
+  const resultEl = document.getElementById('mixerResult');
+  if(!productId){ resultEl.innerHTML = ''; return; }
+  try {
+    const r = await api(`/mixes/required-ingredients?product_id=${productId}&qty=${qty}`);
+    resultEl.innerHTML = `
+      <div style="background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:14px 16px;margin-top:14px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:8px;">
+          ${qty} unit${qty===1?'':'s'} of ${r.product_name} = ${r.total_weight_lb} lb total
+        </div>
+        <table>
+          <thead><tr><th>Ingredient</th><th>%</th><th>Amount Needed</th></tr></thead>
+          <tbody>
+            ${r.ingredients.map(i => `<tr><td>${i.ingredient_name}</td><td>${i.percentage}%</td><td><b>${i.amount_lb} lb</b></td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e){
+    resultEl.innerHTML = '<p class="empty">No recipe defined for this product yet.</p>';
   }
 }
 

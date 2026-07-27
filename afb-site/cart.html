@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="retail">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cart — American Food &amp; Beverage</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main" class="shell" style="padding-block:2rem 1rem">
+  <div id="view"></div>
+</main>
+
+<footer data-footer></footer>
+
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  var BY = {}, SHIP = 9.95, TAX = 0.06625;
+
+  AFB.catalog().then(function(data){
+    data.products.forEach(function(p){ BY[p.item] = p; });
+    render();
+    document.addEventListener("afb:mode", render);
+  });
+
+  function render(){
+    var el = document.getElementById("view");
+    el.innerHTML = AFB.getMode() === "wholesale" ? quoteView() : cartView();
+    wire();
+  }
+
+  /* ---------------- retail ---------------- */
+  function cartView(){
+    var rows = AFB.cart().filter(function(r){ return BY[r.item]; });
+    if (!rows.length) return emptyBlock("Your cart is empty",
+      "Add a jar of something and it'll show up here.", "shop.html", "Browse the catalog");
+
+    var sub = rows.reduce(function(n,r){ return n + BY[r.item].price * r.qty; }, 0);
+    var tax = sub * TAX, total = sub + SHIP + tax;
+
+    return '<span class="eyebrow">Your order</span><h1 style="font-size:clamp(2rem,4vw,3rem)">Cart</h1>' +
+      '<table class="plain"><thead><tr>' +
+        '<th scope="col">Item</th><th scope="col" style="text-align:right">Each</th>' +
+        '<th scope="col" style="text-align:right">Qty</th>' +
+        '<th scope="col" style="text-align:right">Line</th><th scope="col"></th>' +
+      '</tr></thead><tbody>' +
+      rows.map(function(r){
+        var p = BY[r.item];
+        return '<tr>' +
+          '<td><a href="product.html?item='+encodeURIComponent(p.item)+'">'+esc(p.name)+'</a>' +
+            '<div class="count">'+p.unitOz+' oz &middot; '+esc(p.format)+'</div></td>' +
+          '<td class="num">'+AFB.money(p.price)+'</td>' +
+          '<td class="num"><label class="skip" for="q'+p.item+'">Quantity for '+esc(p.name)+'</label>' +
+            '<input id="q'+p.item+'" type="text" inputmode="numeric" value="'+r.qty+'" ' +
+            'data-qty="'+p.item+'" style="width:4rem;text-align:right;padding:.3rem .4rem"></td>' +
+          '<td class="num">'+AFB.money(p.price * r.qty)+'</td>' +
+          '<td><button class="linkbtn" type="button" data-remove="'+p.item+'">Remove</button></td>' +
+        '</tr>';
+      }).join("") + '</tbody></table>' +
+      '<div class="totals">' +
+        '<div><span>Subtotal</span><span>'+AFB.money(sub)+'</span></div>' +
+        '<div><span>Shipping</span><span>'+AFB.money(SHIP)+'</span></div>' +
+        '<div><span>NJ sales tax</span><span>'+AFB.money(tax)+'</span></div>' +
+        '<div class="grand"><span>Total</span><span>'+AFB.money(total)+'</span></div>' +
+      '</div>' +
+      checkoutForm(total);
+  }
+
+  function checkoutForm(total){
+    return '<section class="band" style="border-top:1px solid var(--rule);margin-top:2rem">' +
+      '<span class="eyebrow">Checkout</span>' +
+      '<h2>Where should it go?</h2>' +
+      '<div class="panel" style="margin-top:1.25rem">' +
+      '<form id="checkout" novalidate><div class="formgrid">' +
+        f("Full name","name","text",true) +
+        f("Email","email","email",true) +
+        f("Phone","phone","tel",false) +
+        f("Company (optional)","company","text",false) +
+        '<div class="field full">'+lab("Street address","addr")+'<input id="addr" name="addr" type="text" required></div>' +
+        f("City","city","text",true) +
+        f("State","state","text",true) +
+        f("ZIP","zip","text",true) +
+        '<div class="field full"><label for="notes">Delivery notes</label>' +
+          '<textarea id="notes" name="notes" placeholder="Buzzer, loading dock hours, anything we should know"></textarea></div>' +
+      '</div>' +
+      '<div class="notice" style="margin-top:.5rem"><p><b>Payment runs through your processor.</b> ' +
+      'This step hands off to Stripe, Authorize.net or Magento checkout &mdash; card details are never ' +
+      'collected or stored by this page. Wire the handoff in before going live.</p></div>' +
+      '<button class="btn" type="submit">Place order &middot; '+AFB.money(total)+'</button>' +
+      '<p class="count" style="margin-top:.75rem" id="err" role="alert"></p>' +
+      '</form></div></section>';
+  }
+
+  /* ---------------- wholesale ---------------- */
+  function quoteView(){
+    var rows = AFB.quote().filter(function(r){ return BY[r.item]; });
+    if (!rows.length) return emptyBlock("No items on your quote yet",
+      "Open the item sheet, mark what you're interested in, and we'll price the whole list at once.",
+      "shop.html", "Open the item sheet");
+
+    var cases = rows.reduce(function(n,r){ return n + r.cases; }, 0);
+    var lbs = rows.reduce(function(n,r){ return n + BY[r.item].caseWeightOz * r.cases / 16; }, 0);
+
+    return '<span class="eyebrow">Quote request</span>' +
+      '<h1 style="font-size:clamp(2rem,4vw,3rem)">Your item list</h1>' +
+      '<p style="color:var(--ink-soft)">Send it over and we\'ll come back with case pricing, ' +
+      'lead times and the minimum for each line. Nothing here is an order.</p>' +
+      '<div style="margin:1.25rem 0"><button class="btn ghost small" type="button" id="qcsv">Export list as CSV</button></div>' +
+      '<div class="tablewrap"><table class="sheet"><thead><tr>' +
+        '<th scope="col">Item #</th><th scope="col">Description</th>' +
+        '<th scope="col">Packaging</th><th scope="col" style="text-align:right">Case qty</th>' +
+        '<th scope="col" style="text-align:right">Cases</th>' +
+        '<th scope="col" style="text-align:right">Est. weight</th><th scope="col"></th>' +
+      '</tr></thead><tbody>' +
+      rows.map(function(r){
+        var p = BY[r.item];
+        return '<tr><td class="sku">'+p.item+'</td>' +
+          '<td class="desc"><a href="product.html?item='+encodeURIComponent(p.item)+'">'+esc(p.name)+'</a></td>' +
+          '<td>'+esc(p.format)+'</td>' +
+          '<td class="num">'+p.caseQty+'</td>' +
+          '<td class="num"><label class="skip" for="c'+p.item+'">Cases of '+esc(p.name)+'</label>' +
+            '<input id="c'+p.item+'" type="text" inputmode="numeric" value="'+r.cases+'" ' +
+            'data-cases="'+p.item+'" style="width:4.5rem;text-align:right;padding:.3rem .4rem"></td>' +
+          '<td class="num">'+(p.caseWeightOz * r.cases / 16).toFixed(1)+' lb</td>' +
+          '<td><button class="linkbtn" type="button" data-remove="'+p.item+'">Remove</button></td></tr>';
+      }).join("") + '</tbody></table></div>' +
+      '<div class="totals"><div><span>Lines</span><span>'+rows.length+'</span></div>' +
+        '<div><span>Cases</span><span>'+cases+'</span></div>' +
+        '<div class="grand"><span>Est. weight</span><span>'+lbs.toFixed(0)+' lb</span></div></div>' +
+      '<section class="band" style="border-top:1px solid var(--rule);margin-top:2rem">' +
+      '<span class="eyebrow">Send it</span><h2>Who are we quoting?</h2>' +
+      '<div class="panel" style="margin-top:1.25rem"><form id="quoteform" novalidate><div class="formgrid">' +
+        f("Company","company","text",true) +
+        f("Contact name","name","text",true) +
+        f("Email","email","email",true) +
+        f("Phone","phone","tel",true) +
+        '<div class="field"><label for="type">Business type</label><select id="type">' +
+          ['Supermarket chain','Independent grocer','Distributor','Restaurant / foodservice',
+           'Hotel','Airline','Other'].map(function(o){ return '<option>'+o+'</option>'; }).join("") +
+          '</select></div>' +
+        '<div class="field"><label for="cadence">How often you\'d order</label><select id="cadence">' +
+          ['Weekly','Every two weeks','Monthly','Seasonal / promotional','Still deciding']
+            .map(function(o){ return '<option>'+o+'</option>'; }).join("") + '</select></div>' +
+        '<div class="field full"><label for="qnotes">Anything else</label>' +
+          '<textarea id="qnotes" placeholder="Private label, custom pack sizes, delivery windows, target price points"></textarea></div>' +
+      '</div><button class="btn" type="submit">Send quote request</button>' +
+      '<p class="count" style="margin-top:.75rem" id="err" role="alert"></p>' +
+      '</form></div></section>';
+  }
+
+  /* ---------------- shared ---------------- */
+  function emptyBlock(h, p, href, cta){
+    return '<div class="empty" style="margin-top:2rem"><h3>'+h+'</h3><p>'+p+'</p>' +
+      '<a class="btn ghost" href="'+href+'">'+cta+'</a></div>';
+  }
+  function lab(t,id){ return '<label for="'+id+'">'+t+'</label>'; }
+  function f(t,id,type,req){
+    return '<div class="field">'+lab(t,id)+'<input id="'+id+'" name="'+id+'" type="'+type+'"'+(req?' required':'')+'></div>';
+  }
+
+  function wire(){
+    document.querySelectorAll("[data-qty]").forEach(function(i){
+      i.addEventListener("change", function(){
+        var n = Math.max(0, parseInt(i.value,10) || 0);
+        var c = AFB.cart().filter(function(r){ return r.item !== i.dataset.qty || n > 0; });
+        c.forEach(function(r){ if (r.item === i.dataset.qty) r.qty = n; });
+        AFB.saveCart(c); render();
+      });
+    });
+    document.querySelectorAll("[data-cases]").forEach(function(i){
+      i.addEventListener("change", function(){
+        var n = Math.max(0, parseInt(i.value,10) || 0);
+        var q = AFB.quote().filter(function(r){ return r.item !== i.dataset.cases || n > 0; });
+        q.forEach(function(r){ if (r.item === i.dataset.cases) r.cases = n; });
+        AFB.saveQuote(q); render();
+      });
+    });
+    document.querySelectorAll("[data-remove]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = b.dataset.remove;
+        if (AFB.getMode() === "wholesale"){
+          AFB.saveQuote(AFB.quote().filter(function(r){ return r.item !== id; }));
+        } else {
+          AFB.saveCart(AFB.cart().filter(function(r){ return r.item !== id; }));
+        }
+        render();
+      });
+    });
+
+    var qcsv = document.getElementById("qcsv");
+    if (qcsv) qcsv.addEventListener("click", function(){
+      var rows = AFB.quote().filter(function(r){ return BY[r.item]; });
+      var head = ["Item #","Description","Category","Packaging","Case QTY","Unit Wt (oz)","Cases requested","Est. lb"];
+      var body = rows.map(function(r){
+        var p = BY[r.item];
+        return [p.item,p.name,p.category,p.format,p.caseQty,p.unitOz,r.cases,(p.caseWeightOz*r.cases/16).toFixed(1)];
+      });
+      var csv = [head].concat(body).map(function(row){
+        return row.map(function(c){ c = String(c);
+          return /[",\n]/.test(c) ? '"'+c.replace(/"/g,'""')+'"' : c; }).join(",");
+      }).join("\r\n");
+      AFB.download("afb-quote-request.csv", csv);
+    });
+
+    var co = document.getElementById("checkout");
+    if (co) co.addEventListener("submit", function(e){
+      e.preventDefault();
+      if (!valid(co)) return;
+      AFB.saveCart([]);
+      done("Order received", "We've got it. You'll get a confirmation by email, and it leaves Paterson on the next run.");
+    });
+
+    var qf = document.getElementById("quoteform");
+    if (qf) qf.addEventListener("submit", function(e){
+      e.preventDefault();
+      if (!valid(qf)) return;
+      AFB.saveQuote([]);
+      done("Quote request sent", "A rep will come back with case pricing and lead times, usually within one business day.");
+    });
+  }
+
+  function valid(form){
+    var bad = Array.prototype.filter.call(form.querySelectorAll("[required]"), function(i){
+      return !i.value.trim() || (i.type === "email" && i.value.indexOf("@") < 1);
+    });
+    var err = form.querySelector("#err");
+    if (bad.length){
+      err.textContent = "Fill in " + bad[0].previousElementSibling.textContent.toLowerCase() + " to continue.";
+      err.style.color = "var(--terra-deep)";
+      bad[0].focus();
+      return false;
+    }
+    err.textContent = "";
+    return true;
+  }
+
+  function done(h, p){
+    document.getElementById("view").innerHTML =
+      '<div class="empty" style="margin-top:2rem"><h3>'+h+'</h3><p>'+p+'</p>' +
+      '<a class="btn ghost" href="shop.html">Keep browsing</a></div>';
+    AFB.paintChrome();
+    window.scrollTo(0,0);
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+})();
+</script>
+</body>
+</html>

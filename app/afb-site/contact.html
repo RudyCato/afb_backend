@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="retail">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contact — American Food & Beverage</title>
+<meta name="description" content="Contact American Food & Beverage in Paterson, New Jersey. Sales, orders, documentation requests.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main">
+  <section class="shell hero" style="padding-block:clamp(2.5rem,6vw,4.5rem) 1.5rem">
+    <span class="eyebrow">Contact</span>
+    <h1 style="font-size:clamp(2.2rem,5vw,3.6rem);max-width:18ch">Paterson, New Jersey. Someone picks up.</h1>
+    <p class="lede">Sales, orders, certificates, samples, or a question about an item number &mdash; here's where each goes.</p>
+  </section>
+  <section class="band"><div class="shell">
+<div class="cols"><div><h3>Sales &amp; new accounts</h3><p><a href='mailto:sales@americanfoodbeverage.com'>sales@americanfoodbeverage.com</a><br><a href='tel:+19083456345'>(908) 345-6345</a></p></div><div><h3>Orders</h3><p><a href='mailto:orders@grasslandfoods.com'>orders@grasslandfoods.com</a><br>Existing accounts, reorders and delivery changes.</p></div><div><h3>Mail</h3><p>PO Box 533<br>Paterson, NJ 07543<br>United States</p></div><div><h3>Documentation</h3><p>SQF and organic certificates, OU letters, specs and COAs &mdash; ask sales and we'll send current copies.</p></div></div>
+  </div></section>
+  <section class="band tint"><div class="shell" style="max-width:760px">
+    <span class="eyebrow">Send a message</span>
+    <h2>What do you need?</h2>
+    <div class="panel" style="margin-top:1.25rem">
+      <form id="contact" novalidate>
+        <div class="formgrid">
+          <div class="field"><label for="name">Your name</label><input id="name" type="text" required></div>
+          <div class="field"><label for="email">Email</label><input id="email" type="email" required></div>
+          <div class="field"><label for="company">Company (optional)</label><input id="company" type="text"></div>
+          <div class="field"><label for="topic">Topic</label>
+            <select id="topic">
+              <option>New wholesale account</option><option>Existing order</option>
+              <option>Private label</option><option>Certificates &amp; documentation</option>
+              <option>Samples</option><option>Something else</option>
+            </select></div>
+          <div class="field full"><label for="msg">Message</label>
+            <textarea id="msg" required placeholder="Item numbers help if you have them"></textarea></div>
+        </div>
+        <button class="btn" type="submit">Send message</button>
+        <p class="count" style="margin-top:.75rem" id="err" role="alert"></p>
+      </form>
+    </div>
+  </div></section>
+
+</main>
+
+<footer data-footer></footer>
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+document.getElementById("contact").addEventListener("submit", function(e){
+  e.preventDefault();
+  var form = this, err = document.getElementById("err");
+  var bad = Array.prototype.filter.call(form.querySelectorAll("[required]"), function(i){
+    return !i.value.trim() || (i.type === "email" && i.value.indexOf("@") < 1);
+  });
+  if (bad.length){
+    err.style.color = "var(--terra-deep)";
+    err.textContent = "Fill in " + bad[0].previousElementSibling.textContent.toLowerCase() + " to continue.";
+    bad[0].focus(); return;
+  }
+  form.parentElement.innerHTML =
+    '<h3 style="margin-bottom:.4em">Message sent</h3>' +
+    '<p>Thanks &mdash; we\'ll get back to you shortly. For anything time-sensitive, call (908) 345-6345.</p>';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+/* =========================================================================
+   American Food & Beverage — shared behaviour
+   Loads the catalog, remembers the visitor's mode, runs both carts.
+   ========================================================================= */
+(function () {
+  "use strict";
+
+  /* ---------- storage (falls back to memory when blocked) ------------- */
+  var mem = {};
+  var store = {
+    get: function (k) {
+      try { var v = localStorage.getItem(k); return v === null ? mem[k] : v; }
+      catch (e) { return mem[k]; }
+    },
+    set: function (k, v) {
+      mem[k] = v;
+      try { localStorage.setItem(k, v); } catch (e) { /* memory only */ }
+    }
+  };
+  var getJSON = function (k, d) { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
+  var setJSON = function (k, v) { store.set(k, JSON.stringify(v)); };
+
+  /* ---------- mode ---------------------------------------------------- */
+  var MODE_KEY = "afb.mode";
+  function getMode() { return store.get(MODE_KEY) === "wholesale" ? "wholesale" : "retail"; }
+  function setMode(m) {
+    store.set(MODE_KEY, m);
+    document.documentElement.dataset.mode = m;
+    document.dispatchEvent(new CustomEvent("afb:mode", { detail: m }));
+    paintChrome();
+  }
+
+  /* ---------- carts --------------------------------------------------- */
+  // retail cart: [{item, qty}] priced; quote list: [{item, cases}] unpriced
+  function cart() { return getJSON("afb.cart", []); }
+  function quote() { return getJSON("afb.quote", []); }
+  function saveCart(c) { setJSON("afb.cart", c); paintChrome(); }
+  function saveQuote(q) { setJSON("afb.quote", q); paintChrome(); }
+
+  function addToCart(item, qty) {
+    var c = cart(), row = c.filter(function (r) { return r.item === item; })[0];
+    if (row) { row.qty += qty; } else { c.push({ item: item, qty: qty }); }
+    saveCart(c);
+  }
+  function addToQuote(item, cases) {
+    var q = quote(), row = q.filter(function (r) { return r.item === item; })[0];
+    if (row) { row.cases += cases; } else { q.push({ item: item, cases: cases }); }
+    saveQuote(q);
+  }
+  function cartCount() { return cart().reduce(function (n, r) { return n + r.qty; }, 0); }
+  function quoteCount() { return quote().length; }
+
+  /* ---------- catalog -------------------------------------------------- */
+  var catalogPromise = null;
+  function catalog() {
+    if (catalogPromise) return catalogPromise;
+    catalogPromise = fetch(base() + "catalog.json")
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .catch(function () {
+        // file:// or offline — fall back to the embedded copy
+        if (window.AFB_CATALOG) return window.AFB_CATALOG;
+        throw new Error("Catalog unavailable");
+      });
+    return catalogPromise;
+  }
+  function base() {
+    // every page sits at the site root, so this is a no-op hook for subfolders
+    return "";
+  }
+
+  /* ---------- fuzzy-ish search ----------------------------------------- */
+  function matches(p, q) {
+    if (!q) return true;
+    var hay = (p.item + " " + p.name + " " + p.category + " " + p.format).toLowerCase();
+    return q.toLowerCase().split(/\s+/).every(function (tok) {
+      if (!tok) return true;
+      if (hay.indexOf(tok) > -1) return true;
+      // loose subsequence match, so "almrst" still finds Almonds Roasted
+      var i = 0;
+      for (var c = 0; c < hay.length && i < tok.length; c++) if (hay[c] === tok[i]) i++;
+      return i === tok.length && tok.length > 3;
+    });
+  }
+
+  /* ---------- formatting ----------------------------------------------- */
+  function money(n) { return "$" + n.toFixed(2); }
+  function oz(n) { return (Math.round(n * 100) / 100) + " oz"; }
+  function glyph(cat) {
+    return ({
+      "Nuts": "N", "Flavored Gourmet Nuts": "G", "Seeds": "S", "Trail Mixes": "T",
+      "Dried Fruits": "F", "Granolas & Crunches": "R", "Plantain Chips": "P",
+      "Chocolate Covered": "C", "Candy & Gummies": "Y", "Grains, Beans & Lentils": "B"
+    })[cat] || "•";
+  }
+
+  /* ---------- chrome (header + footer) ---------------------------------- */
+  var NAV = [
+    ["shop.html", "Shop"],
+    ["wholesale.html", "Wholesale"],
+    ["private-label.html", "Private label"],
+    ["certifications.html", "Food safety"],
+    ["about.html", "About"],
+    ["contact.html", "Contact"]
+  ];
+
+  function renderChrome() {
+    var here = location.pathname.split("/").pop() || "index.html";
+    var head = document.querySelector("[data-masthead]");
+    if (head) {
+      head.className = "masthead";
+      head.innerHTML =
+        '<div class="shell masthead-in">' +
+        '<a class="brand" href="index.html"><b>American Food &amp; Beverage</b>' +
+        '<span>Grassland &middot; Premium Food</span></a>' +
+        '<nav class="nav" aria-label="Main">' +
+        NAV.map(function (n) {
+          return '<a href="' + n[0] + '"' + (n[0] === here ? ' aria-current="page"' : '') + '>' + n[1] + '</a>';
+        }).join("") +
+        '<span class="stamp" role="group" aria-label="Browsing mode">' +
+        '<button type="button" data-set-mode="retail">Retail</button>' +
+        '<button type="button" data-set-mode="wholesale">Wholesale</button>' +
+        '</span>' +
+        '<a class="cartlink" href="cart.html" data-cartlink></a>' +
+        '</nav></div>';
+      head.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-set-mode]");
+        if (b) setMode(b.dataset.setMode);
+      });
+    }
+
+    var foot = document.querySelector("[data-footer]");
+    if (foot) {
+      foot.className = "foot";
+      foot.innerHTML =
+        '<div class="shell"><div class="foot-grid">' +
+        '<div><h4>American Food &amp; Beverage</h4>' +
+        '<p style="font-size:.9rem;color:var(--ink-soft)">Importer, wholesaler, roaster and packer. ' +
+        '60,000 sq ft in Paterson, New Jersey, with our own fleet and next-day delivery across the Tri-State area.</p>' +
+        '<div class="certs"><span>SQF Certified</span><span>USDA Organic</span><span>OU Kosher</span></div></div>' +
+        '<div><h4>Shop</h4><ul>' +
+        '<li><a href="shop.html">Full catalog</a></li>' +
+        '<li><a href="shop.html?cat=Nuts">Nuts</a></li>' +
+        '<li><a href="shop.html?cat=Dried%20Fruits">Dried fruits</a></li>' +
+        '<li><a href="shop.html?cat=Trail%20Mixes">Trail mixes</a></li>' +
+        '<li><a href="shop.html?organic=1">Organic items</a></li></ul></div>' +
+        '<div><h4>Buyers</h4><ul>' +
+        '<li><a href="wholesale.html">Wholesale program</a></li>' +
+        '<li><a href="private-label.html">Private label</a></li>' +
+        '<li><a href="certifications.html">Certifications</a></li>' +
+        '<li><a href="quote.html">Request pricing</a></li></ul></div>' +
+        '<div><h4>Reach us</h4><ul>' +
+        '<li>PO Box 533<br>Paterson, NJ 07543</li>' +
+        '<li><a href="tel:+19083456345">(908) 345-6345</a></li>' +
+        '<li><a href="mailto:sales@americanfoodbeverage.com">sales@americanfoodbeverage.com</a></li>' +
+        '<li><a href="mailto:orders@grasslandfoods.com">orders@grasslandfoods.com</a></li></ul></div>' +
+        '</div><div class="legal">American Food &amp; Beverage &middot; Premium Food Distributors, DBA Grassland &middot; ' +
+        'Prices and availability subject to change.</div></div>';
+    }
+    paintChrome();
+  }
+
+  function paintChrome() {
+    var m = getMode();
+    document.documentElement.dataset.mode = m;
+    document.querySelectorAll("[data-set-mode]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.setMode === m));
+    });
+    document.querySelectorAll("[data-cartlink]").forEach(function (a) {
+      if (m === "wholesale") {
+        var n = quoteCount();
+        a.innerHTML = "Quote <b>" + n + "</b>";
+        a.setAttribute("aria-label", n + " items on your quote request");
+      } else {
+        var c = cartCount();
+        a.innerHTML = "Cart <b>" + c + "</b>";
+        a.setAttribute("aria-label", c + " items in your cart");
+      }
+    });
+  }
+
+  /* ---------- CSV export ------------------------------------------------ */
+  function toCSV(rows) {
+    var head = ["Item #", "Description", "Category", "Packaging", "Case QTY", "Unit Wt (oz)", "Case Wt (oz)", "Organic"];
+    var body = rows.map(function (p) {
+      return [p.item, p.name, p.category, p.format, p.caseQty, p.unitOz, p.caseWeightOz, p.organic ? "Yes" : ""];
+    });
+    return [head].concat(body).map(function (r) {
+      return r.map(function (c) {
+        c = String(c);
+        return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+      }).join(",");
+    }).join("\r\n");
+  }
+  function download(name, text) {
+    var b = new Blob([text], { type: "text/csv;charset=utf-8" });
+    var u = URL.createObjectURL(b), a = document.createElement("a");
+    a.href = u; a.download = name; document.body.appendChild(a); a.click();
+    a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 500);
+  }
+
+  /* ---------- expose ----------------------------------------------------- */
+  window.AFB = {
+    getMode: getMode, setMode: setMode, catalog: catalog, matches: matches,
+    money: money, oz: oz, glyph: glyph,
+    cart: cart, quote: quote, saveCart: saveCart, saveQuote: saveQuote,
+    addToCart: addToCart, addToQuote: addToQuote, paintChrome: paintChrome,
+    toCSV: toCSV, download: download
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", renderChrome);
+  } else { renderChrome(); }
+})();

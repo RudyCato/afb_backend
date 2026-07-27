@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="retail">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOP library — American Food &amp; Beverage</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .doclist{display:grid;gap:.9rem;margin-top:1.25rem}
+  .doc{border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem 1.15rem}
+  .doc.sqf{border-left:3px solid var(--terra)}
+  .doc-head{display:flex;flex-wrap:wrap;gap:.4rem .9rem;align-items:baseline}
+  .doc-head h3{margin:0;font-size:1.08rem}
+  .doc code.code{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--terra-deep);background:none;padding:0}
+  .doc .meta{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin:.45rem 0 .7rem}
+  .pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .45rem;border-radius:2px;border:1px solid currentColor;margin-right:.3rem}
+  .pill.sqf{color:var(--terra-deep)}
+  .pill.draft{color:var(--ink-faint)}
+  .pill.gap{color:var(--terra)}
+  .pill.done{color:var(--grass)}
+  .doc .body{border-top:1px solid var(--rule);margin-top:.8rem;padding-top:.8rem;font-size:.93rem;max-height:420px;overflow:auto}
+  .doc .body h2{font-size:1rem;margin:1.1rem 0 .4rem}
+  .doc .body h3{font-size:.9rem;margin:.9rem 0 .3rem}
+  .doc .body table{border-collapse:collapse;font-size:.85rem;margin:.6rem 0;width:100%}
+  .doc .body th,.doc .body td{border:1px solid var(--rule);padding:.35rem .5rem;text-align:left}
+  .doc .body ul,.doc .body ol{padding-left:1.2rem}
+  .doc .body li{margin-bottom:.25rem}
+  .doc .body blockquote{border-left:3px solid var(--terra);margin:.8rem 0;padding:.1rem 0 .1rem .8rem;color:var(--ink-soft)}
+  .whoami{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.5rem}
+  .whoami>div{flex:1 1 190px}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main" class="shell" style="padding-block:2rem">
+
+  <span class="eyebrow">Operations portal &middot; controlled documents</span>
+  <h1 style="font-size:clamp(2rem,4vw,3rem)">SOP library</h1>
+  <p style="color:var(--ink-soft);max-width:62ch">The current version of every procedure.
+  If you printed one, the copy in your hand is out of date the moment this page changes &mdash;
+  work from the screen.</p>
+
+  <div class="whoami">
+    <div>
+      <label for="who">Your name</label>
+      <input id="who" type="text" placeholder="As it should appear on the record">
+    </div>
+    <div>
+      <label for="role">Your role</label>
+      <select id="role"><option value="">All roles</option></select>
+    </div>
+    <div style="flex:0 0 auto">
+      <button class="chip" type="button" id="sqfOnly" aria-pressed="false">Food safety only</button>
+    </div>
+  </div>
+
+  <p class="count" id="summary">Loading the library&hellip;</p>
+  <div class="doclist" id="docs"></div>
+
+</main>
+
+<footer data-footer></footer>
+
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  // AFB_API prefixes API CALLS ONLY. Static data files sit next to this page —
+  // prefixing them breaks the moment the site and API are on separate origins.
+  var API = window.AFB_API || "";
+  var DOCS = [], ACKED = {}, state = { role:"", sqfOnly:false };
+
+  (window.AFB_SOPS ? Promise.resolve(window.AFB_SOPS)
+                   : fetch("sops.json").then(function(r){ return r.json(); })
+  ).then(function(d){
+    DOCS = d.documents;
+    var roles = {};
+    DOCS.forEach(function(x){ (x.roles||[]).forEach(function(r){ roles[r] = 1; }); });
+    document.getElementById("role").innerHTML = '<option value="">All roles</option>' +
+      Object.keys(roles).sort().map(function(r){ return '<option>'+esc(r)+'</option>'; }).join("");
+    render();
+  }).catch(function(){
+    document.getElementById("summary").textContent =
+      "The library didn't load. Check that sops.json is being served.";
+  });
+
+  document.getElementById("role").addEventListener("change", function(){
+    state.role = this.value; render();
+  });
+  document.getElementById("sqfOnly").addEventListener("click", function(){
+    state.sqfOnly = !state.sqfOnly;
+    this.setAttribute("aria-pressed", String(state.sqfOnly));
+    render();
+  });
+
+  function visible(){
+    return DOCS.filter(function(d){
+      if (state.sqfOnly && d.scope !== "sqf") return false;
+      if (state.role && (d.roles||[]).indexOf(state.role) < 0) return false;
+      return true;
+    });
+  }
+
+  function gaps(d){
+    var g = [];
+    if (!d.owner) g.push("owner");
+    if (!d.approver) g.push("approver");
+    if (!d.version) g.push("version");
+    if (!d.effectiveDate) g.push("effective date");
+    return g;
+  }
+
+  function render(){
+    var rows = visible();
+    var outstanding = rows.filter(function(d){
+      return d.status === "active" && !ACKED[d.code + "@" + d.version];
+    }).length;
+    document.getElementById("summary").textContent =
+      rows.length + " document" + (rows.length === 1 ? "" : "s") +
+      (state.role ? " for " + state.role : "") +
+      " · " + outstanding + " awaiting your acknowledgement";
+
+    document.getElementById("docs").innerHTML = rows.map(function(d){
+      var g = gaps(d), key = d.code + "@" + d.version, done = ACKED[key];
+      return '<article class="doc' + (d.scope === "sqf" ? " sqf" : "") + '">' +
+        '<div class="doc-head"><code class="code">' + esc(d.code) + '</code>' +
+          '<h3>' + esc(d.title) + '</h3></div>' +
+        '<div class="meta">' + esc(d.department || "") +
+          ' &middot; v' + esc(d.version || "—") +
+          ' &middot; ' + esc((d.roles||[]).join(", ")) + '</div>' +
+        (d.scope === "sqf" ? '<span class="pill sqf">Food safety</span>' : '') +
+        (d.status === "draft" ? '<span class="pill draft">Draft — not issued</span>' : '') +
+        (d.confidential ? '<span class="pill draft">Confidential</span>' : '') +
+        (g.length ? '<span class="pill gap">Needs ' + esc(g.join(", ")) + '</span>' : '') +
+        (done ? '<span class="pill done">Acknowledged</span>' : '') +
+        '<details><summary style="cursor:pointer;font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);' +
+          'margin-top:.8rem">Read the procedure</summary>' +
+          '<div class="body">' + md(d.body || "") + '</div>' +
+          (d.status === "draft"
+            ? '<p class="count" style="margin-top:.8rem">This document is in draft and cannot be acknowledged yet.</p>'
+            : !d.version
+              ? '<p class="count" style="margin-top:.8rem">No version number assigned — acknowledgement would prove nothing.</p>'
+              : '<button class="btn small" type="button" style="margin-top:.9rem" ' +
+                'data-ack="' + esc(d.code) + '"' + (done ? ' disabled' : '') + '>' +
+                (done ? 'Acknowledged' : 'I have read and understood v' + esc(d.version)) + '</button>') +
+        '</details>' +
+      '</article>';
+    }).join("");
+  }
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-ack]");
+    if (!b) return;
+    var who = document.getElementById("who").value.trim();
+    if (!who){
+      document.getElementById("who").focus();
+      document.getElementById("summary").textContent = "Enter your name before acknowledging.";
+      return;
+    }
+    var code = b.dataset.ack;
+    var d = DOCS.filter(function(x){ return x.code === code; })[0];
+    b.disabled = true; b.textContent = "Recording…";
+
+    var done = function(){
+      ACKED[code + "@" + d.version] = true;
+      render();
+    };
+    if (window.AFB_DEMO){ setTimeout(done, 500); return; }
+    fetch(API + "/api/sops/" + encodeURIComponent(code) + "/acknowledge", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ person: who, person_role: document.getElementById("role").value || null })
+    }).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(done)
+      .catch(function(){
+        b.disabled = false;
+        b.textContent = "Couldn't record — try again";
+      });
+  });
+
+  // deliberately small markdown subset: headings, tables, lists, quotes, bold, code
+  function md(src){
+    var lines = esc(src).replace(/<!--[\s\S]*?-->/g, "").split("\n");
+    var out = [], inTable = false, inList = null;
+    function closeList(){ if (inList){ out.push("</" + inList + ">"); inList = null; } }
+    function closeTable(){ if (inTable){ out.push("</table>"); inTable = false; } }
+    lines.forEach(function(ln){
+      var t = ln.trim();
+      if (/^\|/.test(t)){
+        if (/^\|[\s\-|:]+\|$/.test(t)) return;
+        closeList();
+        var cells = t.split("|").slice(1, -1);
+        var tag = inTable ? "td" : "th";
+        if (!inTable){ out.push("<table>"); inTable = true; }
+        out.push("<tr>" + cells.map(function(c){
+          return "<" + tag + ">" + inline(c.trim()) + "</" + tag + ">"; }).join("") + "</tr>");
+        return;
+      }
+      closeTable();
+      var h = /^(#{2,4})\s+(.*)$/.exec(t);
+      if (h){ closeList(); out.push("<h" + h[1].length + ">" + inline(h[2]) + "</h" + h[1].length + ">"); return; }
+      if (/^>\s?/.test(t)){ closeList(); out.push("<blockquote>" + inline(t.replace(/^>\s?/, "")) + "</blockquote>"); return; }
+      var li = /^(-|\d+\.)\s+(.*)$/.exec(t);
+      if (li){
+        var want = li[1] === "-" ? "ul" : "ol";
+        if (inList !== want){ closeList(); out.push("<" + want + ">"); inList = want; }
+        out.push("<li>" + inline(li[2]) + "</li>");
+        return;
+      }
+      closeList();
+      if (t === "" || t === "---") return;
+      out.push("<p>" + inline(t) + "</p>");
+    });
+    closeList(); closeTable();
+    return out.join("");
+  }
+  function inline(s){
+    return s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/`(.+?)`/g, "<code>$1</code>")
+            .replace(/\*(.+?)\*/g, "<em>$1</em>");
+  }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+})();
+</script>
+</body>
+</html>

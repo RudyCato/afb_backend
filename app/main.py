@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops
 
 Base.metadata.create_all(bind=engine)
 
@@ -34,6 +34,10 @@ app.include_router(reports.router)
 app.include_router(production.router)
 app.include_router(pallets.router)
 app.include_router(packaging.router)
+app.include_router(order_tasks.router)
+app.include_router(mixes.router)
+app.include_router(applications.router)
+app.include_router(sops.router)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 
@@ -60,14 +64,19 @@ def production_page():
     return FileResponse(os.path.join(WEB_DIR, "production.html"))
 
 
-@app.get("/", response_class=HTMLResponse)
-def root():
+@app.get("/", response_class=FileResponse)
+def home_page():
+    return FileResponse(os.path.join(WEB_DIR, "home.html"))
+
+
+@app.get("/ops", response_class=HTMLResponse)
+def internal_links():
     return """
     <html>
     <head><title>American Food & Beverage — Operations</title></head>
     <body style="font-family:-apple-system,sans-serif;max-width:640px;margin:60px auto;padding:0 24px;color:#241A10;">
       <h1>American Food &amp; Beverage — Operations</h1>
-      <p>This server is running and reachable on the network. Pick where to go:</p>
+      <p>Internal tools. Pick where to go:</p>
       <ul style="line-height:2.2;font-size:1.05rem;">
         <li><a href="/order">Place / track an order</a> — customer-facing ordering site</li>
         <li><a href="/dashboard">Operations dashboard</a> — inventory, orders, shipping, reports</li>
@@ -77,3 +86,6 @@ def root():
     </body>
     </html>
     """
+SITE_DIR = SITE_DIR = os.path.join(os.path.dirname(__file__), "..", "afb-site")
+
+app.mount("/store", StaticFiles(directory=SITE_DIR, html=True), name="store")

@@ -1,0 +1,44 @@
+start.py + start.ps1
+====================
+
+EXTRACT INTO:
+
+    E:\data\claude\afb_website\afb_backend
+
+Both files must sit next to requirements.txt — NOT inside app\.
+
+Correct result:
+
+    afb_backend\
+      start.ps1          <- run this
+      start.py           <- it does the work
+      requirements.txt
+      app\
+      afb-site\
+      venv\
+
+
+THEN RUN
+--------
+
+    cd E:\data\claude\afb_website\afb_backend
+    .\start.ps1 -check      (checks only, doesn't start)
+    .\start.ps1             (starts the server)
+
+
+IF POWERSHELL REFUSES TO RUN IT
+-------------------------------
+"running scripts is disabled on this system" is the execution policy.
+Allow it for this window only:
+
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+-Scope Process means it applies to this terminal only and disappears
+when you close it. Nothing permanent, no admin rights needed.
+
+
+WHY TWO FILES
+-------------
+A venv is activated by changing the SHELL's PATH. Python cannot do that
+to the shell that launched it. So start.ps1 activates the venv, then
+hands off to start.py, which runs the checks and starts the server.

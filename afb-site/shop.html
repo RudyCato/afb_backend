@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="retail">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalog — American Food &amp; Beverage</title>
+<meta name="description" content="Browse the full American Food & Beverage catalog: nuts, dried fruits, trail mixes, granolas, chocolate-covered items and more, in seven packaging formats.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main" class="shell" style="padding-bottom:2rem">
+
+  <div style="padding-top:2rem">
+    <span class="eyebrow" data-mode-eyebrow>Catalog</span>
+    <h1 style="font-size:clamp(2rem,4vw,3rem)" data-mode-title>Everything we pack</h1>
+    <p style="color:var(--ink-soft)" data-mode-blurb></p>
+  </div>
+
+  <div class="toolbar">
+    <div class="grow">
+      <label for="q">Search by name or item number</label>
+      <input type="search" id="q" placeholder="cashew roasted salted, or 2810501">
+    </div>
+    <div style="flex:0 1 200px">
+      <label for="fmt">Packaging</label>
+      <select id="fmt"><option value="">All formats</option></select>
+    </div>
+    <div style="flex:0 1 180px">
+      <label for="sort">Sort</label>
+      <select id="sort">
+        <option value="name">Name A–Z</option>
+        <option value="item">Item number</option>
+        <option value="oz">Unit weight</option>
+        <option value="price">Price</option>
+      </select>
+    </div>
+    <div style="flex:0 0 auto;align-self:flex-end">
+      <button class="chip" type="button" id="orgToggle" aria-pressed="false">Organic only</button>
+    </div>
+    <div style="flex:0 0 auto;align-self:flex-end" data-wholesale-only hidden>
+      <button class="btn ghost small" type="button" id="csv">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="chiprow" id="cats" role="group" aria-label="Filter by category"></div>
+
+  <p class="count"><span id="count">—</span> &middot; <span data-wholesale-only hidden class="gated">Pricing shown once your account is approved. <a href="quote.html">Request access</a></span></p>
+  <p class="count" data-wholesale-only hidden id="minnote"></p>
+
+  <!-- retail -->
+  <div class="grid" id="grid" data-retail-only></div>
+
+  <!-- wholesale -->
+  <div class="tablewrap" id="sheetwrap" data-wholesale-only hidden>
+    <table class="sheet" id="sheet">
+      <caption class="skip">Wholesale item sheet</caption>
+      <thead><tr>
+        <th scope="col"><button type="button" data-sort="item">Item # <span class="sortmark"></span></button></th>
+        <th scope="col"><button type="button" data-sort="name">Description <span class="sortmark"></span></button></th>
+        <th scope="col"><button type="button" data-sort="category">Category <span class="sortmark"></span></button></th>
+        <th scope="col"><button type="button" data-sort="format">Packaging <span class="sortmark"></span></button></th>
+        <th scope="col" style="text-align:right"><button type="button" data-sort="caseQty">Case qty <span class="sortmark"></span></button></th>
+        <th scope="col" style="text-align:right"><button type="button" data-sort="unitOz">Unit wt (oz) <span class="sortmark"></span></button></th>
+        <th scope="col" style="text-align:right">Case wt</th>
+        <th scope="col" style="text-align:right"><button type="button" data-sort="moq">Min <span class="sortmark"></span></button></th>
+        <th scope="col">Add</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="empty" id="empty" hidden>
+    <h3>Nothing matches that yet</h3>
+    <p>Try a shorter search, or clear the category filter. Item numbers work too &mdash; ours all start with 2, 3 or 6.</p>
+    <button class="btn ghost" type="button" id="clearAll">Clear filters</button>
+  </div>
+
+</main>
+
+<footer data-footer></footer>
+
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  var state = { q:"", cat:"", fmt:"", organic:false, sort:"name", dir:1 };
+  var ALL = [];
+
+  var params = new URLSearchParams(location.search);
+  if (params.get("cat")) state.cat = params.get("cat");
+  if (params.get("fmt")) state.fmt = params.get("fmt");
+  if (params.get("q"))   state.q   = params.get("q");
+  if (params.get("organic")) state.organic = true;
+  if (params.get("mode")) AFB.setMode(params.get("mode"));
+
+  var $ = function(s){ return document.querySelector(s); };
+
+  AFB.catalog().then(function(data){
+    ALL = data.products;
+
+    $("#q").value = state.q;
+    $("#orgToggle").setAttribute("aria-pressed", String(state.organic));
+
+    $("#fmt").innerHTML = '<option value="">All formats</option>' +
+      data.formats.map(function(f){
+        return '<option value="'+f+'"'+(f===state.fmt?' selected':'')+'>'+f+'</option>';
+      }).join("");
+
+    $("#cats").innerHTML =
+      '<button class="chip" type="button" data-cat="" aria-pressed="'+(!state.cat)+'">All</button>' +
+      data.categories.map(function(c){
+        return '<button class="chip" type="button" data-cat="'+c+'" aria-pressed="'+(state.cat===c)+'">'+c+'</button>';
+      }).join("");
+
+    wire();
+    render();
+  }).catch(function(err){
+    $("#grid").innerHTML = '<div class="notice"><p>The catalog didn\'t load. Serve this site over http (not a file:// path) and confirm <code>catalog.json</code> sits beside these pages.</p></div>';
+  });
+
+  function wire(){
+    $("#q").addEventListener("input", function(){ state.q = this.value; render(); });
+    $("#fmt").addEventListener("change", function(){ state.fmt = this.value; render(); });
+    $("#sort").addEventListener("change", function(){ state.sort = this.value; state.dir = 1; render(); });
+    $("#orgToggle").addEventListener("click", function(){
+      state.organic = !state.organic;
+      this.setAttribute("aria-pressed", String(state.organic));
+      render();
+    });
+    $("#cats").addEventListener("click", function(e){
+      var b = e.target.closest("[data-cat]"); if (!b) return;
+      state.cat = b.dataset.cat;
+      this.querySelectorAll(".chip").forEach(function(c){
+        c.setAttribute("aria-pressed", String(c.dataset.cat === state.cat));
+      });
+      render();
+    });
+    $("#clearAll").addEventListener("click", function(){
+      state = { q:"", cat:"", fmt:"", organic:false, sort:"name", dir:1 };
+      $("#q").value = ""; $("#fmt").value = ""; $("#sort").value = "name";
+      $("#orgToggle").setAttribute("aria-pressed","false");
+      $("#cats").querySelectorAll(".chip").forEach(function(c){
+        c.setAttribute("aria-pressed", String(c.dataset.cat === ""));
+      });
+      render();
+    });
+    $("#csv").addEventListener("click", function(){
+      AFB.download("afb-catalog.csv", AFB.toCSV(filtered()));
+    });
+    document.querySelectorAll("[data-sort]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var k = b.dataset.sort;
+        state.dir = (state.sort === k) ? -state.dir : 1;
+        state.sort = k;
+        render();
+      });
+    });
+    document.addEventListener("afb:mode", render);
+  }
+
+  function filtered(){
+    var rows = ALL.filter(function(p){
+      if (state.cat && p.category !== state.cat) return false;
+      if (state.fmt && p.format !== state.fmt) return false;
+      if (state.organic && !p.organic) return false;
+      return AFB.matches(p, state.q);
+    });
+    var k = state.sort, d = state.dir;
+    rows.sort(function(a,b){
+      var x = a[k], y = b[k];
+      if (k === "oz") { x = a.unitOz; y = b.unitOz; }
+      if (typeof x === "string") return d * x.localeCompare(y);
+      return d * (x - y);
+    });
+    return rows;
+  }
+
+  function render(){
+    var mode = AFB.getMode(), rows = filtered();
+
+    document.querySelectorAll("[data-retail-only]").forEach(function(el){ el.hidden = mode !== "retail"; });
+    document.querySelectorAll("[data-wholesale-only]").forEach(function(el){ el.hidden = mode !== "wholesale"; });
+
+    $("[data-mode-eyebrow]").textContent = mode === "wholesale" ? "Item sheet" : "Catalog";
+    $("[data-mode-title]").textContent  = mode === "wholesale" ? "Every item, every case pack" : "Everything we pack";
+    $("[data-mode-blurb]").textContent  = mode === "wholesale"
+      ? "Sort any column, filter down, export what you need. Add items to a quote request and we'll price them against your volume."
+      : "Filter by what it is or how it's packed. Every jar, cup and container we fill.";
+
+    $("#count").textContent = rows.length + " of " + ALL.length + " items";
+    var m = AFB.minimums();
+    if (m) $("#minnote").textContent =
+      "Sold by the case. Opening order minimum " + m.wholesale.orderCases +
+      " cases or " + m.wholesale.orderWeightLb + " lb, whichever you hit first.";
+    $("#empty").hidden = rows.length > 0;
+    if (mode === "retail") { $("#grid").hidden = rows.length === 0; }
+    else { $("#sheetwrap").hidden = rows.length === 0; }
+
+    document.querySelectorAll(".sortmark").forEach(function(s){ s.textContent = ""; });
+    var active = document.querySelector('[data-sort="'+state.sort+'"] .sortmark');
+    if (active) active.textContent = state.dir > 0 ? "▲" : "▼";
+
+    if (mode === "retail") renderGrid(rows); else renderSheet(rows);
+  }
+
+  function renderGrid(rows){
+    $("#grid").innerHTML = rows.slice(0,300).map(function(p){
+      return '<article class="card">' +
+        '<a class="thumb" href="product.html?item='+encodeURIComponent(p.item)+'" aria-label="'+esc(p.name)+'">' +
+          '<span class="glyph" aria-hidden="true">'+AFB.glyph(p.category)+'</span></a>' +
+        '<div class="body">' +
+          '<h3><a href="product.html?item='+encodeURIComponent(p.item)+'">'+esc(p.name)+'</a></h3>' +
+          '<div class="meta">'+p.unitOz+' oz &middot; '+esc(p.format)+'</div>' +
+          (p.organic ? '<div style="margin-bottom:.6rem"><span class="flag organic">Organic</span><span class="flag kosher">OU Kosher</span></div>'
+                     : '<div style="margin-bottom:.6rem"><span class="flag kosher">OU Kosher</span></div>') +
+          '<div class="foot"><span class="price">'+AFB.money(p.price)+'</span>' +
+          '<button class="btn small" type="button" data-add="'+p.item+'">Add</button></div>' +
+        '</div></article>';
+    }).join("");
+    var note = $("#overflow");
+    if (!note){
+      note = document.createElement("p");
+      note.id = "overflow"; note.className = "count"; note.style.marginTop = "1rem";
+      note.textContent = "Showing the first 300. Narrow the search to see the rest.";
+      $("#grid").insertAdjacentElement("afterend", note);
+    }
+    note.hidden = rows.length <= 300;
+  }
+
+  function renderSheet(rows){
+    var tb = $("#sheet").querySelector("tbody");
+    tb.innerHTML = rows.map(function(p){
+      return '<tr>' +
+        '<td class="sku">'+p.item+'</td>' +
+        '<td class="desc"><a href="product.html?item='+encodeURIComponent(p.item)+'">'+esc(p.name)+'</a>' +
+          (p.organic ? ' <span class="flag organic">Org</span>' : '') + '</td>' +
+        '<td>'+esc(p.category)+'</td>' +
+        '<td>'+esc(p.format)+'</td>' +
+        '<td class="num">'+p.caseQty+'</td>' +
+        '<td class="num">'+p.unitOz+'</td>' +
+        '<td class="num">'+(p.caseWeightOz/16).toFixed(1)+' lb</td>' +
+        '<td class="moq">'+p.moq+'</td>' +
+        '<td><button class="btn ghost small" type="button" data-quote="'+p.item+'" data-moq="'+p.moq+'">+ Quote</button></td>' +
+      '</tr>';
+    }).join("");
+  }
+
+  document.addEventListener("click", function(e){
+    var add = e.target.closest("[data-add]");
+    if (add){ AFB.addToCart(add.dataset.add, 1); flash(add, "Added"); }
+    var q = e.target.closest("[data-quote]");
+    if (q){
+      var moq = parseInt(q.dataset.moq, 10) || 1;
+      AFB.addToQuote(q.dataset.quote, moq);
+      flash(q, moq > 1 ? moq + " cases" : "On quote");
+    }
+  });
+
+  function flash(btn, text){
+    var old = btn.textContent;
+    btn.textContent = text; btn.disabled = true;
+    setTimeout(function(){ btn.textContent = old; btn.disabled = false; }, 900);
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+})();
+</script>
+</body>
+</html>
