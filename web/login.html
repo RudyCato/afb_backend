@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Login — American Food & Beverage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --kraft:#E8DCC3; --kraft-deep:#DACBA6; --paper:#F4EDDB;
+    --espresso:#2B1D12; --espresso-soft:#4A3626;
+    --amber:#C77B2E; --amber-deep:#A2601C;
+    --forest:#3F5738; --forest-deep:#2C3E27;
+    --cranberry:#A23B34; --gold:#B8922F;
+    --line:#C9B896; --shadow:0 8px 24px rgba(43,29,18,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--kraft);color:var(--espresso);font-family:'Inter',sans-serif;
+    min-height:100vh;display:flex;flex-direction:column;}
+  h1{font-family:'Fraunces',serif;color:var(--espresso);margin:0;}
+  a{color:inherit;}
+
+  header{padding:20px 24px;border-bottom:2px solid var(--espresso);}
+  .back-link{
+    display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+    font-family:'IBM Plex Mono',monospace;font-size:0.78rem;text-transform:uppercase;
+    letter-spacing:0.06em;color:var(--espresso-soft);font-weight:600;
+  }
+  .back-link:hover{color:var(--amber-deep);}
+
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{
+    background:var(--paper);border:2px solid var(--espresso);border-radius:3px;
+    box-shadow:var(--shadow);padding:40px 36px;width:100%;max-width:400px;
+  }
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;letter-spacing:0.14em;
+    text-transform:uppercase;color:var(--amber-deep);font-weight:600;margin-bottom:8px;}
+  .card h1{font-size:1.7rem;font-weight:800;margin-bottom:6px;}
+  .card p.sub{color:var(--espresso-soft);font-size:0.92rem;margin:0 0 28px;}
+
+  label{display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;color:var(--espresso-soft);}
+  input{
+    width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:2px;
+    font-family:'Inter',sans-serif;font-size:0.98rem;background:#fff;color:var(--espresso);
+    margin-bottom:18px;
+  }
+  input:focus{outline:none;border-color:var(--espresso);}
+
+  .btn{
+    width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'IBM Plex Mono',monospace;font-size:0.85rem;text-transform:uppercase;
+    letter-spacing:0.05em;padding:14px 24px;border-radius:2px;border:2px solid var(--espresso);
+    background:var(--espresso);color:var(--paper);font-weight:600;cursor:pointer;
+  }
+  .btn:hover{background:var(--forest);border-color:var(--forest);}
+  .btn:disabled{opacity:0.6;cursor:default;}
+
+  .error{
+    background:#fbeceb;border:1.5px solid var(--cranberry);color:var(--cranberry);
+    padding:10px 14px;border-radius:2px;font-size:0.85rem;margin-bottom:18px;display:none;
+  }
+  .hint{margin-top:22px;font-size:0.8rem;color:var(--espresso-soft);text-align:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" href="/">&larr; Back to main site</a>
+</header>
+
+<main>
+  <div class="card">
+    <div class="eyebrow">Staff access</div>
+    <h1>Sign in</h1>
+    <p class="sub">Operations dashboard, packing &amp; production, and job applications.</p>
+
+    <div class="error" id="err"></div>
+
+    <form id="loginForm">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+      <button class="btn" type="submit" id="submitBtn">Sign in</button>
+    </form>
+
+    <p class="hint">Forgot your password? Ask your manager to reset it.</p>
+  </div>
+</main>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const nextPath = params.get('next') || '/dashboard';
+
+  const form = document.getElementById('loginForm');
+  const errBox = document.getElementById('err');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errBox.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in…';
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    try {
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'same-origin',
+        body: JSON.stringify({username, password})
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        errBox.textContent = data.detail || 'Incorrect username or password.';
+        errBox.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign in';
+        return;
+      }
+      window.location.href = nextPath;
+    } catch (err) {
+      errBox.textContent = 'Could not reach the server. Try again.';
+      errBox.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign in';
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -4,3 +4,4 @@ sqlalchemy>=2.0
 pydantic[email]>=2.10
 python-multipart>=0.0.20
 psycopg2-binary>=2.9   # Postgres driver — used automatically when DATABASE_URL is set (e.g. on Render)
+itsdangerous>=2.1       # signed cookie sessions for staff login (Starlette SessionMiddleware dependency)

@@ -334,6 +334,25 @@ class Pallet(Base):
     orders = relationship("Order", back_populates="pallet")
 
 
+class StaffRole(str, enum.Enum):
+    admin = "admin"           # full access — owner/consultant
+    manager = "manager"       # dashboard + applications admin
+    packer = "packer"         # production page only
+
+
+class StaffUser(Base):
+    __tablename__ = "staff_users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    role = Column(Enum(StaffRole), default=StaffRole.packer, nullable=False)
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login_at = Column(DateTime, nullable=True)
+
+
 class PackagingSpec(Base):
     """
     Defines what indirect materials (container, lid, box) a sellable product

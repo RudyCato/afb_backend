@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food &amp; Beverage — Job Applications</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 24px 60px;}
+
+  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:16px 0;}
+  header .wrap{padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header .top{font-weight:900;font-size:1.2rem;}
+  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;}
+  .nav-link{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;}
+
+  .kpi-row{display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap;}
+  .kpi{background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;padding:14px 18px;box-shadow:var(--shadow);min-width:110px;}
+  .kpi .n{font-family:'Bitter',serif;font-size:1.6rem;font-weight:900;}
+  .kpi .l{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-top:2px;}
+
+  .filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .filter-chip{
+    padding:7px 14px;border:1.5px solid var(--line-strong);border-radius:20px;font-size:0.8rem;
+    cursor:pointer;background:var(--paper);
+  }
+  .filter-chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;overflow:hidden;box-shadow:var(--shadow);}
+  th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);padding:10px 14px;border-bottom:2px solid var(--ink);background:var(--cream);}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:0.88rem;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .muted{color:var(--ink-soft);font-size:0.8rem;}
+
+  select.status-select{
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;padding:6px 8px;border:1.5px solid var(--line-strong);
+    border-radius:3px;background:#fff;color:var(--ink);
+  }
+  .status-badge{font-size:0.72rem;font-weight:700;padding:3px 9px;border-radius:12px;text-transform:capitalize;}
+  .status-new{background:#dde7f5;color:#2d4d78;}
+  .status-reviewing{background:#f5edd0;color:#7a5f10;}
+  .status-interview{background:#e3d8f0;color:#5a3a7a;}
+  .status-hired{background:#dcefd4;color:var(--olive-deep);}
+  .status-declined{background:#f2dcd8;color:var(--rust-deep);}
+
+  .notes-input{width:160px;}
+  .loading, .empty{color:var(--ink-soft);font-style:italic;padding:16px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <div class="top">American Food &amp; Beverage</div>
+      <div class="bottom">Job Applications</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <a href="/dashboard" class="nav-link">&larr; Dashboard</a>
+      <span id="whoami" class="mono" style="font-size:0.75rem;"></span>
+      <a href="#" class="nav-link" onclick="logout();return false;">Log out</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="filter-row" id="statusFilters">
+    <div class="filter-chip active" data-status="all">All</div>
+    <div class="filter-chip" data-status="new">New</div>
+    <div class="filter-chip" data-status="reviewing">Reviewing</div>
+    <div class="filter-chip" data-status="interview">Interview</div>
+    <div class="filter-chip" data-status="hired">Hired</div>
+    <div class="filter-chip" data-status="declined">Declined</div>
+  </div>
+  <div id="appsTableWrap"><div class="loading">Loading applications&hellip;</div></div>
+
+</div>
+
+<script>
+  const STATUS_OPTIONS = ['new', 'reviewing', 'interview', 'hired', 'declined'];
+  let applications = [];
+  let activeStatusFilter = 'all';
+
+  async function checkAuth() {
+    const res = await fetch('/auth/me');
+    if (!res.ok) { window.location.href = '/login?next=/applications-admin'; return; }
+    const me = await res.json();
+    document.getElementById('whoami').textContent = `${me.full_name} (${me.role})`;
+  }
+
+  function logout() {
+    fetch('/auth/logout', {method: 'POST'}).then(() => window.location.href = '/login');
+  }
+
+  // ---------------- KPIs ----------------
+  function renderKpis() {
+    const total = applications.length;
+    const byStatus = {};
+    STATUS_OPTIONS.forEach(s => byStatus[s] = 0);
+    applications.forEach(a => byStatus[a.status] = (byStatus[a.status] || 0) + 1);
+
+    document.getElementById('kpiRow').innerHTML = `
+      <div class="kpi"><div class="n">${total}</div><div class="l">Total applicants</div></div>
+      <div class="kpi"><div class="n">${byStatus.new || 0}</div><div class="l">New</div></div>
+      <div class="kpi"><div class="n">${byStatus.interview || 0}</div><div class="l">Interviewing</div></div>
+      <div class="kpi"><div class="n">${byStatus.hired || 0}</div><div class="l">Hired</div></div>
+    `;
+  }
+
+  // ---------------- Applications ----------------
+  async function loadApplications() {
+    try {
+      const res = await fetch('/api/applications');
+      if (res.status === 401 || res.status === 403) { window.location.href = '/login?next=/applications-admin'; return; }
+      if (!res.ok) throw new Error();
+      applications = await res.json();
+      renderApplications();
+      renderKpis();
+    } catch (e) {
+      document.getElementById('appsTableWrap').innerHTML = '<div class="empty">Could not load applications.</div>';
+    }
+  }
+
+  document.querySelectorAll('#statusFilters .filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#statusFilters .filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeStatusFilter = chip.getAttribute('data-status');
+      renderApplications();
+    });
+  });
+
+  function renderApplications() {
+    const filtered = activeStatusFilter === 'all'
+      ? applications
+      : applications.filter(a => a.status === activeStatusFilter);
+
+    if (!filtered.length) {
+      document.getElementById('appsTableWrap').innerHTML = '<div class="empty">No applications match this filter.</div>';
+      return;
+    }
+
+    const rows = filtered.map(a => `
+      <tr>
+        <td>
+          <div><strong>${escapeHtml(a.full_name)}</strong></div>
+          <div class="muted">${escapeHtml(a.phone)}${a.email ? ' &middot; ' + escapeHtml(a.email) : ''}</div>
+          <div class="muted">${escapeHtml(a.city || '')}</div>
+        </td>
+        <td>${escapeHtml(a.role)}</td>
+        <td class="muted">
+          ${a.shift_preference ? escapeHtml(a.shift_preference) : '—'}<br>
+          ${a.earliest_start ? 'Start: ' + escapeHtml(a.earliest_start) : ''}
+          ${a.cdl_class ? '<br>CDL: ' + escapeHtml(a.cdl_class) : ''}
+          ${a.resume_filename ? '<br>Resume: ' + escapeHtml(a.resume_filename) : ''}
+        </td>
+        <td class="muted">${new Date(a.submitted_at).toLocaleDateString()}</td>
+        <td>
+          <select class="status-select" onchange="updateStatus(${a.id}, this.value)">
+            ${STATUS_OPTIONS.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <input class="notes-input" placeholder="notes…" value="${escapeAttr(a.notes || '')}"
+            onblur="updateNotes(${a.id}, this.value)">
+        </td>
+      </tr>
+    `).join('');
+
+    document.getElementById('appsTableWrap').innerHTML = `
+      <table>
+        <thead><tr><th>Applicant</th><th>Position</th><th>Details</th><th>Applied</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  async function updateStatus(id, status) {
+    const a = applications.find(x => x.id === id);
+    await fetch(`/api/applications/${id}`, {
+      method: 'PATCH',
+      body: new URLSearchParams({status, notes: (a && a.notes) || ''}),
+    });
+    if (a) a.status = status;
+    renderKpis();
+  }
+
+  async function updateNotes(id, notes) {
+    const a = applications.find(x => x.id === id);
+    await fetch(`/api/applications/${id}`, {
+      method: 'PATCH',
+      body: new URLSearchParams({status: (a && a.status) || 'new', notes}),
+    });
+    if (a) a.notes = notes;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+  function escapeAttr(str) {
+    return (str || '').replace(/"/g, '&quot;');
+  }
+
+  checkAuth();
+  loadApplications();
+</script>
+
+</body>
+</html>

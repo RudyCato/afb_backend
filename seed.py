@@ -31,6 +31,7 @@ from datetime import datetime, timedelta
 
 from app.database import Base, engine, SessionLocal
 from app import models
+from app.auth import hash_password
 
 random.seed(7)
 
@@ -458,6 +459,39 @@ def seed_mix_recipes(db, products):
     return len(created), (1 if granola else 0)
 
 
+DEFAULT_STAFF_PASSWORD = "afb2026"  # everyone should change this after first login
+
+
+def seed_staff_users(db):
+    """
+    Creates one login per named packer plus a manager and an admin account.
+    Everyone starts on the same default password — first thing to change
+    once this goes live with the real team.
+    """
+    staff = [
+        ("rudy", "Rudy Cato", models.StaffRole.admin),
+        ("manager", "Warehouse Manager", models.StaffRole.manager),
+        ("luis", "Luis M.", models.StaffRole.packer),
+        ("dana", "Dana K.", models.StaffRole.packer),
+        ("marcus", "Marcus T.", models.StaffRole.packer),
+        ("elena", "Elena R.", models.StaffRole.packer),
+        ("omar", "Omar S.", models.StaffRole.packer),
+        ("priya", "Priya D.", models.StaffRole.packer),
+    ]
+    created = []
+    for username, full_name, role in staff:
+        u = models.StaffUser(
+            username=username,
+            password_hash=hash_password(DEFAULT_STAFF_PASSWORD),
+            full_name=full_name,
+            role=role,
+        )
+        db.add(u)
+        created.append(u)
+    db.commit()
+    return created
+
+
 def run(catalog_only=False):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -482,11 +516,13 @@ def run(catalog_only=False):
     packers = seed_packers_and_production(db, products)
     material_count, spec_count = seed_packaging_materials(db, products)
     raw_material_count, recipe_count = seed_mix_recipes(db, products)
+    staff = seed_staff_users(db)
     db.close()
     print(f"Seeded {len(products)} products, {len(customers)} customers, 6 sample orders, "
           f"{len(packers)} packers with sample assignments, {material_count} packaging/PPE "
           f"materials, {spec_count} packaging specs, {raw_material_count} raw materials, "
-          f"{recipe_count} mix recipe(s).")
+          f"{recipe_count} mix recipe(s), {len(staff)} staff logins "
+          f"(default password: {DEFAULT_STAFF_PASSWORD}).")
 
 
 if __name__ == "__main__":

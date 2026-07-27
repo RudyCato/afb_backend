@@ -31,6 +31,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, B
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.orm import Session
 
+from ..auth import require_role
 from ..database import Base, engine, get_db
 
 log = logging.getLogger("applications")
@@ -290,8 +291,9 @@ async def submit_application(
 
 @router.get("")
 def list_applications(status: str | None = None, role: str | None = None,
-                      limit: int = 100, db: Session = Depends(get_db)):
-    """Internal listing for the ops portal. Put this behind auth before launch."""
+                      limit: int = 100, db: Session = Depends(get_db),
+                      staff=Depends(require_role("admin", "manager"))):
+    """Internal listing for the ops portal — admin/manager staff only."""
     q = db.query(Application).order_by(Application.submitted_at.desc())
     if status:
         q = q.filter(Application.status == status)
@@ -305,7 +307,7 @@ def list_applications(status: str | None = None, role: str | None = None,
             "over_18": a.over_18, "earliest_start": a.earliest_start,
             "shift_preference": a.shift_preference, "cdl_class": a.cdl_class,
             "resume_filename": a.resume_filename, "status": a.status,
-            "language": a.language,
+            "language": a.language, "notes": a.notes,
         }
         for a in q.limit(min(limit, 500)).all()
     ]
@@ -313,7 +315,8 @@ def list_applications(status: str | None = None, role: str | None = None,
 
 @router.patch("/{app_id}")
 def update_status(app_id: int, status: str = Form(...), notes: str = Form(""),
-                  db: Session = Depends(get_db)):
+                  db: Session = Depends(get_db),
+                  staff=Depends(require_role("admin", "manager"))):
     row = db.get(Application, app_id)
     if not row:
         raise HTTPException(404, "No such application")

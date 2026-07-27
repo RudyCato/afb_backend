@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 
 from .models import (
     OrderStatus, ShipmentStatus, InventoryReason, AssignmentStatus, PalletStatus,
-    ProductType, OrderTaskType, OrderTaskStatus,
+    ProductType, OrderTaskType, OrderTaskStatus, StaffRole,
 )
 
 
@@ -420,3 +420,15 @@ class MixRequirementOut(BaseModel):
     unit_weight_lb: float
     total_weight_lb: float
     ingredients: List[IngredientAmount]
+
+
+# ---------- Staff auth ----------
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class StaffMeOut(BaseModel):
+    username: str
+    full_name: str
+    role: StaffRole

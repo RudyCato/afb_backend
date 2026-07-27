@@ -10,6 +10,8 @@ services:
         fromDatabase:
           name: afb-db
           property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
 
 databases:
   - name: afb-db
