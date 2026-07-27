@@ -289,7 +289,7 @@
     </div>
     <div class="panel">
       <table>
-        <thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Reorder at</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Product</th><th>Description</th><th>Category</th><th>Location</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Min qty</th><th>Status</th><th></th></tr></thead>
         <tbody id="inventoryRows"></tbody>
       </table>
     </div>
@@ -483,15 +483,60 @@
     </div>
     <div class="sub" id="adjPreview" style="margin-bottom:14px;"></div>
     <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Reason</label>
-    <select id="adjReason" style="margin-bottom:14px;">
+    <select id="adjReason" style="margin-bottom:6px;">
       <option value="adjustment">Manual adjustment</option>
       <option value="received_stock">Received stock</option>
       <option value="production_completed">Production completed</option>
+      <option value="removed">Removed (damaged / lost / samples)</option>
+      <option value="returned">Returned to stock</option>
     </select>
+    <div class="sub" style="margin-bottom:14px;font-size:0.72rem;">"Removed" always subtracts and "Returned" always adds, no matter which sign you type above.</div>
     <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Note (optional)</label>
     <input type="text" id="adjNote" style="margin-bottom:16px;" placeholder="e.g. Physical count correction">
     <div id="adjMsg" class="msg"></div>
     <button class="modal-btn" onclick="submitAdjust()">Save Adjustment</button>
+  </div>
+</div>
+
+<!-- INVENTORY LOCATION MODAL -->
+<div class="modal-backdrop" id="locationModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('locationModal')">&times;</button>
+    <h3 id="locSku">Edit Location</h3>
+    <div class="sub" id="locProductName"></div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin:14px 0 4px;">Warehouse</label>
+    <input type="text" id="locWarehouse" placeholder="e.g. Main, Supplies" style="margin-bottom:12px;">
+
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Aisle</label>
+        <input type="text" id="locAisle" placeholder="e.g. A" style="margin-bottom:12px;">
+      </div>
+      <div style="flex:1;">
+        <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Bin / Column</label>
+        <input type="text" id="locBinColumn" placeholder="e.g. 12" style="margin-bottom:12px;">
+      </div>
+    </div>
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Min qty (reorder point)</label>
+    <input type="number" id="locMinQty" style="margin-bottom:16px;">
+
+    <div id="locMsg" class="msg"></div>
+    <button class="modal-btn" onclick="submitLocation()">Save Location</button>
+  </div>
+</div>
+
+<!-- INVENTORY HISTORY MODAL -->
+<div class="modal-backdrop" id="historyModal">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="closeModal('historyModal')">&times;</button>
+    <h3 id="histSku">Transaction History</h3>
+    <div class="sub" id="histProductName" style="margin-bottom:16px;"></div>
+    <table>
+      <thead><tr><th>Date</th><th>Change</th><th>Reason</th><th>Note</th></tr></thead>
+      <tbody id="histRows"><tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading&hellip;</td></tr></tbody>
+    </table>
   </div>
 </div>
 
@@ -605,14 +650,25 @@ function renderInventory(data){
   LAST_INVENTORY = data;
   const filterType = document.getElementById('inventoryTypeFilter').value;
   const filtered = data.items.filter(i => (i.item_type || 'sellable') === filterType);
-  document.getElementById('inventoryRows').innerHTML = filtered.map(i=>`
+  document.getElementById('inventoryRows').innerHTML = filtered.map(i=>{
+    const locLabel = [i.warehouse, i.aisle ? `Aisle ${i.aisle}` : '', i.bin_column ? `Bin ${i.bin_column}` : '']
+      .filter(Boolean).join(' / ') || (i.location || '—');
+    const descLabel = i.description || '';
+    return `
     <tr class="${i.low_stock ? 'low':''}">
-      <td class="mono">${i.sku}</td><td>${i.name}</td><td>${i.category}</td>
+      <td class="mono">${i.sku}</td><td>${i.name}</td>
+      <td style="max-width:220px;font-size:0.8rem;color:var(--ink-soft);">${descLabel}</td>
+      <td>${i.category}</td>
+      <td style="font-size:0.82rem;">${locLabel}</td>
       <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
       <td><span class="pill ${i.low_stock?'low':''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
-      <td><button class="adjust-btn" onclick="openAdjustModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${i.qty_on_hand})">Adjust</button></td>
+      <td style="white-space:nowrap;">
+        <button class="adjust-btn" onclick="openAdjustModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${i.qty_on_hand})">Adjust</button>
+        <button class="adjust-btn" onclick="openLocationModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${JSON.stringify(i.warehouse||'')}, ${JSON.stringify(i.aisle||'')}, ${JSON.stringify(i.bin_column||'')}, ${i.reorder_threshold})">Location</button>
+        <button class="adjust-btn" onclick="openHistoryModal(${i.product_id}, '${i.sku}')">History</button>
+      </td>
     </tr>
-  `).join('') || '<tr><td colspan="9" class="empty">Nothing in this category.</td></tr>';
+  `;}).join('') || '<tr><td colspan="11" class="empty">Nothing in this category.</td></tr>';
 }
 
 /* ---------------- Customers ---------------- */
@@ -1006,13 +1062,18 @@ function updateAdjPreview(){
     `New on-hand quantity will be ${ADJ_CURRENT_QTY + change} (${change >= 0 ? '+' : ''}${change})`;
 }
 async function submitAdjust(){
-  const change_qty = parseInt(document.getElementById('adjAmount').value);
+  let change_qty = parseInt(document.getElementById('adjAmount').value);
   const reason = document.getElementById('adjReason').value;
   const reference = document.getElementById('adjNote').value || null;
   const msgEl = document.getElementById('adjMsg');
   if(!change_qty){
     msgEl.textContent = 'Enter a non-zero amount.'; msgEl.className = 'msg err'; return;
   }
+  // "Removed" always subtracts, "returned" always adds — regardless of the
+  // sign the person typed, so a mis-clicked +/- can't silently do the
+  // opposite of what the reason says.
+  if (reason === 'removed') change_qty = -Math.abs(change_qty);
+  if (reason === 'returned') change_qty = Math.abs(change_qty);
   try {
     const res = await fetch(`${API}/inventory/${ADJ_PRODUCT_ID}/adjust`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1023,6 +1084,72 @@ async function submitAdjust(){
     setTimeout(()=>{ closeModal('adjustModal'); loadAll(); }, 700);
   } catch(e){
     msgEl.textContent = 'Could not save: ' + e.message; msgEl.className = 'msg err';
+  }
+}
+
+/* ---------------- Inventory Location & Min Qty ---------------- */
+let LOC_PRODUCT_ID = null;
+
+function openLocationModal(productId, sku, name, warehouse, aisle, binColumn, reorderThreshold){
+  LOC_PRODUCT_ID = productId;
+  document.getElementById('locSku').textContent = sku;
+  document.getElementById('locProductName').textContent = name;
+  document.getElementById('locWarehouse').value = warehouse || '';
+  document.getElementById('locAisle').value = aisle || '';
+  document.getElementById('locBinColumn').value = binColumn || '';
+  document.getElementById('locMinQty').value = reorderThreshold;
+  document.getElementById('locMsg').style.display = 'none';
+  openModal('locationModal');
+}
+
+async function submitLocation(){
+  const msgEl = document.getElementById('locMsg');
+  const payload = {
+    warehouse: document.getElementById('locWarehouse').value.trim() || null,
+    aisle: document.getElementById('locAisle').value.trim() || null,
+    bin_column: document.getElementById('locBinColumn').value.trim() || null,
+    reorder_threshold: parseInt(document.getElementById('locMinQty').value) || 0,
+  };
+  try {
+    const res = await fetch(`${API}/inventory/${LOC_PRODUCT_ID}/location`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok'; msgEl.style.display = 'block';
+    setTimeout(()=>{ closeModal('locationModal'); loadAll(); }, 700);
+  } catch(e){
+    msgEl.textContent = 'Could not save: ' + e.message; msgEl.className = 'msg err'; msgEl.style.display = 'block';
+  }
+}
+
+/* ---------------- Inventory Transaction History ---------------- */
+async function openHistoryModal(productId, sku){
+  document.getElementById('histSku').textContent = sku;
+  document.getElementById('histProductName').textContent = 'Removed / returned / received / adjusted — every change to this item.';
+  document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading…</td></tr>';
+  openModal('historyModal');
+  try {
+    const rows = await fetchJSON(`/inventory/${productId}/transactions`);
+    if (!rows.length) {
+      document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">No transactions logged yet.</td></tr>';
+      return;
+    }
+    const reasonLabels = {
+      received_stock: 'Received stock', order_reserved: 'Order reserved', order_released: 'Order released',
+      order_shipped: 'Order shipped', adjustment: 'Manual adjustment', production_completed: 'Production completed',
+      removed: 'Removed', returned: 'Returned',
+    };
+    document.getElementById('histRows').innerHTML = rows.map(r => `
+      <tr>
+        <td class="mono">${new Date(r.created_at).toLocaleString()}</td>
+        <td style="color:${r.change_qty >= 0 ? 'var(--olive-deep)' : 'var(--rust-deep)'};font-weight:600;">${r.change_qty >= 0 ? '+' : ''}${r.change_qty}</td>
+        <td>${reasonLabels[r.reason] || r.reason}</td>
+        <td class="mono" style="font-size:0.8rem;">${r.reference || '—'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">Could not load history.</td></tr>';
   }
 }
 

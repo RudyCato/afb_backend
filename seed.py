@@ -166,16 +166,32 @@ def load_catalog_rows():
 
 def seed_catalog(db):
     products = []
-    for row in load_catalog_rows():
+    aisle_by_category = {}
+    next_aisle_letter = ord("A")
+
+    for idx, row in enumerate(load_catalog_rows()):
+        category = row["category"]
+        if category not in aisle_by_category:
+            aisle_by_category[category] = chr(next_aisle_letter)
+            next_aisle_letter += 1
+        aisle = aisle_by_category[category]
+        bin_column = str((idx % 24) + 1)   # 24 bin positions per aisle, cycling
+
+        description = f"{row['name']} — {category}" + (f", {row['pack_size']}" if row.get("pack_size") else "")
+
         p = models.Product(
-            sku=row["sku"], name=row["name"], category=row["category"],
+            sku=row["sku"], name=row["name"], description=description, category=category,
             pack_size=row["pack_size"], unit_price=row["price"], active=True,
         )
         db.add(p)
         db.flush()
         qty = row["qty_on_hand"]
         threshold = random.choice([10, 15, 20, 25])
-        db.add(models.Inventory(product_id=p.id, qty_on_hand=qty, reorder_threshold=threshold))
+        db.add(models.Inventory(
+            product_id=p.id, qty_on_hand=qty, reorder_threshold=threshold,
+            warehouse="Main", aisle=aisle, bin_column=bin_column,
+            location=f"Main / Aisle {aisle} / Bin {bin_column}",
+        ))
         db.add(models.InventoryTransaction(
             product_id=p.id, change_qty=qty,
             reason=models.InventoryReason.received_stock, reference="initial stock"
@@ -361,15 +377,19 @@ def seed_packaging_materials(db, products):
     ]
 
     created = {}
-    for sku, name, category in containers + lids + boxes + supplies:
+    for i, (sku, name, category) in enumerate(containers + lids + boxes + supplies):
         p = models.Product(
-            sku=sku, name=name, category=category,
+            sku=sku, name=name, description=f"{name} — {category}", category=category,
             item_type=models.ProductType.indirect_material, active=True,
         )
         db.add(p)
         db.flush()
         qty = random.randint(200, 1500)
-        db.add(models.Inventory(product_id=p.id, qty_on_hand=qty, reorder_threshold=100))
+        db.add(models.Inventory(
+            product_id=p.id, qty_on_hand=qty, reorder_threshold=100,
+            warehouse="Supplies", aisle="S", bin_column=str(i + 1),
+            location=f"Supplies / Aisle S / Bin {i + 1}",
+        ))
         db.add(models.InventoryTransaction(
             product_id=p.id, change_qty=qty,
             reason=models.InventoryReason.received_stock, reference="initial stock"

@@ -35,6 +35,8 @@ class InventoryReason(str, enum.Enum):
     order_shipped = "order_shipped"
     adjustment = "adjustment"
     production_completed = "production_completed"
+    removed = "removed"          # damaged, lost, samples taken, etc. — leaves the building
+    returned = "returned"        # customer return, unused pull, etc. — comes back into stock
 
 
 class AssignmentStatus(str, enum.Enum):
@@ -146,6 +148,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     sku = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)   # longer item description, separate from the short catalog name
     category = Column(String, nullable=False)
     pack_size = Column(String, nullable=True)   # e.g. "25 lb case"
     unit_price = Column(Float, nullable=True)   # optional, fill in later
@@ -166,10 +169,13 @@ class Inventory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column(Integer, ForeignKey("products.id"), unique=True, nullable=False)
-    location = Column(String, default="Paterson, NJ - Main")
+    location = Column(String, default="Paterson, NJ - Main")   # kept for display/back-compat
+    warehouse = Column(String, nullable=True, default="Main")
+    aisle = Column(String, nullable=True)
+    bin_column = Column(String, nullable=True)   # the "column" in a warehouse's aisle/column/shelf scheme
     qty_on_hand = Column(Integer, default=0)
     qty_reserved = Column(Integer, default=0)
-    reorder_threshold = Column(Integer, default=10)
+    reorder_threshold = Column(Integer, default=10)   # "min qty" — reorder point
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     product = relationship("Product", back_populates="inventory")

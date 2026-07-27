@@ -28,6 +28,7 @@ class CustomerOut(CustomerCreate):
 class ProductCreate(BaseModel):
     sku: str
     name: str
+    description: Optional[str] = None
     category: str
     pack_size: Optional[str] = None
     unit_price: Optional[float] = None
@@ -42,6 +43,7 @@ class ProductOut(BaseModel):
     id: int
     sku: str
     name: str
+    description: Optional[str] = None
     category: str
     pack_size: Optional[str]
     unit_price: Optional[float]
@@ -55,8 +57,12 @@ class InventoryOut(BaseModel):
     product_id: int
     sku: str
     name: str
+    description: Optional[str] = None
     category: str
     location: str
+    warehouse: Optional[str] = None
+    aisle: Optional[str] = None
+    bin_column: Optional[str] = None
     qty_on_hand: int
     qty_reserved: int
     qty_available: int
@@ -69,6 +75,13 @@ class InventoryAdjust(BaseModel):
     change_qty: int
     reason: InventoryReason = InventoryReason.adjustment
     reference: Optional[str] = None
+
+
+class InventoryLocationUpdate(BaseModel):
+    warehouse: Optional[str] = None
+    aisle: Optional[str] = None
+    bin_column: Optional[str] = None
+    reorder_threshold: Optional[int] = None
 
 
 # ---------- Orders ----------
