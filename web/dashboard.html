@@ -311,9 +311,9 @@
         <option value="indirect_material">Packaging &amp; Supplies (containers, lids, boxes, PPE)</option>
       </select>
     </div>
-    <div class="panel">
+    <div class="panel" style="overflow-x:auto;">
       <table>
-        <thead><tr><th>SKU</th><th>Product</th><th>Description</th><th>Category</th><th>Location</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Min qty</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Barcode</th><th>Product</th><th>Description</th><th>Category</th><th>Location</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Min qty</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="inventoryRows"></tbody>
       </table>
     </div>
@@ -544,10 +544,13 @@
     </div>
 
     <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Min qty (reorder point)</label>
-    <input type="number" id="locMinQty" style="margin-bottom:16px;">
+    <input type="number" id="locMinQty" style="margin-bottom:12px;">
+
+    <label style="display:block;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;">Barcode / GTIN <span style="text-transform:none;font-weight:400;">(UPC, EAN-13, or GTIN-14 — used by scanner lookup)</span></label>
+    <input type="text" id="locBarcode" style="margin-bottom:16px;" placeholder="e.g. 10614141999996">
 
     <div id="locMsg" class="msg"></div>
-    <button class="modal-btn" onclick="submitLocation()">Save Location</button>
+    <button class="modal-btn" onclick="submitLocation()">Save</button>
   </div>
 </div>
 
@@ -931,30 +934,51 @@ function renderCycleChart(data){
 
 let LAST_INVENTORY = {items: []};
 
+let INV_ITEMS_BY_ID = {};
+
 function renderInventory(data){
   LAST_INVENTORY = data;
   const filterType = document.getElementById('inventoryTypeFilter').value;
   const filtered = data.items.filter(i => (i.item_type || 'sellable') === filterType);
+  INV_ITEMS_BY_ID = Object.fromEntries(filtered.map(i => [i.product_id, i]));
+  const escHtml = (s) => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
   document.getElementById('inventoryRows').innerHTML = filtered.map(i=>{
     const locLabel = [i.warehouse, i.aisle ? `Aisle ${i.aisle}` : '', i.bin_column ? `Bin ${i.bin_column}` : '']
       .filter(Boolean).join(' / ') || (i.location || '—');
-    const descLabel = i.description || '';
     return `
-    <tr class="${i.low_stock ? 'low':''}">
-      <td class="mono">${i.sku}</td><td>${i.name}</td>
-      <td style="max-width:220px;font-size:0.8rem;color:var(--ink-soft);">${descLabel}</td>
-      <td>${i.category}</td>
-      <td style="font-size:0.82rem;">${locLabel}</td>
+    <tr class="${i.low_stock ? 'low':''}" data-product-id="${i.product_id}">
+      <td class="mono">${escHtml(i.sku)}</td>
+      <td class="mono" style="font-size:0.78rem;">${escHtml(i.barcode || '—')}</td>
+      <td>${escHtml(i.name)}</td>
+      <td style="max-width:220px;font-size:0.8rem;color:var(--ink-soft);">${escHtml(i.description || '')}</td>
+      <td>${escHtml(i.category)}</td>
+      <td style="font-size:0.82rem;">${escHtml(locLabel)}</td>
       <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
       <td><span class="pill ${i.low_stock?'low':''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
       <td style="white-space:nowrap;">
-        <button class="adjust-btn" onclick="openAdjustModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${i.qty_on_hand})">Adjust</button>
-        <button class="adjust-btn" onclick="openLocationModal(${i.product_id}, '${i.sku}', '${i.name.replace(/'/g,"\\'")}', ${JSON.stringify(i.warehouse||'')}, ${JSON.stringify(i.aisle||'')}, ${JSON.stringify(i.bin_column||'')}, ${i.reorder_threshold})">Location</button>
-        <button class="adjust-btn" onclick="openHistoryModal(${i.product_id}, '${i.sku}')">History</button>
+        <button class="adjust-btn" data-inv-action="adjust">Adjust</button>
+        <button class="adjust-btn" data-inv-action="location">Location</button>
+        <button class="adjust-btn" data-inv-action="history">History</button>
       </td>
     </tr>
-  `;}).join('') || '<tr><td colspan="11" class="empty">Nothing in this category.</td></tr>';
+  `;}).join('') || '<tr><td colspan="12" class="empty">Nothing in this category.</td></tr>';
 }
+
+// One delegated listener for every Adjust / Location / History button in the
+// dashboard's inventory table — avoids the inline-onclick quoting bug that
+// broke when a product name or location contained special characters.
+document.getElementById('inventoryRows').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button[data-inv-action]');
+  if (!btn) return;
+  const tr = btn.closest('tr[data-product-id]');
+  if (!tr) return;
+  const item = INV_ITEMS_BY_ID[parseInt(tr.dataset.productId)];
+  if (!item) return;
+  const a = btn.dataset.invAction;
+  if (a === 'adjust')   openAdjustModal(item.product_id, item.sku, item.name, item.qty_on_hand);
+  if (a === 'location') openLocationModal(item.product_id, item.sku, item.name, item.warehouse||'', item.aisle||'', item.bin_column||'', item.reorder_threshold, item.barcode||'');
+  if (a === 'history')  openHistoryModal(item.product_id, item.sku);
+});
 
 /* ---------------- Customers ---------------- */
 async function openCustomerListModal(){
@@ -1372,17 +1396,20 @@ async function submitAdjust(){
   }
 }
 
-/* ---------------- Inventory Location & Min Qty ---------------- */
+/* ---------------- Inventory Location & Min Qty (+ Barcode) ---------------- */
 let LOC_PRODUCT_ID = null;
+let LOC_ORIGINAL_BARCODE = '';
 
-function openLocationModal(productId, sku, name, warehouse, aisle, binColumn, reorderThreshold){
+function openLocationModal(productId, sku, name, warehouse, aisle, binColumn, reorderThreshold, barcode){
   LOC_PRODUCT_ID = productId;
+  LOC_ORIGINAL_BARCODE = barcode || '';
   document.getElementById('locSku').textContent = sku;
   document.getElementById('locProductName').textContent = name;
   document.getElementById('locWarehouse').value = warehouse || '';
   document.getElementById('locAisle').value = aisle || '';
   document.getElementById('locBinColumn').value = binColumn || '';
   document.getElementById('locMinQty').value = reorderThreshold;
+  document.getElementById('locBarcode').value = barcode || '';
   document.getElementById('locMsg').style.display = 'none';
   openModal('locationModal');
 }
@@ -1395,12 +1422,20 @@ async function submitLocation(){
     bin_column: document.getElementById('locBinColumn').value.trim() || null,
     reorder_threshold: parseInt(document.getElementById('locMinQty').value) || 0,
   };
+  const newBarcode = document.getElementById('locBarcode').value.trim();
   try {
     const res = await fetch(`${API}/inventory/${LOC_PRODUCT_ID}/location`, {
       method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload),
     });
     if(!res.ok) throw new Error(await res.text());
+    if (newBarcode !== LOC_ORIGINAL_BARCODE) {
+      const pres = await fetch(`${API}/products/${LOC_PRODUCT_ID}`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({barcode: newBarcode}),
+      });
+      if(!pres.ok) throw new Error(await pres.text());
+    }
     msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok'; msgEl.style.display = 'block';
     setTimeout(()=>{ closeModal('locationModal'); loadAll(); }, 700);
   } catch(e){

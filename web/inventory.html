@@ -51,7 +51,8 @@
   .summary-row{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;font-size:0.85rem;color:var(--ink-soft);}
   .summary-row strong{color:var(--ink);}
 
-  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line-strong);border-radius:3px;overflow:hidden;box-shadow:var(--shadow);}
+  .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line-strong);border-radius:3px;box-shadow:var(--shadow);background:var(--paper);}
+  table{width:100%;min-width:1050px;border-collapse:collapse;background:var(--paper);}
   th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);padding:9px 10px;border-bottom:2px solid var(--ink);background:var(--cream);white-space:nowrap;}
   td{padding:10px;border-bottom:1px solid var(--line);font-size:0.85rem;vertical-align:top;}
   tr:last-child td{border-bottom:none;}
@@ -139,17 +140,22 @@
 
   <div class="summary-row no-print" id="summaryRow"></div>
 
+  <div class="table-scroll">
   <table>
     <thead>
       <tr>
-        <th>SKU</th><th>Product</th><th>Description</th><th>Location</th>
+        <th>SKU</th><th>Barcode</th><th>Product</th><th>Description</th><th>Location</th>
         <th>On hand</th><th>Reserved</th><th>Available</th><th>Min qty</th>
         <th class="print-count-col">Counted qty</th>
-        <th>Status</th><th class="action-col no-print"></th>
+        <th>Status</th><th class="action-col no-print">Actions</th>
       </tr>
     </thead>
-    <tbody id="rows"><tr><td colspan="11" class="empty">Loading inventory…</td></tr></tbody>
+    <tbody id="rows"><tr><td colspan="12" class="empty">Loading inventory…</td></tr></tbody>
   </table>
+  </div>
+  <div class="no-print" style="font-size:0.72rem;color:var(--ink-soft);margin-top:6px;">
+    On phones and small screens: swipe the table left to reveal the Actions column.
+  </div>
 
 </div>
 
@@ -203,8 +209,12 @@
     </div>
     <label>Min qty (reorder point)</label>
     <input type="number" id="locMinQty" style="margin-bottom:14px;">
+
+    <label>Barcode / GTIN <span style="font-weight:400;color:var(--ink-soft);">(UPC, EAN-13, or GTIN-14 — used by the scanner to identify this product)</span></label>
+    <input type="text" id="locBarcode" style="margin-bottom:14px;" placeholder="e.g. 10614141999996">
+
     <div id="locMsg" class="msg"></div>
-    <button class="modal-btn" onclick="submitLocation()">Save Location</button>
+    <button class="modal-btn" onclick="submitLocation()">Save</button>
   </div>
 </div>
 
@@ -271,34 +281,56 @@
     `;
 
     if (!items.length) {
-      document.getElementById('rows').innerHTML = '<tr><td colspan="11" class="empty">No items match.</td></tr>';
+      document.getElementById('rows').innerHTML = '<tr><td colspan="12" class="empty">No items match.</td></tr>';
       return;
     }
+
+    // Keep a map by product_id so the click handler can grab all the fields
+    // for a row without them having to be embedded in the HTML (which is what
+    // used to break the action buttons — quoted JSON inside onclick="").
+    ITEMS_BY_ID = Object.fromEntries(items.map(i => [i.product_id, i]));
 
     document.getElementById('rows').innerHTML = items.map(i => {
       const locLabel = [i.warehouse, i.aisle ? `Aisle ${i.aisle}` : '', i.bin_column ? `Bin ${i.bin_column}` : '']
         .filter(Boolean).join(' / ') || (i.location || '—');
       return `
-        <tr class="${i.low_stock ? 'low' : ''}">
+        <tr class="${i.low_stock ? 'low' : ''}" data-product-id="${i.product_id}">
           <td class="mono">${escapeHtml(i.sku)}</td>
+          <td class="mono" style="font-size:0.78rem;">${escapeHtml(i.barcode || '—')}</td>
           <td>${escapeHtml(i.name)}</td>
           <td style="max-width:200px;font-size:0.8rem;color:var(--ink-soft);">${escapeHtml(i.description || '')}</td>
           <td style="font-size:0.8rem;">${escapeHtml(locLabel)}</td>
           <td>${i.qty_on_hand}</td><td>${i.qty_reserved}</td><td>${i.qty_available}</td><td>${i.reorder_threshold}</td>
           <td class="print-count-col"><input class="count-input" type="text"></td>
           <td><span class="pill ${i.low_stock ? 'low' : ''}">${i.low_stock ? 'Reorder' : 'OK'}</span></td>
-          <td class="action-col no-print">
-            <button class="action-btn" onclick="openAdjustModal(${i.product_id}, '${escJs(i.sku)}', '${escJs(i.name)}', ${i.qty_on_hand})">Adjust</button>
-            <button class="action-btn" onclick="openLocationModal(${i.product_id}, '${escJs(i.sku)}', '${escJs(i.name)}', ${JSON.stringify(i.warehouse || '')}, ${JSON.stringify(i.aisle || '')}, ${JSON.stringify(i.bin_column || '')}, ${i.reorder_threshold})">Location</button>
-            <button class="action-btn" onclick="openHistoryModal(${i.product_id}, '${escJs(i.sku)}')">History</button>
+          <td class="action-col no-print" style="white-space:nowrap;">
+            <button class="action-btn" data-action="adjust">Adjust</button>
+            <button class="action-btn" data-action="location">Location</button>
+            <button class="action-btn" data-action="history">History</button>
           </td>
         </tr>
       `;
     }).join('');
   }
 
+  // Event-delegation click handler — replaces the fragile inline onclick=""
+  // approach so quoted values in product data can never break the row.
+  document.getElementById('rows').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-action]');
+    if (!btn) return;
+    const tr = btn.closest('tr[data-product-id]');
+    if (!tr) return;
+    const item = ITEMS_BY_ID[parseInt(tr.dataset.productId)];
+    if (!item) return;
+    const action = btn.dataset.action;
+    if (action === 'adjust')   openAdjustModal(item);
+    if (action === 'location') openLocationModal(item);
+    if (action === 'history')  openHistoryModal(item);
+  });
+
+  let ITEMS_BY_ID = {};
+
   function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
-  function escJs(str){ return (str || '').replace(/'/g, "\\'"); }
 
   function openModal(id){ document.getElementById(id).classList.add('show'); }
   function closeModal(id){ document.getElementById(id).classList.remove('show'); }
@@ -330,11 +362,11 @@
 
   /* ---------------- Adjust ---------------- */
   let ADJ_PRODUCT_ID = null, ADJ_CURRENT_QTY = 0;
-  function openAdjustModal(productId, sku, name, currentQty){
-    ADJ_PRODUCT_ID = productId; ADJ_CURRENT_QTY = currentQty;
-    document.getElementById('adjSku').textContent = sku;
-    document.getElementById('adjProductName').textContent = name;
-    document.getElementById('adjCurrentQty').textContent = currentQty;
+  function openAdjustModal(item){
+    ADJ_PRODUCT_ID = item.product_id; ADJ_CURRENT_QTY = item.qty_on_hand;
+    document.getElementById('adjSku').textContent = item.sku;
+    document.getElementById('adjProductName').textContent = item.name;
+    document.getElementById('adjCurrentQty').textContent = item.qty_on_hand;
     document.getElementById('adjAmount').value = 1;
     document.getElementById('adjNote').value = '';
     document.getElementById('adjMsg').style.display = 'none';
@@ -373,16 +405,19 @@
     }
   }
 
-  /* ---------------- Location ---------------- */
+  /* ---------------- Location (+ Barcode) ---------------- */
   let LOC_PRODUCT_ID = null;
-  function openLocationModal(productId, sku, name, warehouse, aisle, binColumn, reorderThreshold){
-    LOC_PRODUCT_ID = productId;
-    document.getElementById('locSku').textContent = sku;
-    document.getElementById('locProductName').textContent = name;
-    document.getElementById('locWarehouse').value = warehouse || '';
-    document.getElementById('locAisle').value = aisle || '';
-    document.getElementById('locBinColumn').value = binColumn || '';
-    document.getElementById('locMinQty').value = reorderThreshold;
+  let LOC_ORIGINAL_BARCODE = '';
+  function openLocationModal(item){
+    LOC_PRODUCT_ID = item.product_id;
+    LOC_ORIGINAL_BARCODE = item.barcode || '';
+    document.getElementById('locSku').textContent = item.sku;
+    document.getElementById('locProductName').textContent = item.name;
+    document.getElementById('locWarehouse').value = item.warehouse || '';
+    document.getElementById('locAisle').value = item.aisle || '';
+    document.getElementById('locBinColumn').value = item.bin_column || '';
+    document.getElementById('locMinQty').value = item.reorder_threshold;
+    document.getElementById('locBarcode').value = item.barcode || '';
     document.getElementById('locMsg').style.display = 'none';
     openModal('locationModal');
   }
@@ -394,12 +429,24 @@
       bin_column: document.getElementById('locBinColumn').value.trim() || null,
       reorder_threshold: parseInt(document.getElementById('locMinQty').value) || 0,
     };
+    const newBarcode = document.getElementById('locBarcode').value.trim();
     try {
+      // 1. Location + min-qty go to the Inventory row.
       const res = await fetch(`${API}/inventory/${LOC_PRODUCT_ID}/location`, {
         method: 'PATCH', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(await res.text());
+
+      // 2. If the barcode changed, save that on the Product itself.
+      if (newBarcode !== LOC_ORIGINAL_BARCODE) {
+        const pres = await fetch(`${API}/products/${LOC_PRODUCT_ID}`, {
+          method: 'PATCH', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({barcode: newBarcode}),
+        });
+        if (!pres.ok) throw new Error(await pres.text());
+      }
+
       msgEl.textContent = 'Saved.'; msgEl.className = 'msg ok'; msgEl.style.display = 'block';
       setTimeout(() => { closeModal('locationModal'); loadInventory(); }, 700);
     } catch (e) {
@@ -408,13 +455,13 @@
   }
 
   /* ---------------- History ---------------- */
-  async function openHistoryModal(productId, sku){
-    document.getElementById('histSku').textContent = sku;
+  async function openHistoryModal(item){
+    document.getElementById('histSku').textContent = item.sku;
     document.getElementById('histProductName').textContent = 'Every change to this item — received, removed, returned, adjusted.';
     document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="mono" style="color:var(--ink-soft);">Loading…</td></tr>';
     openModal('historyModal');
     try {
-      const res = await fetch(`/inventory/${productId}/transactions`);
+      const res = await fetch(`/inventory/${item.product_id}/transactions`);
       const rows = await res.json();
       if (!rows.length) {
         document.getElementById('histRows').innerHTML = '<tr><td colspan="4" class="empty">No transactions logged yet.</td></tr>';

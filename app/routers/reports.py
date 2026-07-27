@@ -62,6 +62,7 @@ def inventory_report(db: Session = Depends(get_db)):
             "description": r.product.description,
             "category": r.product.category,
             "item_type": r.product.item_type.value,
+            "barcode": r.product.barcode,
             "warehouse": r.warehouse,
             "aisle": r.aisle,
             "bin_column": r.bin_column,
