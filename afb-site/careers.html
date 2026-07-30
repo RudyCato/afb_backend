@@ -62,6 +62,9 @@
       <button class="chip" type="button" data-lang="en" aria-pressed="true">English</button>
       <button class="chip" type="button" data-lang="es" aria-pressed="false">Español</button>
     </div>
+    <p style="margin-top:1rem;font-size:.9rem;color:var(--ink-soft)">
+      Already work here? <a href="employee-application.html" style="color:var(--terra-deep);font-weight:600">Apply for an internal transfer or promotion &rarr;</a>
+    </p>
   </section>
 
   <section class="band" style="border-top:1px solid var(--rule);padding-block:2rem">
@@ -82,6 +85,11 @@
         <div class="field">
           <label for="role" data-t="l_role">Role you're applying for <span class="req">*</span></label>
           <select id="role" name="role" required></select>
+        </div>
+
+        <div id="rolePreview" style="display:none;background:#fbf6e9;border:1px solid var(--rule-strong);border-radius:var(--radius);padding:.85rem 1rem;margin-bottom:1rem;font-size:.88rem;">
+          <div style="font-family:'Karla',sans-serif;font-weight:600;margin-bottom:.3rem" id="rolePreviewTitle">What this role covers</div>
+          <div id="rolePreviewSops" style="color:var(--ink-soft);font-size:.85rem"></div>
         </div>
 
         <div class="formgrid">
@@ -257,6 +265,31 @@
   function toggleDriver(){
     var v = document.getElementById("role").value.toLowerCase();
     document.getElementById("driverFields").hidden = v.indexOf("driver") < 0;
+    renderRolePreview(v);
+  }
+
+  // When a role is picked, show a short preview of the SOPs that role follows.
+  // Lightweight — matches by title against the pre-loaded JOBS array so it
+  // works even if the SOP API isn't reachable from the static site.
+  function renderRolePreview(title){
+    var box = document.getElementById("rolePreview");
+    var body = document.getElementById("rolePreviewSops");
+    if (!title || title === "general application"){
+      box.style.display = "none";
+      return;
+    }
+    var job = JOBS.filter(function(j){ return j.title.toLowerCase() === title; })[0];
+    if (!job){ box.style.display = "none"; return; }
+
+    var codes = (job.sopCodes || []);
+    box.style.display = "block";
+    if (!codes.length){
+      body.innerHTML = "This role does not have written SOPs yet — the trainer walks you through everything on your first day.";
+      return;
+    }
+    body.innerHTML = "You'll be trained on: " +
+      codes.map(function(c){ return '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:.8rem;background:#fff;padding:2px 6px;border-radius:3px;border:1px solid var(--rule)">'+esc(c)+'</span>'; }).join(" ") +
+      '<div style="margin-top:.4rem;font-size:.8rem"><a href="sops.html" target="_blank" rel="noopener" style="color:var(--terra-deep)">View the SOP library &rarr;</a></div>';
   }
 
   document.addEventListener("click", function(e){

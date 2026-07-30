@@ -49,13 +49,36 @@
   }
   .status-badge{font-size:0.72rem;font-weight:700;padding:3px 9px;border-radius:12px;text-transform:capitalize;}
   .status-new{background:#dde7f5;color:#2d4d78;}
-  .status-reviewing{background:#f5edd0;color:#7a5f10;}
+  .status-reviewing, .status-under_review{background:#f5edd0;color:#7a5f10;}
   .status-interview{background:#e3d8f0;color:#5a3a7a;}
-  .status-hired{background:#dcefd4;color:var(--olive-deep);}
+  .status-hired, .status-approved{background:#dcefd4;color:var(--olive-deep);}
   .status-declined{background:#f2dcd8;color:var(--rust-deep);}
+  .status-submitted{background:#dde7f5;color:#2d4d78;}
+  .status-withdrawn{background:#e2e2e2;color:#555;}
 
   .notes-input{width:160px;}
   .loading, .empty{color:var(--ink-soft);font-style:italic;padding:16px;}
+
+  /* Top-level tab switcher between external and internal (employee) apps */
+  .mode-tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--line-strong);}
+  .mode-tab{
+    padding:12px 24px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;text-transform:uppercase;
+    letter-spacing:0.05em;cursor:pointer;background:transparent;border:none;color:var(--ink-soft);
+    border-bottom:3px solid transparent;margin-bottom:-2px;
+  }
+  .mode-tab.active{color:var(--ink);border-bottom-color:var(--rust);font-weight:600;}
+  .mode-tab .count-pill{
+    display:inline-block;margin-left:8px;background:var(--ink);color:var(--paper);
+    font-size:0.65rem;padding:2px 7px;border-radius:10px;
+  }
+  .mode-tab.active .count-pill{background:var(--rust);}
+  .sop-chips{display:flex;flex-wrap:wrap;gap:4px;}
+  .sop-chip{
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;background:#e3f0d8;color:var(--olive-deep);
+    padding:2px 7px;border-radius:10px;
+  }
+  .reason-cell{max-width:260px;font-size:0.82rem;color:var(--ink-soft);}
+  .reason-cell.full{white-space:normal;}
 </style>
 </head>
 <body>
@@ -76,23 +99,32 @@
 
 <div class="wrap">
 
+  <div class="mode-tabs">
+    <button type="button" class="mode-tab active" data-mode="external" onclick="switchMode('external')">
+      External applicants <span class="count-pill" id="extCount">0</span>
+    </button>
+    <button type="button" class="mode-tab" data-mode="internal" onclick="switchMode('internal')">
+      Internal / employee transfers <span class="count-pill" id="intCount">0</span>
+    </button>
+  </div>
+
   <div class="kpi-row" id="kpiRow"></div>
 
-  <div class="filter-row" id="statusFilters">
-    <div class="filter-chip active" data-status="all">All</div>
-    <div class="filter-chip" data-status="new">New</div>
-    <div class="filter-chip" data-status="reviewing">Reviewing</div>
-    <div class="filter-chip" data-status="interview">Interview</div>
-    <div class="filter-chip" data-status="hired">Hired</div>
-    <div class="filter-chip" data-status="declined">Declined</div>
-  </div>
+  <div class="filter-row" id="statusFilters"></div>
   <div id="appsTableWrap"><div class="loading">Loading applications&hellip;</div></div>
 
 </div>
 
 <script>
-  const STATUS_OPTIONS = ['new', 'reviewing', 'interview', 'hired', 'declined'];
-  let applications = [];
+  // Two entirely separate data sets — external applicants come from /api/applications,
+  // employee transfer requests come from /employee-applications. They have different
+  // status vocabularies and different columns, so they render through different code paths.
+  const STATUS_EXTERNAL = ['new', 'reviewing', 'interview', 'hired', 'declined'];
+  const STATUS_INTERNAL = ['submitted', 'under_review', 'approved', 'declined', 'withdrawn'];
+
+  let external = [];
+  let internal = [];
+  let mode = 'external';           // 'external' | 'internal'
   let activeStatusFilter = 'all';
 
   async function checkAuth() {
@@ -106,51 +138,92 @@
     fetch('/auth/logout', {method: 'POST'}).then(() => window.location.href = '/login');
   }
 
-  // ---------------- KPIs ----------------
-  function renderKpis() {
-    const total = applications.length;
-    const byStatus = {};
-    STATUS_OPTIONS.forEach(s => byStatus[s] = 0);
-    applications.forEach(a => byStatus[a.status] = (byStatus[a.status] || 0) + 1);
-
-    document.getElementById('kpiRow').innerHTML = `
-      <div class="kpi"><div class="n">${total}</div><div class="l">Total applicants</div></div>
-      <div class="kpi"><div class="n">${byStatus.new || 0}</div><div class="l">New</div></div>
-      <div class="kpi"><div class="n">${byStatus.interview || 0}</div><div class="l">Interviewing</div></div>
-      <div class="kpi"><div class="n">${byStatus.hired || 0}</div><div class="l">Hired</div></div>
-    `;
+  // ---------------- Mode switcher ----------------
+  function switchMode(next) {
+    mode = next;
+    activeStatusFilter = 'all';
+    document.querySelectorAll('.mode-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.mode === next);
+    });
+    renderStatusFilters();
+    renderCurrent();
+    renderKpis();
   }
 
-  // ---------------- Applications ----------------
-  async function loadApplications() {
+  function renderStatusFilters() {
+    const statuses = mode === 'external' ? STATUS_EXTERNAL : STATUS_INTERNAL;
+    document.getElementById('statusFilters').innerHTML =
+      `<div class="filter-chip active" data-status="all" onclick="setFilter('all')">All</div>` +
+      statuses.map(s => `<div class="filter-chip" data-status="${s}" onclick="setFilter('${s}')">${humanize(s)}</div>`).join('');
+  }
+
+  function setFilter(status) {
+    activeStatusFilter = status;
+    document.querySelectorAll('#statusFilters .filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.status === status);
+    });
+    renderCurrent();
+  }
+
+  function humanize(s) { return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+
+  // ---------------- KPIs (mode-specific) ----------------
+  function renderKpis() {
+    const set = mode === 'external' ? external : internal;
+    const total = set.length;
+    const byStatus = {};
+    set.forEach(a => byStatus[a.status] = (byStatus[a.status] || 0) + 1);
+
+    if (mode === 'external') {
+      document.getElementById('kpiRow').innerHTML = `
+        <div class="kpi"><div class="n">${total}</div><div class="l">Total applicants</div></div>
+        <div class="kpi"><div class="n">${byStatus.new || 0}</div><div class="l">New</div></div>
+        <div class="kpi"><div class="n">${byStatus.interview || 0}</div><div class="l">Interviewing</div></div>
+        <div class="kpi"><div class="n">${byStatus.hired || 0}</div><div class="l">Hired</div></div>
+      `;
+    } else {
+      document.getElementById('kpiRow').innerHTML = `
+        <div class="kpi"><div class="n">${total}</div><div class="l">Total requests</div></div>
+        <div class="kpi"><div class="n">${byStatus.submitted || 0}</div><div class="l">New</div></div>
+        <div class="kpi"><div class="n">${byStatus.under_review || 0}</div><div class="l">Under review</div></div>
+        <div class="kpi"><div class="n">${byStatus.approved || 0}</div><div class="l">Approved</div></div>
+      `;
+    }
+    document.getElementById('extCount').textContent = external.length;
+    document.getElementById('intCount').textContent = internal.length;
+  }
+
+  // ---------------- Load ----------------
+  async function loadAll() {
     try {
-      const res = await fetch('/api/applications');
-      if (res.status === 401 || res.status === 403) { window.location.href = '/login?next=/applications-admin'; return; }
-      if (!res.ok) throw new Error();
-      applications = await res.json();
-      renderApplications();
+      const [extRes, intRes] = await Promise.all([
+        fetch('/api/applications'),
+        fetch('/employee-applications'),
+      ]);
+      if (extRes.status === 401 || extRes.status === 403) { window.location.href = '/login?next=/applications-admin'; return; }
+      external = extRes.ok ? await extRes.json() : [];
+      internal = intRes.ok ? await intRes.json() : [];
+      renderStatusFilters();
+      renderCurrent();
       renderKpis();
     } catch (e) {
       document.getElementById('appsTableWrap').innerHTML = '<div class="empty">Could not load applications.</div>';
     }
   }
 
-  document.querySelectorAll('#statusFilters .filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('#statusFilters .filter-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeStatusFilter = chip.getAttribute('data-status');
-      renderApplications();
-    });
-  });
+  function renderCurrent() {
+    if (mode === 'external') renderExternal();
+    else renderInternal();
+  }
 
-  function renderApplications() {
+  // ---------------- External applicants (unchanged behavior) ----------------
+  function renderExternal() {
     const filtered = activeStatusFilter === 'all'
-      ? applications
-      : applications.filter(a => a.status === activeStatusFilter);
+      ? external
+      : external.filter(a => a.status === activeStatusFilter);
 
     if (!filtered.length) {
-      document.getElementById('appsTableWrap').innerHTML = '<div class="empty">No applications match this filter.</div>';
+      document.getElementById('appsTableWrap').innerHTML = '<div class="empty">No external applications match this filter.</div>';
       return;
     }
 
@@ -170,13 +243,13 @@
         </td>
         <td class="muted">${new Date(a.submitted_at).toLocaleDateString()}</td>
         <td>
-          <select class="status-select" onchange="updateStatus(${a.id}, this.value)">
-            ${STATUS_OPTIONS.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}
+          <select class="status-select" data-app-id="${a.id}" data-app-type="external">
+            ${STATUS_EXTERNAL.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
         </td>
         <td>
-          <input class="notes-input" placeholder="notes…" value="${escapeAttr(a.notes || '')}"
-            onblur="updateNotes(${a.id}, this.value)">
+          <input class="notes-input" data-notes-id="${a.id}" data-app-type="external"
+            placeholder="notes…" value="${escapeAttr(a.notes || '')}">
         </td>
       </tr>
     `).join('');
@@ -187,25 +260,126 @@
         <tbody>${rows}</tbody>
       </table>
     `;
+    wireRowEvents();
   }
 
-  async function updateStatus(id, status) {
-    const a = applications.find(x => x.id === id);
-    await fetch(`/api/applications/${id}`, {
-      method: 'PATCH',
-      body: new URLSearchParams({status, notes: (a && a.notes) || ''}),
+  // ---------------- Internal / employee transfers ----------------
+  function renderInternal() {
+    const filtered = activeStatusFilter === 'all'
+      ? internal
+      : internal.filter(a => a.status === activeStatusFilter);
+
+    if (!filtered.length) {
+      document.getElementById('appsTableWrap').innerHTML = '<div class="empty">No internal transfer requests match this filter.</div>';
+      return;
+    }
+
+    const rows = filtered.map(a => {
+      const sopChips = (a.acknowledged_sop_codes || [])
+        .map(c => `<span class="sop-chip">${escapeHtml(c)}</span>`)
+        .join('') || '<span class="muted">none</span>';
+      const reason = a.reason || '';
+      const reasonShort = reason.length > 120 ? reason.slice(0, 117) + '…' : reason;
+      return `
+      <tr>
+        <td>
+          <div><strong>${escapeHtml(a.employee_name)}</strong></div>
+          <div class="muted">${escapeHtml(a.employee_email)}${a.employee_phone ? ' &middot; ' + escapeHtml(a.employee_phone) : ''}</div>
+          <div class="muted">Since ${escapeHtml(a.hire_date || '—')}</div>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(a.current_role)}</strong></div>
+          <div class="muted">${escapeHtml(a.current_department || '')}</div>
+          <div class="muted">${a.supervisor_name ? 'Sup: ' + escapeHtml(a.supervisor_name) : ''}</div>
+        </td>
+        <td>
+          <div><strong>${escapeHtml(a.applying_for_role)}</strong></div>
+          <div class="muted">${escapeHtml(a.applying_for_department || '')}</div>
+          <div class="muted">${a.earliest_start ? 'Start: ' + escapeHtml(a.earliest_start) : ''}${a.shift_preference ? ' &middot; ' + escapeHtml(a.shift_preference) : ''}</div>
+        </td>
+        <td class="reason-cell" title="${escapeAttr(reason)}">${escapeHtml(reasonShort)}</td>
+        <td><div class="sop-chips">${sopChips}</div></td>
+        <td class="muted">${new Date(a.submitted_at).toLocaleDateString()}</td>
+        <td>
+          <select class="status-select" data-app-id="${a.id}" data-app-type="internal">
+            ${STATUS_INTERNAL.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${humanize(s)}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <input class="notes-input" data-notes-id="${a.id}" data-app-type="internal"
+            placeholder="reviewer notes…" value="${escapeAttr(a.notes || '')}">
+        </td>
+      </tr>
+      `;
+    }).join('');
+
+    document.getElementById('appsTableWrap').innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Employee</th><th>Current role</th><th>Applying for</th>
+          <th>Why (hover for full)</th><th>SOPs ack'd</th><th>Submitted</th><th>Status</th><th>Notes</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    wireRowEvents();
+  }
+
+  // ---------------- Row event wiring (one listener, routes by data attributes) ----------------
+  function wireRowEvents() {
+    document.querySelectorAll('.status-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const id = parseInt(sel.dataset.appId);
+        const type = sel.dataset.appType;
+        updateStatus(type, id, sel.value);
+      });
     });
-    if (a) a.status = status;
+    document.querySelectorAll('.notes-input').forEach(inp => {
+      inp.addEventListener('blur', () => {
+        const id = parseInt(inp.dataset.notesId);
+        const type = inp.dataset.appType;
+        updateNotes(type, id, inp.value);
+      });
+    });
+  }
+
+  async function updateStatus(type, id, status) {
+    if (type === 'external') {
+      const a = external.find(x => x.id === id);
+      await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        body: new URLSearchParams({status, notes: (a && a.notes) || ''}),
+      });
+      if (a) a.status = status;
+    } else {
+      const a = internal.find(x => x.id === id);
+      await fetch(`/employee-applications/${id}`, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({status, notes: (a && a.notes) || null}),
+      });
+      if (a) a.status = status;
+    }
     renderKpis();
   }
 
-  async function updateNotes(id, notes) {
-    const a = applications.find(x => x.id === id);
-    await fetch(`/api/applications/${id}`, {
-      method: 'PATCH',
-      body: new URLSearchParams({status: (a && a.status) || 'new', notes}),
-    });
-    if (a) a.notes = notes;
+  async function updateNotes(type, id, notes) {
+    if (type === 'external') {
+      const a = external.find(x => x.id === id);
+      await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        body: new URLSearchParams({status: (a && a.status) || 'new', notes}),
+      });
+      if (a) a.notes = notes;
+    } else {
+      const a = internal.find(x => x.id === id);
+      await fetch(`/employee-applications/${id}`, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({status: (a && a.status) || 'submitted', notes}),
+      });
+      if (a) a.notes = notes;
+    }
   }
 
   function escapeHtml(str) {
@@ -218,7 +392,7 @@
   }
 
   checkAuth();
-  loadApplications();
+  loadAll();
 </script>
 
 </body>

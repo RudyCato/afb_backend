@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Internal Application — American Food &amp; Beverage</title>
+<meta name="description" content="Current AFB employees: apply for an internal transfer, promotion, or cross-training. Read the SOPs for the role and submit in five minutes.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .req{color:var(--terra-deep)}
+  .checkrow{display:flex;gap:.6rem;align-items:flex-start;margin-bottom:.6rem}
+  .checkrow input{width:1.15rem;height:1.15rem;margin-top:.15rem;flex:0 0 auto}
+  .checkrow label{font-family:"Karla",sans-serif;font-size:.92rem;text-transform:none;letter-spacing:0;color:var(--ink);margin:0}
+  #sopPanel{
+    display:none;background:#fbf6e9;border:1px solid var(--rule-strong);
+    border-radius:var(--radius);padding:1rem 1.15rem;margin-top:.5rem;margin-bottom:1.1rem;
+  }
+  #sopPanel.show{display:block}
+  #sopPanel h4{margin:0 0 .5rem;font-family:"Karla",sans-serif;font-size:.95rem}
+  #sopPanel .sop-item{
+    background:#fff;border:1px solid var(--rule);border-radius:4px;padding:.7rem .85rem;margin-bottom:.5rem;
+  }
+  #sopPanel .sop-title{font-weight:600;font-size:.9rem}
+  #sopPanel .sop-meta{font-family:"IBM Plex Mono",monospace;font-size:.65rem;letter-spacing:.06em;color:var(--ink-faint);text-transform:uppercase;margin-top:.15rem;margin-bottom:.5rem}
+  #sopPanel .sop-missing{color:var(--terra-deep);font-style:italic;font-size:.85rem}
+  #sopPanel .no-sops{color:var(--ink-soft);font-style:italic;font-size:.9rem}
+  .callout{background:#f5efdc;border-left:3px solid var(--terra-deep);padding:.85rem 1rem;margin:1rem 0;font-size:.9rem;color:var(--ink)}
+  .backlink{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);text-decoration:none}
+  .backlink:hover{color:var(--terra-deep)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header data-masthead></header>
+
+<main id="main" class="shell">
+
+  <section class="hero" style="padding-block:clamp(2.2rem,5vw,3.2rem) 1rem">
+    <a class="backlink" href="careers.html">&larr; Public careers page</a>
+    <span class="eyebrow" style="margin-top:.9rem">Internal · For current AFB staff</span>
+    <h1 style="font-size:clamp(1.9rem,4vw,3rem);max-width:22ch">Apply for an internal position.</h1>
+    <p class="lede">Transferring departments, applying for a promotion, or cross-training into a new
+    role. Pick the position, read the SOPs, tell us why — HR and your current supervisor get a copy.</p>
+  </section>
+
+  <section class="band" style="border-top:1px solid var(--rule)">
+    <div class="panel" style="margin-top:.5rem">
+      <form id="empForm" novalidate>
+
+        <div class="field">
+          <label for="employee_name">Your full name <span class="req">*</span></label>
+          <input id="employee_name" name="employee_name" type="text" autocomplete="name" required>
+        </div>
+
+        <div class="formgrid">
+          <div class="field"><label for="employee_email">Work / personal email <span class="req">*</span></label>
+            <input id="employee_email" name="employee_email" type="email" inputmode="email" required></div>
+          <div class="field"><label for="employee_phone">Phone</label>
+            <input id="employee_phone" name="employee_phone" type="tel" inputmode="tel"></div>
+          <div class="field"><label for="current_role">Your current role <span class="req">*</span></label>
+            <input id="current_role" name="current_role" type="text" placeholder="e.g. Packer" required></div>
+          <div class="field"><label for="current_department">Your current department</label>
+            <input id="current_department" name="current_department" type="text" placeholder="e.g. Packing Room"></div>
+          <div class="field"><label for="hire_date">When did you start at AFB?</label>
+            <input id="hire_date" name="hire_date" type="text" placeholder="Approx month/year is fine"></div>
+          <div class="field"><label for="supervisor_name">Your current supervisor</label>
+            <input id="supervisor_name" name="supervisor_name" type="text" placeholder="So HR can ask about you"></div>
+        </div>
+
+        <div class="field">
+          <label for="role">Position you're applying for <span class="req">*</span></label>
+          <select id="role" name="role" required>
+            <option value="">Loading available positions&hellip;</option>
+          </select>
+        </div>
+
+        <div id="sopPanel">
+          <h4>Read these SOPs before applying for this role</h4>
+          <div id="sopList"></div>
+          <div id="sopAcks" style="margin-top:.6rem"></div>
+        </div>
+
+        <div class="formgrid">
+          <div class="field"><label for="earliest_start">Earliest you could switch</label>
+            <input id="earliest_start" name="earliest_start" type="text" placeholder="Two weeks, after peak, etc."></div>
+          <div class="field"><label for="shift_preference">Shift preference</label>
+            <select id="shift_preference" name="shift_preference">
+              <option value="">No preference</option>
+              <option>1st shift</option><option>2nd shift</option><option>Either</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="reason">Why do you want this role? <span class="req">*</span></label>
+          <textarea id="reason" name="reason" rows="4" required
+            placeholder="A few sentences on what draws you to the role and how you'd add value. HR reads this."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="relevant_experience">Relevant experience</label>
+          <textarea id="relevant_experience" name="relevant_experience" rows="3"
+            placeholder="Cross-training you've done, prior jobs, certifications, anything relevant."></textarea>
+        </div>
+
+        <div class="callout">
+          Submitting this application does not affect your current position. Your current supervisor
+          is notified so they can weigh in — this is a normal part of an internal move.
+        </div>
+
+        <button class="btn" type="submit" id="submitBtn">Submit internal application</button>
+        <p class="count" style="margin-top:.75rem" id="formErr" role="alert"></p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer data-footer></footer>
+
+<script src="assets/catalog.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function(){
+  var API = window.AFB_API || "";
+  var JOBS = [];
+  var CURRENT_SOPS = [];   // SOPs shown for the currently-selected role
+
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  // Load jobs via the API — the API joins SOP metadata per role, which is what
+  // powers the "read these SOPs before applying" panel below the role picker.
+  fetch(API + "/jobs")
+    .then(function(r){ return r.json(); })
+    .then(function(jobs){
+      JOBS = jobs || [];
+      var sel = document.getElementById("role");
+      sel.innerHTML = '<option value="">— pick a position —</option>' +
+        JOBS.map(function(j){ return '<option value="'+esc(j.id)+'">'+esc(j.title)+
+          (j.department ? ' — '+esc(j.department) : '')+'</option>'; }).join("");
+      var pre = new URLSearchParams(location.search).get("role");
+      if (pre) { sel.value = pre; renderSops(pre); }
+    })
+    .catch(function(){
+      var err = document.getElementById("formErr");
+      err.style.color = "var(--terra-deep)";
+      err.textContent = "Couldn't load open positions. Refresh, or call HR at (908) 345-6345.";
+    });
+
+  document.getElementById("role").addEventListener("change", function(e){
+    renderSops(e.target.value);
+  });
+
+  function renderSops(jobId){
+    var panel = document.getElementById("sopPanel");
+    var listEl = document.getElementById("sopList");
+    var acksEl = document.getElementById("sopAcks");
+    CURRENT_SOPS = [];
+    if (!jobId){ panel.classList.remove("show"); return; }
+
+    var job = JOBS.filter(function(j){ return j.id === jobId; })[0];
+    if (!job){ panel.classList.remove("show"); return; }
+
+    panel.classList.add("show");
+
+    if (!job.sops || !job.sops.length){
+      listEl.innerHTML = '<div class="no-sops">No SOPs listed for this role yet. HR will walk you through expectations during the review.</div>';
+      acksEl.innerHTML = "";
+      return;
+    }
+
+    CURRENT_SOPS = job.sops.slice();
+
+    listEl.innerHTML = CURRENT_SOPS.map(function(s){
+      if (s.status === "not_found"){
+        return '<div class="sop-item">' +
+          '<div class="sop-title">'+esc(s.code)+'</div>' +
+          '<div class="sop-missing">SOP not yet published — HR will provide before your first day in this role.</div>' +
+        '</div>';
+      }
+      return '<div class="sop-item">' +
+        '<div class="sop-title">'+esc(s.title || s.code)+'</div>' +
+        '<div class="sop-meta">'+esc(s.code)+
+          (s.current_version ? ' &middot; v'+esc(s.current_version) : '')+
+          (s.department ? ' &middot; '+esc(s.department) : '')+
+          (s.status ? ' &middot; '+esc(s.status) : '')+
+        '</div>' +
+        '<a href="sops.html?code='+encodeURIComponent(s.code)+'" target="_blank" rel="noopener" ' +
+          'style="font-family:\'IBM Plex Mono\',monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--terra-deep);text-decoration:none">' +
+          'Open SOP &rarr;</a>' +
+      '</div>';
+    }).join("");
+
+    var ackable = CURRENT_SOPS.filter(function(s){ return s.status !== "not_found"; });
+    if (!ackable.length){ acksEl.innerHTML = ""; return; }
+    acksEl.innerHTML = '<div style="font-family:\'Karla\',sans-serif;font-size:.85rem;font-weight:600;margin-bottom:.4rem">I have read the SOP(s) for this role:</div>' +
+      ackable.map(function(s){
+        return '<div class="checkrow">' +
+          '<input type="checkbox" class="ack-cb" data-code="'+esc(s.code)+'" id="ack-'+esc(s.code)+'">' +
+          '<label for="ack-'+esc(s.code)+'">'+esc(s.code)+' — '+esc(s.title || "")+'</label>' +
+        '</div>';
+      }).join("");
+  }
+
+  document.getElementById("empForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var err = document.getElementById("formErr");
+    var btn = document.getElementById("submitBtn");
+    err.textContent = "";
+
+    // Required-field check
+    var missing = Array.prototype.filter.call(this.querySelectorAll("[required]"), function(i){
+      return !i.value.trim();
+    });
+    if (missing.length){
+      err.style.color = "var(--terra-deep)";
+      err.textContent = "Fill in the fields marked *";
+      missing[0].focus();
+      return;
+    }
+    if (document.getElementById("reason").value.trim().length < 20){
+      err.style.color = "var(--terra-deep)";
+      err.textContent = "Please give a fuller reason (at least 20 characters).";
+      document.getElementById("reason").focus();
+      return;
+    }
+
+    // SOP acknowledgment check — if any SOPs shown, require all of them ticked.
+    var boxes = Array.prototype.slice.call(document.querySelectorAll(".ack-cb"));
+    var unchecked = boxes.filter(function(b){ return !b.checked; });
+    if (boxes.length && unchecked.length){
+      err.style.color = "var(--terra-deep)";
+      err.textContent = "Confirm you've read every SOP listed for this role.";
+      unchecked[0].scrollIntoView({behavior:"smooth", block:"center"});
+      return;
+    }
+    var ackedCodes = boxes.filter(function(b){ return b.checked; })
+                          .map(function(b){ return b.dataset.code; });
+
+    var selectedJobId = document.getElementById("role").value;
+    var job = JOBS.filter(function(j){ return j.id === selectedJobId; })[0] || {};
+
+    var payload = {
+      employee_name: document.getElementById("employee_name").value.trim(),
+      employee_email: document.getElementById("employee_email").value.trim(),
+      employee_phone: document.getElementById("employee_phone").value.trim(),
+      current_role: document.getElementById("current_role").value.trim(),
+      current_department: document.getElementById("current_department").value.trim(),
+      hire_date: document.getElementById("hire_date").value.trim(),
+      applying_for_role: job.title || selectedJobId,
+      applying_for_role_id: selectedJobId,
+      applying_for_department: job.department || "",
+      earliest_start: document.getElementById("earliest_start").value.trim(),
+      shift_preference: document.getElementById("shift_preference").value,
+      reason: document.getElementById("reason").value.trim(),
+      relevant_experience: document.getElementById("relevant_experience").value.trim(),
+      acknowledged_sop_codes: ackedCodes,
+    };
+
+    btn.disabled = true; btn.textContent = "Sending…";
+
+    fetch(API + "/employee-applications", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+    })
+    .then(function(r){ if (!r.ok) return r.json().then(function(j){ throw new Error(j.detail || r.status); }); return r.json(); })
+    .then(function(){
+      document.querySelector(".panel").innerHTML =
+        '<h3 style="margin-bottom:.4em">Internal application received</h3>' +
+        '<p>HR and your current supervisor have been notified. You\'ll also get a confirmation email. ' +
+        'This does not affect your current position.</p>';
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    })
+    .catch(function(ex){
+      btn.disabled = false; btn.textContent = "Submit internal application";
+      err.style.color = "var(--terra-deep)";
+      err.textContent = (ex.message && ex.message.length < 160 ? ex.message + " " : "") +
+                        "That didn't send. Try again, or call HR at (908) 345-6345.";
+    });
+  });
+})();
+</script>
+</body>
+</html>
