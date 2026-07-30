@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFB — Workflow Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:18px 24px;}
+  header .top{font-size:1.3rem;font-weight:900;font-family:'Bitter',serif;}
+  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.15em;color:var(--gold);text-transform:uppercase;margin-top:2px;}
+  header .desc{color:var(--paper);opacity:0.8;font-size:0.85rem;margin-top:8px;max-width:760px;}
+
+  .layout{display:flex;max-width:1180px;margin:0 auto;min-height:calc(100vh - 110px);}
+  nav.pages{width:230px;flex-shrink:0;padding:20px 12px;border-right:1px solid var(--line-strong);}
+  nav.pages .label{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-soft);margin:0 8px 8px;}
+  nav.pages button{
+    display:block;width:100%;text-align:left;background:none;border:none;border-radius:4px;
+    padding:10px 10px;margin-bottom:4px;font-family:'IBM Plex Sans',sans-serif;font-size:0.88rem;color:var(--ink);cursor:pointer;
+  }
+  nav.pages button:hover{background:var(--paper);}
+  nav.pages button.active{background:var(--paper);border-left:3px solid var(--rust);font-weight:600;box-shadow:var(--shadow);}
+  nav.pages button .n{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--ink-soft);display:block;margin-top:2px;}
+
+  main{flex:1;padding:24px 28px 60px;min-width:0;}
+  .page-head h2{font-size:1.5rem;}
+  .page-head .summary{color:var(--ink-soft);font-size:0.92rem;margin-top:6px;max-width:720px;}
+
+  .quads{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;}
+  @media (max-width:800px){.quads{grid-template-columns:1fr;}}
+  .quad{background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;padding:16px 18px;box-shadow:var(--shadow);}
+  .quad h3{font-size:0.72rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;color:var(--rust-deep);margin-bottom:12px;}
+  .quad .body-text{font-size:0.88rem;line-height:1.55;white-space:pre-wrap;color:var(--ink);}
+  .quad .empty{color:var(--ink-soft);font-style:italic;font-size:0.85rem;}
+
+  /* --- wireframe rendering --- */
+  .wf-field{margin-bottom:12px;}
+  .wf-field .wf-label{font-size:0.72rem;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:4px;}
+  .wf-box{border:1.5px dashed var(--line-strong);border-radius:3px;padding:9px 10px;font-size:0.82rem;color:#9c8f74;background:#fffef9;}
+  .wf-box.select::after{content:" \25BE";float:right;color:var(--ink-soft);}
+  .wf-box.textarea{min-height:46px;}
+  .wf-box.readout{border-style:solid;border-color:var(--gold);background:#fdf6e6;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .wf-box.table{font-family:'IBM Plex Mono',monospace;font-size:0.76rem;}
+  .wf-btn{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;
+    border:1.5px solid var(--rust);color:var(--rust-deep);border-radius:16px;padding:6px 16px;background:#fff;}
+  .wf-check{display:flex;align-items:center;gap:8px;font-size:0.85rem;}
+  .wf-check .box{width:15px;height:15px;border:1.5px dashed var(--line-strong);border-radius:2px;flex-shrink:0;}
+  .wf-section{font-family:'Bitter',serif;font-weight:700;font-size:0.95rem;margin:14px 0 6px;color:var(--olive-deep);border-bottom:1px solid var(--line);padding-bottom:4px;}
+  .wf-note{font-size:0.72rem;color:var(--ink-soft);margin-top:3px;font-style:italic;}
+
+  /* --- comments --- */
+  .comments-panel{margin-top:22px;background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;padding:18px 20px;box-shadow:var(--shadow);}
+  .comments-panel h3{font-size:0.95rem;margin-bottom:14px;}
+  .comment-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .comment-form .full{grid-column:1/-1;}
+  .comment-form label{display:block;font-size:0.68rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-bottom:4px;}
+  .comment-form input,.comment-form select,.comment-form textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line-strong);border-radius:3px;
+    font-family:'IBM Plex Sans',sans-serif;font-size:0.88rem;color:var(--ink);background:#fff;
+  }
+  .comment-form textarea{min-height:70px;resize:vertical;}
+  .comment-form .submit-row{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;}
+  .btn-submit{
+    font-family:'IBM Plex Mono',monospace;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.05em;
+    background:var(--rust);color:#fff;border:none;border-radius:20px;padding:10px 24px;cursor:pointer;
+  }
+  .btn-submit:hover{background:var(--rust-deep);}
+  .btn-submit:disabled{opacity:0.5;cursor:default;}
+  .form-msg{font-size:0.8rem;color:var(--olive-deep);}
+  .form-msg.err{color:var(--rust-deep);}
+
+  .comment-list{border-top:1px solid var(--line);padding-top:12px;}
+  .comment{padding:10px 0;border-bottom:1px dotted var(--line);}
+  .comment:last-child{border-bottom:none;}
+  .comment .meta{display:flex;gap:8px;align-items:center;font-size:0.76rem;color:var(--ink-soft);margin-bottom:4px;}
+  .cat-pill{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;
+    padding:2px 9px;border-radius:10px;color:#fff;}
+  .cat-pill.bug{background:var(--rust-deep);}
+  .cat-pill.suggestion{background:var(--olive-deep);}
+  .cat-pill.question{background:var(--gold);color:var(--ink);}
+  .cat-pill.approval{background:#3a5a6b;}
+  .status-pill{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:#e9e2cc;color:var(--ink-soft);}
+  .comment .body-text{font-size:0.86rem;margin-top:2px;}
+  .comment .resolved-note{margin-top:5px;font-size:0.78rem;color:var(--olive-deep);background:#eef1e6;border-left:3px solid var(--olive);padding:6px 9px;border-radius:2px;}
+  .empty-page{padding:60px 20px;text-align:center;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<header>
+  <div class="top" id="projTitle">AFB — Workflow Review</div>
+  <div class="bottom">American Food &amp; Beverage · Operations Review</div>
+  <div class="desc" id="projDesc"></div>
+</header>
+
+<div class="layout" id="layout" style="display:none;">
+  <nav class="pages" id="pagesNav"></nav>
+  <main id="main"></main>
+</div>
+
+<div id="loadingMsg" style="padding:60px 24px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;">Loading review…</div>
+<div id="errorMsg" style="display:none;padding:60px 24px;color:var(--rust-deep);">
+  <h2>Link not found</h2>
+  <p>This review link is invalid or has expired. Check the link with whoever sent it to you.</p>
+</div>
+
+<script>
+const TOKEN = location.pathname.split('/').filter(Boolean).pop();
+let PROJECT = null;
+let ACTIVE_PAGE_ID = null;
+
+const TYPE_META = {
+  text:      {cls:'text',      placeholder:'free text entry'},
+  number:    {cls:'text',      placeholder:'numeric entry'},
+  date:      {cls:'text',      placeholder:'mm/dd/yyyy'},
+  select:    {cls:'select',    placeholder:'dropdown — pick one'},
+  textarea:  {cls:'textarea',  placeholder:'longer free text'},
+  checkbox:  null,
+  button:    null,
+  table:     {cls:'table',     placeholder:''},
+  readout:   {cls:'readout',   placeholder:''},
+  section:   null,
+};
+
+async function load(){
+  try{
+    const res = await fetch(`/api/review/projects/${TOKEN}`);
+    if(!res.ok) throw new Error('not found');
+    PROJECT = await res.json();
+  }catch(e){
+    document.getElementById('loadingMsg').style.display='none';
+    document.getElementById('errorMsg').style.display='block';
+    return;
+  }
+  document.getElementById('loadingMsg').style.display='none';
+  document.getElementById('layout').style.display='flex';
+  document.getElementById('projTitle').textContent = PROJECT.name;
+  document.getElementById('projDesc').textContent = PROJECT.description || '';
+  renderNav();
+  if(PROJECT.pages.length){
+    selectPage(PROJECT.pages[0].id);
+  } else {
+    document.getElementById('main').innerHTML = '<div class="empty-page">No workflow pages have been added to this review yet.</div>';
+  }
+}
+
+function renderNav(){
+  const nav = document.getElementById('pagesNav');
+  nav.innerHTML = '<div class="label">Workflow pages</div>' + PROJECT.pages.map(p => {
+    const openCount = p.comments.filter(c => c.status === 'open').length;
+    return `<button data-page-id="${p.id}" class="${p.id===ACTIVE_PAGE_ID?'active':''}">${escapeHtml(p.title)}
+      <span class="n">${p.comments.length} comment${p.comments.length===1?'':'s'}${openCount?` · ${openCount} open`:''}</span>
+    </button>`;
+  }).join('');
+  nav.querySelectorAll('button').forEach(b => b.addEventListener('click', () => selectPage(parseInt(b.dataset.pageId))));
+}
+
+function selectPage(id){
+  ACTIVE_PAGE_ID = id;
+  renderNav();
+  const page = PROJECT.pages.find(p => p.id === id);
+  renderPage(page);
+}
+
+function renderPage(page){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="page-head">
+      <h2>${escapeHtml(page.title)}</h2>
+      <div class="summary">${escapeHtml(page.summary || '')}</div>
+    </div>
+    <div class="quads">
+      <div class="quad">
+        <h3>UI wireframe</h3>
+        <div id="wf"></div>
+      </div>
+      <div class="quad">
+        <h3>Process flow</h3>
+        <div class="body-text">${page.flow_notes ? escapeHtml(page.flow_notes) : '<span class="empty">No flow notes yet.</span>'}</div>
+      </div>
+      <div class="quad">
+        <h3>Data fields</h3>
+        <div id="dataFields"></div>
+      </div>
+      <div class="quad">
+        <h3>Downstream effects</h3>
+        <div class="body-text">${page.downstream_notes ? escapeHtml(page.downstream_notes) : '<span class="empty">No downstream effects noted.</span>'}</div>
+      </div>
+    </div>
+    <div class="comments-panel">
+      <h3>Leave a comment on this page</h3>
+      <div class="comment-form">
+        <div><label>Your name</label><input id="cName" placeholder="optional"></div>
+        <div><label>Your email</label><input id="cEmail" placeholder="optional, for follow-up"></div>
+        <div class="full">
+          <label>Category</label>
+          <select id="cCategory">
+            <option value="question">Question</option>
+            <option value="bug">Bug</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="approval">Approval</option>
+          </select>
+        </div>
+        <div class="full">
+          <label>Comment</label>
+          <textarea id="cBody" placeholder="What should change, or what needs clarifying?"></textarea>
+        </div>
+        <div class="full submit-row">
+          <span class="form-msg" id="cMsg"></span>
+          <button class="btn-submit" id="cSubmit">Submit comment</button>
+        </div>
+      </div>
+      <div class="comment-list" id="commentList"></div>
+    </div>
+  `;
+  renderWireframe(page.fields);
+  renderDataFields(page.fields);
+  renderComments(page.comments);
+  document.getElementById('cSubmit').addEventListener('click', () => submitComment(page.id));
+}
+
+function renderWireframe(fields){
+  const wf = document.getElementById('wf');
+  if(!fields.length){ wf.innerHTML = '<div class="empty">No fields defined for this screen yet.</div>'; return; }
+  wf.innerHTML = fields.map(f => {
+    if(f.type === 'section'){
+      return `<div class="wf-section">${escapeHtml(f.label)}</div>`;
+    }
+    if(f.type === 'button'){
+      return `<div class="wf-field"><span class="wf-btn">${escapeHtml(f.label)}</span>${f.note?`<div class="wf-note">${escapeHtml(f.note)}</div>`:''}</div>`;
+    }
+    if(f.type === 'checkbox'){
+      return `<div class="wf-field"><div class="wf-check"><span class="box"></span>${escapeHtml(f.label)}</div>${f.note?`<div class="wf-note">${escapeHtml(f.note)}</div>`:''}</div>`;
+    }
+    const meta = TYPE_META[f.type] || TYPE_META.text;
+    return `<div class="wf-field">
+      <div class="wf-label">${escapeHtml(f.label)}</div>
+      <div class="wf-box ${meta.cls}">${f.type==='table' ? (f.note ? escapeHtml(f.note) : 'columns…') : meta.placeholder}</div>
+      ${f.note && f.type!=='table' ? `<div class="wf-note">${escapeHtml(f.note)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDataFields(fields){
+  const el = document.getElementById('dataFields');
+  const real = fields.filter(f => !['section','button'].includes(f.type));
+  if(!real.length){ el.innerHTML = '<div class="empty">No data fields listed.</div>'; return; }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+    <thead><tr>
+      <th style="text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:6px;">Field</th>
+      <th style="text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:6px;">Type</th>
+      <th style="text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:6px;">Notes</th>
+    </tr></thead>
+    <tbody>
+      ${real.map(f => `<tr>
+        <td style="padding:6px 6px 6px 0;border-bottom:1px dotted var(--line);">${escapeHtml(f.label)}</td>
+        <td style="padding:6px;border-bottom:1px dotted var(--line);color:var(--ink-soft);">${escapeHtml(f.type)}</td>
+        <td style="padding:6px;border-bottom:1px dotted var(--line);color:var(--ink-soft);">${escapeHtml(f.note || '')}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderComments(comments){
+  const list = document.getElementById('commentList');
+  if(!comments.length){ list.innerHTML = '<div class="empty" style="padding:8px 0;">No comments yet — be the first.</div>'; return; }
+  list.innerHTML = comments.map(c => `
+    <div class="comment">
+      <div class="meta">
+        <span class="cat-pill ${c.category}">${c.category}</span>
+        <span class="status-pill">${c.status}</span>
+        <span>${escapeHtml(c.author_name || 'Anonymous')}</span>
+        <span>· ${new Date(c.created_at).toLocaleDateString()}</span>
+      </div>
+      <div class="body-text">${escapeHtml(c.body)}</div>
+      ${c.resolved_note ? `<div class="resolved-note">${escapeHtml(c.resolved_note)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+async function submitComment(pageId){
+  const body = document.getElementById('cBody').value.trim();
+  const msg = document.getElementById('cMsg');
+  if(body.length < 2){ msg.textContent = 'Write a comment first.'; msg.className='form-msg err'; return; }
+  const btn = document.getElementById('cSubmit');
+  btn.disabled = true;
+  msg.textContent = 'Submitting…'; msg.className='form-msg';
+  try{
+    const res = await fetch('/api/review/comments', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        token: TOKEN, page_id: pageId,
+        category: document.getElementById('cCategory').value,
+        body, author_name: document.getElementById('cName').value.trim() || null,
+        author_email: document.getElementById('cEmail').value.trim() || null,
+      }),
+    });
+    if(!res.ok) throw new Error(await res.text());
+    // refresh project data so the new comment (and nav counts) show up
+    const fresh = await fetch(`/api/review/projects/${TOKEN}`);
+    PROJECT = await fresh.json();
+    document.getElementById('cBody').value = '';
+    document.getElementById('cName').value = '';
+    document.getElementById('cEmail').value = '';
+    msg.textContent = 'Thanks — comment submitted.'; msg.className='form-msg';
+    renderNav();
+    selectPage(pageId);
+  }catch(e){
+    msg.textContent = 'Could not submit — try again.'; msg.className='form-msg err';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function escapeHtml(s){
+  if(s===null||s===undefined) return '';
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+load();
+</script>
+</body>
+</html>

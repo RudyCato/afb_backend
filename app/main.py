@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import get_current_staff_optional
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan, employee_applications, jobs
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan, employee_applications, jobs, review
 from .routers import auth as auth_router
 
 Base.metadata.create_all(bind=engine)
@@ -81,6 +81,7 @@ app.include_router(report_pdfs.router)
 app.include_router(scan.router)
 app.include_router(employee_applications.router)
 app.include_router(jobs.router)
+app.include_router(review.router)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 
@@ -152,6 +153,22 @@ def applications_admin_page(staff=Depends(get_current_staff_optional)):
     return FileResponse(os.path.join(WEB_DIR, "applications-admin.html"))
 
 
+@app.get("/review-admin")
+def review_admin_page(staff=Depends(get_current_staff_optional)):
+    gate = _staff_gate("/review-admin", staff)
+    if gate:
+        return gate
+    return FileResponse(os.path.join(WEB_DIR, "review-admin.html"))
+
+
+@app.get("/review/{token}")
+def review_reviewer_page(token: str):
+    """Public, token-gated review page — no staff login. The token itself is
+    the access control; an unknown/expired token is handled client-side by
+    the page's own fetch against /api/review/projects/{token}."""
+    return FileResponse(os.path.join(WEB_DIR, "review.html"))
+
+
 @app.get("/", response_class=FileResponse)
 def home_page():
     return FileResponse(os.path.join(WEB_DIR, "home.html"))
@@ -170,6 +187,7 @@ def internal_links():
         <li><a href="/dashboard">Operations dashboard</a> — inventory, orders, shipping, reports (staff login required)</li>
         <li><a href="/production">Packing &amp; production</a> — packing manager assignments and packer daily logs (staff login required)</li>
         <li><a href="/applications-admin">Job applications</a> — review and update applicant status (staff login required)</li>
+        <li><a href="/review-admin">Site review portal</a> — share workflow pages with reviewers, triage comments (staff login required)</li>
         <li><a href="/login">Staff login</a></li>
         <li><a href="/docs">API docs</a> — every endpoint, callable directly from the browser</li>
       </ul>
