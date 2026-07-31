@@ -20,8 +20,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak,
-    ListFlowable, ListItem, HRFlowable,
+    ListFlowable, ListItem, HRFlowable, Image,
 )
+from reportlab.lib.utils import ImageReader
 
 INK = colors.HexColor("#241A10")
 CREAM = colors.HexColor("#FBF6E9")
@@ -108,6 +109,16 @@ def build():
         BIG,
     ))
     story.append(Spacer(1, 10))
+
+    _screenshot_path = os.path.join(os.path.dirname(__file__), "images", "review-portal-screenshot.jpg")
+    if os.path.exists(_screenshot_path):
+        img_reader = ImageReader(_screenshot_path)
+        iw, ih = img_reader.getSize()
+        max_w = 6.5 * inch
+        display_h = max_w * (ih / iw)
+        story.append(Image(_screenshot_path, width=max_w, height=display_h))
+        story.append(Paragraph("This is what a review page looks like — pick a screen on the left, read the four boxes, leave a comment at the bottom.", META))
+        story.append(Spacer(1, 12))
 
     # ---- WHAT -----------------------------------------------------------
     _qbox(story, "WHAT IS IT?", [

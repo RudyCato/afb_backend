@@ -22,13 +22,15 @@ from __future__ import annotations
 import enum
 import json
 import logging
+import os
 import secrets
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, DateTime, Enum as SAEnum, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, Enum as SAEnum, ForeignKey, Integer, String, Text, inspect as sa_inspect, text
 from sqlalchemy.orm import Session, relationship
 
 from .. import mail
@@ -38,6 +40,17 @@ from ..database import Base, SessionLocal, engine, get_db
 log = logging.getLogger("review")
 
 router = APIRouter(prefix="/api/review", tags=["review"])
+
+# Screenshots are committed into the repo (web/review-media/) so they survive
+# a redeploy. The upload endpoint below also writes here at runtime for
+# convenience — but on hosts with an ephemeral filesystem (Render's default,
+# no persistent disk attached), anything written at runtime is lost on the
+# next deploy unless it's also committed to git. Baked-in screenshots
+# (captured once and committed) are unaffected by this.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+MEDIA_DIR = os.path.normpath(os.path.join(_HERE, "..", "..", "web", "review-media"))
+os.makedirs(MEDIA_DIR, exist_ok=True)
+_ALLOWED_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +96,7 @@ class ReviewPage(Base):
     fields_json = Column(Text, nullable=False, default="[]")  # JSON list of {label,type,note}
     flow_notes = Column(Text, nullable=True)        # process-flow quadrant, plain text/steps
     downstream_notes = Column(Text, nullable=True)  # downstream-effects quadrant
+    screenshot_filename = Column(String, nullable=True)  # just the filename, served from /review-media/
 
     project = relationship("ReviewProject", back_populates="pages")
     comments = relationship("ReviewComment", back_populates="page", cascade="all, delete-orphan")
@@ -107,6 +121,24 @@ class ReviewComment(Base):
 
 
 Base.metadata.create_all(bind=engine)
+
+
+def _ensure_screenshot_column():
+    """create_all only creates missing TABLES, not new columns on tables that
+    already exist — so on any deployment where review_pages was created
+    before screenshot_filename existed, we need a tiny in-place migration.
+    Safe/idempotent on both SQLite and Postgres."""
+    insp = sa_inspect(engine)
+    if "review_pages" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("review_pages")}
+    if "screenshot_filename" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE review_pages ADD COLUMN screenshot_filename VARCHAR"))
+        log.info("Migrated review_pages: added screenshot_filename column")
+
+
+_ensure_screenshot_column()
 
 
 # ---------------------------------------------------------------------------
@@ -175,6 +207,7 @@ class PageOut(BaseModel):
     flow_notes: Optional[str]
     downstream_notes: Optional[str]
     order_index: int
+    screenshot_url: Optional[str] = None
     comments: List[CommentOut] = []
 
 
@@ -226,6 +259,7 @@ def _page_to_out(p: ReviewPage) -> PageOut:
         id=p.id, title=p.title, summary=p.summary, fields=fields,
         flow_notes=p.flow_notes, downstream_notes=p.downstream_notes,
         order_index=p.order_index or 0,
+        screenshot_url=(f"/review-media/{p.screenshot_filename}" if p.screenshot_filename else None),
         comments=[CommentOut.model_validate(c) for c in sorted(p.comments, key=lambda c: c.created_at or datetime.utcnow(), reverse=True)],
     )
 
@@ -332,6 +366,37 @@ def add_page(payload: PageCreate, db: Session = Depends(get_db), staff=Depends(g
         downstream_notes=(payload.downstream_notes or None),
     )
     db.add(page)
+    db.commit()
+    db.refresh(page)
+    return _page_to_out(page)
+
+
+@router.post("/pages/{page_id}/screenshot", response_model=PageOut)
+def upload_screenshot(page_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), staff=Depends(get_current_staff)):
+    """Attach a screenshot image to a workflow page. NOTE: on a host without a
+    persistent disk (Render's default), this file is written to the running
+    instance only — it will NOT survive the next deploy. For a screenshot to
+    stick permanently, commit the file into web/review-media/ in git and
+    reference it via seed/add-pages scripts instead."""
+    page = db.query(ReviewPage).get(page_id)
+    if not page:
+        raise HTTPException(404, "Page not found.")
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in _ALLOWED_IMAGE_EXT:
+        raise HTTPException(422, f"Unsupported image type '{ext}'. Use png, jpg, jpeg, or webp.")
+    filename = f"page-{page_id}-{uuid.uuid4().hex[:8]}{ext}"
+    dest = os.path.join(MEDIA_DIR, filename)
+    with open(dest, "wb") as out:
+        out.write(file.file.read())
+    # Clean up the previous image for this page, if any, so we don't leak files.
+    if page.screenshot_filename:
+        old_path = os.path.join(MEDIA_DIR, page.screenshot_filename)
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
+    page.screenshot_filename = filename
     db.commit()
     db.refresh(page)
     return _page_to_out(page)

@@ -104,6 +104,14 @@
       <span class="hint" id="createProjectMsg"></span>
     </div>
 
+    <div class="panel" id="managePagesPanel" style="display:none;">
+      <h3>Screenshots — <span id="managePagesProjName" class="mono"></span></h3>
+      <p class="hint">Upload a real screenshot of each screen so reviewers see the actual app alongside the wireframe. <strong>Note:</strong> unless this file is committed into <span class="mono">web/review-media/</span> in git, an uploaded image only lives on the current running instance — it will disappear on the next deploy.</p>
+      <table><thead><tr><th style="width:280px;">Page</th><th style="width:120px;">Screenshot</th><th>Upload / replace</th></tr></thead>
+        <tbody id="managePagesBody"></tbody>
+      </table>
+    </div>
+
     <div class="panel" id="addPagePanel" style="display:none;">
       <h3>Add a workflow page to <span id="addPageProjName" class="mono"></span></h3>
       <div class="field"><label>Page title</label><input id="wpTitle" placeholder="e.g. Receiving — Log Inbound Product"></div>
@@ -212,12 +220,49 @@ function renderProjects(){
   tbody.querySelectorAll('[data-addpage]').forEach(b => b.addEventListener('click', () => showAddPage(parseInt(b.dataset.addpage))));
 }
 
-function showAddPage(projectId){
+async function showAddPage(projectId){
   ACTIVE_PROJECT_ID = projectId;
   const proj = PROJECTS.find(p => p.id === projectId);
   document.getElementById('addPagePanel').style.display = 'block';
   document.getElementById('addPageProjName').textContent = proj.name;
-  document.getElementById('addPagePanel').scrollIntoView({behavior:'smooth'});
+  document.getElementById('managePagesPanel').style.display = 'block';
+  document.getElementById('managePagesProjName').textContent = proj.name;
+  await loadManagePages(projectId);
+  document.getElementById('managePagesPanel').scrollIntoView({behavior:'smooth'});
+}
+
+async function loadManagePages(projectId){
+  const res = await fetch(`/api/review/projects/id/${projectId}`);
+  const detail = await res.json();
+  const tbody = document.getElementById('managePagesBody');
+  if(!detail.pages.length){
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">No pages yet — add one below first.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = detail.pages.map(p => `
+    <tr>
+      <td>${escapeHtml(p.title)}</td>
+      <td>${p.screenshot_url ? `<img src="${p.screenshot_url}" style="width:100px;border:1px solid var(--line-strong);border-radius:3px;">` : '<span class="hint">none yet</span>'}</td>
+      <td><input type="file" accept="image/png,image/jpeg,image/webp" data-upload-for="${p.id}"></td>
+    </tr>
+  `).join('');
+  tbody.querySelectorAll('[data-upload-for]').forEach(input => {
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if(!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      input.disabled = true;
+      try{
+        const res = await fetch(`/api/review/pages/${input.dataset.uploadFor}/screenshot`, { method: 'POST', body: fd });
+        if(!res.ok) throw new Error(await res.text());
+        await loadManagePages(projectId);
+      }catch(e){
+        alert('Upload failed — check the file is a png/jpg/webp under any size limit your host enforces.');
+        input.disabled = false;
+      }
+    });
+  });
 }
 
 document.getElementById('createProjectBtn').addEventListener('click', async () => {
@@ -275,6 +320,7 @@ document.getElementById('addPageBtn').addEventListener('click', async () => {
     msg.textContent = 'Page added.';
     ['wpTitle','wpSummary','wpFields','wpFlow','wpDownstream'].forEach(id => document.getElementById(id).value = '');
     await loadProjects();
+    await loadManagePages(ACTIVE_PROJECT_ID);
   }catch(e){
     msg.textContent = 'Could not add page.';
   }

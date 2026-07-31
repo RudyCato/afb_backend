@@ -87,6 +87,12 @@ WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 
 app.mount("/icons", StaticFiles(directory=os.path.join(WEB_DIR, "icons")), name="icons")
 
+# Screenshots attached to review-portal workflow pages (see app/routers/review.py).
+# The directory is created by that router's own import-time setup, but guard
+# here too in case main.py's import order ever changes.
+os.makedirs(os.path.join(WEB_DIR, "review-media"), exist_ok=True)
+app.mount("/review-media", StaticFiles(directory=os.path.join(WEB_DIR, "review-media")), name="review-media")
+
 
 @app.get("/manifest.json")
 def manifest():
