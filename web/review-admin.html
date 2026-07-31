@@ -82,6 +82,7 @@
     <button class="tab active" data-tab="projects">Projects</button>
     <button class="tab" data-tab="comments">Comment triage</button>
     <button class="tab" data-tab="suggestions">Suggestions queue</button>
+    <button class="tab" data-tab="changes">Changes</button>
   </div>
 
   <div id="tab-projects">
@@ -167,6 +168,22 @@
       </tr></thead><tbody id="suggestionsBody"></tbody></table>
     </div>
   </div>
+
+  <div id="tab-changes" style="display:none;">
+    <div class="panel">
+      <h3>Changes — <span id="changesProjName" class="mono"></span></h3>
+      <p class="hint">Every comment, status change, added page, and uploaded screenshot for the selected project, newest first.</p>
+      <div class="filters">
+        <select id="changesProject"></select>
+        <button class="btn secondary small" id="changesRefresh">Refresh</button>
+        <button class="btn secondary small" id="changesOpenPdf">Open PDF (view / print)</button>
+        <button class="btn small" id="changesEmailPdf">Email PDF</button>
+      </div>
+      <table><thead><tr>
+        <th style="width:130px;">When</th><th style="width:160px;">Event</th><th style="width:180px;">Page</th><th>Details</th><th style="width:130px;">By</th>
+      </tr></thead><tbody id="changesBody"></tbody></table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -181,11 +198,12 @@ function escapeHtml(s){
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-  ['projects','comments','suggestions'].forEach(n => {
+  ['projects','comments','suggestions','changes'].forEach(n => {
     document.getElementById('tab-'+n).style.display = (n===name) ? 'block' : 'none';
   });
   if(name === 'comments') loadTriage();
   if(name === 'suggestions') loadSuggestions();
+  if(name === 'changes') loadChanges();
 }
 
 async function loadProjects(){
@@ -329,12 +347,67 @@ document.getElementById('addPageBtn').addEventListener('click', async () => {
 function renderTriageProjectPicker(){
   const sel = document.getElementById('triageProject');
   sel.innerHTML = PROJECTS.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  const changesSel = document.getElementById('changesProject');
+  if(changesSel) changesSel.innerHTML = PROJECTS.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
 }
 
 document.getElementById('triageRefresh').addEventListener('click', loadTriage);
 document.getElementById('triageProject').addEventListener('change', loadTriage);
 document.getElementById('triageCategory').addEventListener('change', loadTriage);
 document.getElementById('triageStatus').addEventListener('change', loadTriage);
+
+document.getElementById('changesRefresh').addEventListener('click', loadChanges);
+document.getElementById('changesProject').addEventListener('change', loadChanges);
+document.getElementById('changesOpenPdf').addEventListener('click', () => {
+  const projectId = document.getElementById('changesProject').value;
+  if(!projectId) return;
+  window.open(`/api/review/projects/${projectId}/activity/pdf`, '_blank');
+});
+document.getElementById('changesEmailPdf').addEventListener('click', async () => {
+  const projectId = document.getElementById('changesProject').value;
+  if(!projectId) return;
+  const email = prompt('Email the changelog PDF to:');
+  if(!email) return;
+  try{
+    const res = await fetch(`/api/review/projects/${projectId}/activity/pdf/email`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ recipient_email: email }),
+    });
+    const data = await res.json();
+    alert(data.detail || (res.ok ? 'Sent.' : 'Could not send.'));
+  }catch(e){
+    alert('Could not send — check the server logs.');
+  }
+});
+
+const EVENT_LABELS = {
+  comment_added: 'Comment added',
+  comment_status_changed: 'Status changed',
+  page_added: 'Page added',
+  screenshot_uploaded: 'Screenshot uploaded',
+};
+
+async function loadChanges(){
+  if(!PROJECTS.length) await loadProjects();
+  const sel = document.getElementById('changesProject');
+  const projectId = sel.value;
+  if(!projectId){ document.getElementById('changesBody').innerHTML = '<tr><td colspan="5" class="empty">No projects yet.</td></tr>'; return; }
+  const proj = PROJECTS.find(p => String(p.id) === String(projectId));
+  document.getElementById('changesProjName').textContent = proj ? proj.name : '';
+  const res = await fetch(`/api/review/projects/${projectId}/activity`);
+  const rows = await res.json();
+  const tbody = document.getElementById('changesBody');
+  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="5" class="empty">No changes recorded yet.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="hint">${new Date(r.created_at).toLocaleString()}</td>
+      <td>${EVENT_LABELS[r.event_type] || r.event_type}</td>
+      <td>${escapeHtml(r.page_title || '—')}</td>
+      <td>${escapeHtml(r.summary)}</td>
+      <td class="hint">${escapeHtml(r.actor || '—')}</td>
+    </tr>
+  `).join('');
+}
 
 async function loadTriage(){
   if(!PROJECTS.length) await loadProjects();

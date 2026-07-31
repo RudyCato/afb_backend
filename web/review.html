@@ -35,6 +35,10 @@
   main{flex:1;padding:24px 28px 60px;min-width:0;}
   .page-head h2{font-size:1.5rem;}
   .page-head .summary{color:var(--ink-soft);font-size:0.92rem;margin-top:6px;max-width:720px;}
+  .page-actions{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .btn-ghost{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;
+    background:none;border:1px solid var(--line-strong);color:var(--ink-soft);border-radius:16px;padding:7px 14px;cursor:pointer;}
+  .btn-ghost:hover{background:var(--paper);border-color:var(--rust);color:var(--rust-deep);}
 
   .screenshot-panel{margin-top:18px;background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;padding:16px 18px;box-shadow:var(--shadow);}
   .screenshot-panel h3{font-size:0.72rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;color:var(--rust-deep);margin-bottom:10px;}
@@ -182,6 +186,11 @@ function renderPage(page){
     <div class="page-head">
       <h2>${escapeHtml(page.title)}</h2>
       <div class="summary">${escapeHtml(page.summary || '')}</div>
+      <div class="page-actions">
+        <button class="btn-ghost" id="pagePdfBtn">Open PDF (view / print)</button>
+        <button class="btn-ghost" id="pageEmailBtn">Email this page</button>
+        <span class="form-msg" id="pageEmailMsg"></span>
+      </div>
     </div>
     ${page.screenshot_url ? `
     <div class="screenshot-panel">
@@ -237,6 +246,28 @@ function renderPage(page){
   renderDataFields(page.fields);
   renderComments(page.comments);
   document.getElementById('cSubmit').addEventListener('click', () => submitComment(page.id));
+  document.getElementById('pagePdfBtn').addEventListener('click', () => {
+    window.open(`/api/review/pages/${page.id}/pdf?token=${encodeURIComponent(TOKEN)}`, '_blank');
+  });
+  document.getElementById('pageEmailBtn').addEventListener('click', () => emailCurrentPage(page.id));
+}
+
+async function emailCurrentPage(pageId){
+  const msg = document.getElementById('pageEmailMsg');
+  const email = window.prompt('Email a PDF of this page to:');
+  if(!email) return;
+  msg.textContent = 'Sending…'; msg.className = 'form-msg';
+  try{
+    const res = await fetch(`/api/review/pages/${pageId}/email`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ token: TOKEN, recipient_email: email }),
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || 'failed');
+    msg.textContent = data.detail || 'Sent.'; msg.className = 'form-msg';
+  }catch(e){
+    msg.textContent = 'Could not send — check the address and try again.'; msg.className = 'form-msg err';
+  }
 }
 
 function renderWireframe(fields){

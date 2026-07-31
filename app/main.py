@@ -189,12 +189,15 @@ def internal_links():
       <h1>American Food &amp; Beverage — Operations</h1>
       <p>Internal tools. Pick where to go:</p>
       <ul style="line-height:2.2;font-size:1.05rem;">
-        <li><a href="/order">Place / track an order</a> — customer-facing ordering site</li>
+        <li><a href="/store">Main site</a> — public marketing &amp; ordering site</li>
+        <li><a href="/order">Place / track an order</a> — legacy customer-facing order page</li>
         <li><a href="/dashboard">Operations dashboard</a> — inventory, orders, shipping, reports (staff login required)</li>
         <li><a href="/production">Packing &amp; production</a> — packing manager assignments and packer daily logs (staff login required)</li>
+        <li><a href="/stock">Inventory / stock count</a> — barcode, on-hand, location, adjust (staff login required)</li>
         <li><a href="/applications-admin">Job applications</a> — review and update applicant status (staff login required)</li>
         <li><a href="/review-admin">Site review portal</a> — share workflow pages with reviewers, triage comments (staff login required)</li>
         <li><a href="/login">Staff login</a></li>
+        <li><a href="/change-password">Change password</a> — staff account settings (staff login required)</li>
         <li><a href="/docs">API docs</a> — every endpoint, callable directly from the browser</li>
       </ul>
     </body>

@@ -26,12 +26,20 @@ import os
 import secrets
 import uuid
 from datetime import datetime
+from io import BytesIO
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, DateTime, Enum as SAEnum, ForeignKey, Integer, String, Text, inspect as sa_inspect, text
 from sqlalchemy.orm import Session, relationship
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import LETTER, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from .. import mail
 from ..auth import get_current_staff
@@ -118,6 +126,28 @@ class ReviewComment(Base):
     resolved_at = Column(DateTime, nullable=True)
 
     page = relationship("ReviewPage", back_populates="comments")
+
+
+class ActivityEvent(str, enum.Enum):
+    comment_added = "comment_added"
+    comment_status_changed = "comment_status_changed"
+    page_added = "page_added"
+    screenshot_uploaded = "screenshot_uploaded"
+
+
+class ReviewActivity(Base):
+    """Audit trail — every change made to a review project, so 'what happened
+    and when' is answerable without digging through comment tables by hand.
+    Feeds the admin Changes tab (view on screen, open/print PDF, email PDF)."""
+    __tablename__ = "review_activity"
+
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer, ForeignKey("review_projects.id"), nullable=False)
+    page_id = Column(Integer, ForeignKey("review_pages.id"), nullable=True)
+    event_type = Column(SAEnum(ActivityEvent), nullable=False)
+    summary = Column(Text, nullable=False)  # human-readable one-liner
+    actor = Column(String, nullable=True)   # staff username, or reviewer name/"Anonymous reviewer"
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 Base.metadata.create_all(bind=engine)
@@ -235,6 +265,25 @@ class CommentStatusUpdate(BaseModel):
     resolved_note: Optional[str] = None
 
 
+class ActivityOut(BaseModel):
+    id: int
+    project_id: int
+    page_id: Optional[int]
+    page_title: Optional[str] = None
+    event_type: ActivityEvent
+    summary: str
+    actor: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class EmailRequest(BaseModel):
+    recipient_email: str
+    token: Optional[str] = None  # required when called from the public reviewer view
+
+
 class SuggestionOut(BaseModel):
     id: int
     project_name: str
@@ -299,6 +348,180 @@ def _notify_new_comment(project_id: int, page_id: int, comment_id: int):
         log.exception("Failed to send review-comment notification email")
     finally:
         db.close()
+
+
+def _log_activity(db: Session, *, project_id: int, page_id: Optional[int], event_type: ActivityEvent, summary: str, actor: Optional[str] = None):
+    """Adds a ReviewActivity row to the current session — caller still owns
+    the commit (called right before the endpoint's existing db.commit())."""
+    db.add(ReviewActivity(
+        project_id=project_id, page_id=page_id, event_type=event_type,
+        summary=summary, actor=actor,
+    ))
+
+
+# ---------------------------------------------------------------------------
+# PDF building — changelog (admin) and single-page (reviewer) exports
+# ---------------------------------------------------------------------------
+_PDF_INK = colors.HexColor("#241A10")
+_PDF_RUST = colors.HexColor("#a3402a")
+_PDF_OLIVE = colors.HexColor("#4f5c3a")
+_PDF_LINE = colors.HexColor("#d8c79a")
+_PDF_CREAM = colors.HexColor("#FBF6E9")
+
+_pdf_styles = getSampleStyleSheet()
+_PDF_H1 = ParagraphStyle("rev_h1", parent=_pdf_styles["Heading1"], textColor=_PDF_INK,
+                         fontName="Helvetica-Bold", fontSize=16, leading=20, spaceAfter=6)
+_PDF_H2 = ParagraphStyle("rev_h2", parent=_pdf_styles["Heading2"], textColor=_PDF_INK,
+                         fontName="Helvetica-Bold", fontSize=11, leading=14, spaceBefore=10, spaceAfter=4)
+_PDF_META = ParagraphStyle("rev_meta", parent=_pdf_styles["BodyText"], textColor=_PDF_OLIVE,
+                           fontName="Helvetica", fontSize=8, leading=11)
+_PDF_BODY = ParagraphStyle("rev_body", parent=_pdf_styles["BodyText"], textColor=_PDF_INK,
+                           fontName="Helvetica", fontSize=9, leading=12)
+_PDF_FOOTER = ParagraphStyle("rev_footer", parent=_pdf_styles["BodyText"], textColor=_PDF_OLIVE,
+                             fontName="Helvetica-Oblique", fontSize=7, leading=9, alignment=1)
+
+
+def _pdf_table_style() -> TableStyle:
+    return TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), _PDF_INK),
+        ("TEXTCOLOR", (0, 0), (-1, 0), _PDF_CREAM),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 1), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("TOPPADDING", (0, 0), (-1, 0), 6),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.75, _PDF_INK),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F7F1DE")]),
+    ])
+
+
+def _pdf_header(title: str, subtitle: str) -> list:
+    now = datetime.now().strftime("%a %b %d %Y — %I:%M %p")
+    return [
+        Paragraph("American Food &amp; Beverage — Review Portal", _PDF_META),
+        Paragraph(title, _PDF_H1),
+        Paragraph(subtitle, _PDF_META),
+        Paragraph(f"Generated {now}", _PDF_META),
+        Spacer(1, 10),
+    ]
+
+
+def _pdf_footer_on_page(canvas_, doc):
+    canvas_.saveState()
+    canvas_.setFont("Helvetica-Oblique", 7)
+    canvas_.setFillColor(_PDF_OLIVE)
+    canvas_.drawCentredString(doc.pagesize[0] / 2.0, 0.35 * inch, f"Page {doc.page} — American Food & Beverage")
+    canvas_.restoreState()
+
+
+def _build_pdf(story: list, *, landscape_mode: bool = False) -> bytes:
+    buf = BytesIO()
+    page_size = landscape(LETTER) if landscape_mode else LETTER
+    doc = SimpleDocTemplate(
+        buf, pagesize=page_size,
+        leftMargin=0.5 * inch, rightMargin=0.5 * inch,
+        topMargin=0.5 * inch, bottomMargin=0.5 * inch,
+        title="AFB Review Portal",
+    )
+    doc.build(story, onFirstPage=_pdf_footer_on_page, onLaterPages=_pdf_footer_on_page)
+    return buf.getvalue()
+
+
+def _activity_pdf(db: Session, proj: ReviewProject) -> tuple[bytes, str]:
+    rows = (
+        db.query(ReviewActivity)
+        .filter(ReviewActivity.project_id == proj.id)
+        .order_by(ReviewActivity.created_at.desc())
+        .all()
+    )
+    page_titles = {p.id: p.title for p in proj.pages}
+
+    story = _pdf_header(f"Changelog — {proj.name}", f"{len(rows)} recorded change(s)")
+    if rows:
+        data = [["When", "Event", "Page", "Details", "By"]]
+        event_labels = {
+            ActivityEvent.comment_added: "Comment added",
+            ActivityEvent.comment_status_changed: "Comment status changed",
+            ActivityEvent.page_added: "Page added",
+            ActivityEvent.screenshot_uploaded: "Screenshot uploaded",
+        }
+        for r in rows:
+            data.append([
+                r.created_at.strftime("%b %d %I:%M %p"),
+                event_labels.get(r.event_type, r.event_type.value),
+                page_titles.get(r.page_id, "—"),
+                r.summary,
+                r.actor or "—",
+            ])
+        t = Table(data, colWidths=[1.1 * inch, 1.4 * inch, 1.8 * inch, 2.8 * inch, 1.0 * inch])
+        t.setStyle(_pdf_table_style())
+        story.append(t)
+    else:
+        story.append(Paragraph("No changes recorded yet.", _PDF_BODY))
+
+    pdf = _build_pdf(story, landscape_mode=True)
+    filename = f"afb-review-changelog-{proj.slug}.pdf"
+    return pdf, filename
+
+
+def _page_pdf(page: ReviewPage) -> tuple[bytes, str]:
+    proj = page.project
+    story = _pdf_header(page.title, proj.name if proj else "")
+    if page.summary:
+        story.append(Paragraph(page.summary, _PDF_BODY))
+        story.append(Spacer(1, 8))
+
+    try:
+        fields = json.loads(page.fields_json or "[]")
+    except Exception:
+        fields = []
+    story.append(Paragraph("Data fields", _PDF_H2))
+    real_fields = [f for f in fields if f.get("type") not in ("section", "button")]
+    if real_fields:
+        data = [["Field", "Type", "Notes"]]
+        for f in real_fields:
+            data.append([f.get("label", ""), f.get("type", ""), f.get("note") or ""])
+        t = Table(data, colWidths=[2.2 * inch, 1.2 * inch, 3.6 * inch])
+        t.setStyle(_pdf_table_style())
+        story.append(t)
+    else:
+        story.append(Paragraph("No fields listed.", _PDF_BODY))
+
+    story.append(Paragraph("Process flow", _PDF_H2))
+    story.append(Paragraph((page.flow_notes or "No flow notes yet.").replace("\n", "<br/>"), _PDF_BODY))
+
+    story.append(Paragraph("Downstream effects", _PDF_H2))
+    story.append(Paragraph((page.downstream_notes or "No downstream effects noted.").replace("\n", "<br/>"), _PDF_BODY))
+
+    comments = sorted(page.comments, key=lambda c: c.created_at or datetime.utcnow(), reverse=True)
+    story.append(Paragraph(f"Comments ({len(comments)})", _PDF_H2))
+    if comments:
+        data = [["When", "Category", "From", "Status", "Comment"]]
+        for c in comments[:25]:
+            data.append([
+                c.created_at.strftime("%b %d %I:%M %p"),
+                c.category.value, c.author_name or "Anonymous",
+                c.status.value, c.body[:180],
+            ])
+        t = Table(data, colWidths=[1.0 * inch, 0.9 * inch, 1.1 * inch, 0.9 * inch, 3.1 * inch])
+        t.setStyle(_pdf_table_style())
+        story.append(t)
+    else:
+        story.append(Paragraph("No comments yet.", _PDF_BODY))
+
+    pdf = _build_pdf(story, landscape_mode=True)
+    safe_title = "".join(ch if ch.isalnum() or ch in "-_ " else "" for ch in page.title).strip().replace(" ", "-")
+    filename = f"afb-review-{safe_title or page.id}.pdf"
+    return pdf, filename
+
+
+def _pdf_stream(pdf_bytes: bytes, filename: str) -> StreamingResponse:
+    return StreamingResponse(
+        BytesIO(pdf_bytes), media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -366,6 +589,11 @@ def add_page(payload: PageCreate, db: Session = Depends(get_db), staff=Depends(g
         downstream_notes=(payload.downstream_notes or None),
     )
     db.add(page)
+    db.flush()
+    _log_activity(
+        db, project_id=proj.id, page_id=page.id, event_type=ActivityEvent.page_added,
+        summary=f"Added workflow page \"{page.title}\"", actor=getattr(staff, "username", None),
+    )
     db.commit()
     db.refresh(page)
     return _page_to_out(page)
@@ -397,6 +625,10 @@ def upload_screenshot(page_id: int, file: UploadFile = File(...), db: Session = 
             except OSError:
                 pass
     page.screenshot_filename = filename
+    _log_activity(
+        db, project_id=page.project_id, page_id=page.id, event_type=ActivityEvent.screenshot_uploaded,
+        summary=f"Uploaded a screenshot for \"{page.title}\"", actor=getattr(staff, "username", None),
+    )
     db.commit()
     db.refresh(page)
     return _page_to_out(page)
@@ -442,6 +674,13 @@ def add_comment(payload: CommentCreate, background: BackgroundTasks, db: Session
         status=CommentStatus.open,
     )
     db.add(c)
+    db.flush()
+    who = payload.author_name or "Anonymous reviewer"
+    _log_activity(
+        db, project_id=proj.id, page_id=page.id, event_type=ActivityEvent.comment_added,
+        summary=f"{who} left a {payload.category.value} comment: “{payload.body.strip()[:120]}”",
+        actor=who,
+    )
     db.commit()
     db.refresh(c)
     background.add_task(_notify_new_comment, proj.id, page.id, c.id)
@@ -473,6 +712,7 @@ def update_comment_status(comment_id: int, payload: CommentStatusUpdate, db: Ses
     c = db.query(ReviewComment).get(comment_id)
     if not c:
         raise HTTPException(404, "Comment not found.")
+    old_status = c.status
     c.status = payload.status
     if payload.resolved_note is not None:
         c.resolved_note = payload.resolved_note
@@ -480,6 +720,14 @@ def update_comment_status(comment_id: int, payload: CommentStatusUpdate, db: Ses
         c.resolved_at = datetime.utcnow()
     if payload.status == CommentStatus.open:
         c.resolved_at = None
+    if old_status != payload.status:
+        summary = f"Comment status changed: {old_status.value} → {payload.status.value}"
+        if payload.resolved_note:
+            summary += f" — “{payload.resolved_note[:100]}”"
+        _log_activity(
+            db, project_id=c.project_id, page_id=c.page_id, event_type=ActivityEvent.comment_status_changed,
+            summary=summary, actor=getattr(staff, "username", None),
+        )
     db.commit()
     db.refresh(c)
     return CommentOut.model_validate(c)
@@ -509,3 +757,106 @@ def suggestions_queue(db: Session = Depends(get_db), staff=Depends(get_current_s
             author_name=c.author_name, body=c.body, status=c.status, created_at=c.created_at, age_days=age,
         ))
     return out
+
+
+# ---------------------------------------------------------------------------
+# Staff-side: changes / activity log — view, print (via PDF), email PDF
+# ---------------------------------------------------------------------------
+@router.get("/projects/{project_id}/activity", response_model=List[ActivityOut])
+def list_activity(project_id: int, db: Session = Depends(get_db), staff=Depends(get_current_staff)):
+    proj = db.query(ReviewProject).get(project_id)
+    if not proj:
+        raise HTTPException(404, "Project not found.")
+    page_titles = {p.id: p.title for p in proj.pages}
+    rows = (
+        db.query(ReviewActivity)
+        .filter(ReviewActivity.project_id == project_id)
+        .order_by(ReviewActivity.created_at.desc())
+        .all()
+    )
+    return [
+        ActivityOut(
+            id=r.id, project_id=r.project_id, page_id=r.page_id,
+            page_title=page_titles.get(r.page_id), event_type=r.event_type,
+            summary=r.summary, actor=r.actor, created_at=r.created_at,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/projects/{project_id}/activity/pdf")
+def activity_pdf(project_id: int, db: Session = Depends(get_db), staff=Depends(get_current_staff)):
+    """Streams the changelog as a PDF — open it in the browser's own PDF
+    viewer to view on screen or send to a printer."""
+    proj = db.query(ReviewProject).get(project_id)
+    if not proj:
+        raise HTTPException(404, "Project not found.")
+    pdf_bytes, filename = _activity_pdf(db, proj)
+    return _pdf_stream(pdf_bytes, filename)
+
+
+@router.post("/projects/{project_id}/activity/pdf/email")
+def email_activity_pdf(project_id: int, payload: EmailRequest, db: Session = Depends(get_db), staff=Depends(get_current_staff)):
+    proj = db.query(ReviewProject).get(project_id)
+    if not proj:
+        raise HTTPException(404, "Project not found.")
+    to_addr = (payload.recipient_email or "").strip()
+    if "@" not in to_addr:
+        raise HTTPException(422, "A valid recipient email address is required.")
+    pdf_bytes, filename = _activity_pdf(db, proj)
+    subject = f"[AFB Review] Changelog — {proj.name} — {datetime.now().strftime('%b %d, %Y')}"
+    body = (
+        f"Attached: {filename}\n\n"
+        f"Full change history for the \"{proj.name}\" review project, generated from /review-admin."
+    )
+    msg = mail.build_message(subject=subject, to=to_addr, body=body)
+    mail.attach_pdf(msg, filename=filename, data=pdf_bytes)
+    mail.send(msg)
+    cfg = mail.smtp_config()
+    if not cfg["enabled"]:
+        return {"ok": True, "sent": False, "detail": f"Mail sending is disabled — the PDF would have gone to {to_addr}. Set MAIL_ENABLED=1 to actually send."}
+    return {"ok": True, "sent": True, "detail": f"Sent {filename} to {to_addr}."}
+
+
+# ---------------------------------------------------------------------------
+# Public: reviewer view — email/print a single workflow page
+# ---------------------------------------------------------------------------
+def _page_for_token(page_id: int, token: str, db: Session) -> ReviewPage:
+    page = db.query(ReviewPage).get(page_id)
+    if not page:
+        raise HTTPException(404, "Page not found.")
+    proj = db.query(ReviewProject).filter(ReviewProject.token == token).first()
+    if not proj or page.project_id != proj.id:
+        raise HTTPException(404, "Review link not found or expired.")
+    return page
+
+
+@router.get("/pages/{page_id}/pdf")
+def page_pdf(page_id: int, token: str, db: Session = Depends(get_db)):
+    """Public, token-gated — lets a reviewer open/print the page they're
+    looking at as a PDF, same token check as everything else on /review."""
+    page = _page_for_token(page_id, token, db)
+    pdf_bytes, filename = _page_pdf(page)
+    return _pdf_stream(pdf_bytes, filename)
+
+
+@router.post("/pages/{page_id}/email")
+def email_page(page_id: int, payload: EmailRequest, db: Session = Depends(get_db)):
+    """Public, token-gated — reviewer emails themself or a colleague a PDF
+    copy of the page they're currently looking at."""
+    if not payload.token:
+        raise HTTPException(422, "Missing review token.")
+    page = _page_for_token(page_id, payload.token, db)
+    to_addr = (payload.recipient_email or "").strip()
+    if "@" not in to_addr:
+        raise HTTPException(422, "A valid recipient email address is required.")
+    pdf_bytes, filename = _page_pdf(page)
+    subject = f"[AFB Review] {page.title}"
+    body = f"Attached: {filename}\n\nShared from the AFB review portal."
+    msg = mail.build_message(subject=subject, to=to_addr, body=body)
+    mail.attach_pdf(msg, filename=filename, data=pdf_bytes)
+    mail.send(msg)
+    cfg = mail.smtp_config()
+    if not cfg["enabled"]:
+        return {"ok": True, "sent": False, "detail": f"Mail sending is disabled — the PDF would have gone to {to_addr}."}
+    return {"ok": True, "sent": True, "detail": f"Sent {filename} to {to_addr}."}
