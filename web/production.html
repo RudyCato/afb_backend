@@ -491,6 +491,12 @@ async function loadPackerTasks(){
           <input type="number" id="qty-${a.id}" min="1" value="${Math.max(1, a.qty_assigned - a.qty_completed)}">
           <button class="btn" onclick="logAssignmentProduction(${a.id}, ${a.product_id})">Log Completed</button>
         </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dotted var(--line);">
+          <a href="/packing-job-assign?packer=${encodeURIComponent(packer)}&product=${encodeURIComponent(a.product_name)}&sku=${encodeURIComponent(a.sku)}&order=${encodeURIComponent(a.order_number||'')}"
+             style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--rust);text-decoration:none;">
+            📋 Open SQF Packing Log (SOP-PRD-FORM-014) &rarr;
+          </a>
+        </div>
       </div>
     `).join('');
   }
@@ -624,6 +630,12 @@ async function previewMixRequirement(){
             ${r.ingredients.map(i => `<tr><td>${i.ingredient_name}</td><td>${i.percentage}%</td><td><b>${i.amount_lb} lb</b></td></tr>`).join('')}
           </tbody>
         </table>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dotted var(--line);">
+          <a href="/packing-job-assign?product=${encodeURIComponent(r.product_name)}&ingredients=${encodeURIComponent(JSON.stringify(r.ingredients))}"
+             class="btn" style="display:inline-block;text-decoration:none;font-size:0.72rem;">
+            📋 Create Packing Job (SOP-PRD-FORM-014) &rarr;
+          </a>
+        </div>
       </div>
     `;
   } catch(e){

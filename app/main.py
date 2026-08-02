@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import get_current_staff_optional
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan, employee_applications, jobs, review, packing_jobs
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan, employee_applications, jobs, review, packing_jobs, hr
 from .routers import auth as auth_router
 
 Base.metadata.create_all(bind=engine)
@@ -83,6 +83,7 @@ app.include_router(employee_applications.router)
 app.include_router(jobs.router)
 app.include_router(review.router)
 app.include_router(packing_jobs.router)
+app.include_router(hr.router)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 
@@ -182,6 +183,14 @@ def packing_job_assign_page(staff=Depends(get_current_staff_optional)):
     if gate:
         return gate
     return FileResponse(os.path.join(WEB_DIR, "packing-job-assign.html"))
+
+
+@app.get("/hr-portal")
+def hr_portal_page(staff=Depends(get_current_staff_optional)):
+    gate = _staff_gate("/hr-portal", staff)
+    if gate:
+        return gate
+    return FileResponse(os.path.join(WEB_DIR, "hr-portal.html"))
 
 
 @app.get("/", response_class=FileResponse)

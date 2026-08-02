@@ -352,6 +352,8 @@ class Pallet(Base):
 class StaffRole(str, enum.Enum):
     admin = "admin"           # full access — owner/consultant
     manager = "manager"       # dashboard + applications admin
+    hr_admin = "hr_admin"     # HR director / HR manager — HR portal full access
+    associate = "associate"   # individual associate — HR portal self-service only
     packer = "packer"         # production page only
 
 
@@ -566,3 +568,159 @@ class PackingJob(Base):
     submitted_by = Column(String(150), nullable=True)
     approved_by = Column(String(150), nullable=True)
     notes = Column(Text, nullable=True)
+
+
+# ── HR / Associate Portal ─────────────────────────────────────────────────────
+
+class AssociateProfile(Base):
+    """Extended profile for each StaffUser — personal info, department, emergency
+    contacts, and onboarding status. Linked 1-to-1 with StaffUser."""
+    __tablename__ = "associate_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    staff_id = Column(Integer, ForeignKey("staff_users.id"), unique=True, nullable=False)
+
+    # Identity / employment
+    employee_id   = Column(String(20), unique=True, nullable=True)   # AFB-001
+    department    = Column(String(100), nullable=True)
+    position      = Column(String(100), nullable=True)
+    hire_date     = Column(Date, nullable=True)
+    status        = Column(String(30), default="active")             # active | on_leave | terminated
+
+    # Contact
+    phone         = Column(String(30), nullable=True)
+    address       = Column(Text, nullable=True)
+
+    # Emergency contact
+    ec_name       = Column(String(100), nullable=True)
+    ec_phone      = Column(String(30), nullable=True)
+    ec_relation   = Column(String(50), nullable=True)
+
+    # Profile
+    bio           = Column(Text, nullable=True)
+    photo_url     = Column(String(500), nullable=True)
+    skills        = Column(JSON, default=list)                        # list of skill strings
+    certifications = Column(JSON, default=list)                      # list of cert strings
+
+    # Onboarding
+    onboarding_completed    = Column(Boolean, default=False)
+    onboarding_completed_at = Column(DateTime, nullable=True)
+    onboarding_notes        = Column(Text, nullable=True)
+
+    notes      = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("StaffUser", backref="hr_profile")
+
+
+class TrainingModule(Base):
+    """A training or SOP module that can be assigned to associates."""
+    __tablename__ = "training_modules"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    code        = Column(String(30), unique=True, nullable=False)     # TRN-001, SQF-001
+    title       = Column(String(200), nullable=False)
+    category    = Column(String(50), nullable=False)                  # onboarding | safety | sop | sqf | quality | hr
+    description = Column(Text, nullable=True)
+    content_url = Column(String(500), nullable=True)                  # link to doc/video
+    estimated_minutes  = Column(Integer, default=30)
+    passing_score      = Column(Integer, default=80)                  # minimum % to pass
+    is_required        = Column(Boolean, default=True)
+    required_roles     = Column(JSON, default=list)                   # [] = all roles
+    sqf_cert_module    = Column(Boolean, default=False)               # counts toward SQF cert?
+    cert_valid_days    = Column(Integer, nullable=True)               # recertification window
+    active             = Column(Boolean, default=True)
+    created_at         = Column(DateTime, default=datetime.utcnow)
+
+    completions = relationship("TrainingCompletion", back_populates="module", cascade="all, delete-orphan")
+
+
+class TrainingCompletion(Base):
+    """Records that a specific associate completed (or attempted) a training module."""
+    __tablename__ = "training_completions"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    staff_id     = Column(Integer, ForeignKey("staff_users.id"), nullable=False)
+    module_id    = Column(Integer, ForeignKey("training_modules.id"), nullable=False)
+    completed_at = Column(DateTime, default=datetime.utcnow)
+    score        = Column(Integer, nullable=True)                     # % score if quiz-based
+    passed       = Column(Boolean, default=True)
+    certified_until = Column(DateTime, nullable=True)                 # for cert-expiry tracking
+    instructor   = Column(String(100), nullable=True)                 # for in-person sessions
+    method       = Column(String(30), default="self_study")           # self_study | classroom | on_job
+    notes        = Column(Text, nullable=True)
+
+    staff  = relationship("StaffUser", backref="training_completions")
+    module = relationship("TrainingModule", back_populates="completions")
+
+
+class SelfEvaluation(Base):
+    """Associate self-evaluation for a given review period."""
+    __tablename__ = "self_evaluations"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    staff_id     = Column(Integer, ForeignKey("staff_users.id"), nullable=False)
+    period       = Column(String(30), nullable=False)                 # e.g. "Q3 2026"
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+
+    # Core dimension ratings — 1 (needs improvement) to 5 (exceeds expectations)
+    ratings      = Column(JSON, nullable=True)                        # {"quality":4,"attendance":5,...}
+
+    strengths    = Column(Text, nullable=True)
+    improvements = Column(Text, nullable=True)
+    goals        = Column(Text, nullable=True)
+    comments     = Column(Text, nullable=True)
+
+    # Manager review
+    reviewed_by      = Column(String(100), nullable=True)
+    reviewed_at      = Column(DateTime, nullable=True)
+    manager_comments = Column(Text, nullable=True)
+    overall_rating   = Column(Integer, nullable=True)                 # manager's 1-5 summary
+
+    staff = relationship("StaffUser", backref="self_evaluations")
+
+
+class HRMessage(Base):
+    """Associate ↔ HR/management messages — day-off requests, concerns, feedback."""
+    __tablename__ = "hr_messages"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    from_staff_id   = Column(Integer, ForeignKey("staff_users.id"), nullable=False)
+    to_staff_id     = Column(Integer, ForeignKey("staff_users.id"), nullable=True)  # NULL = any HR admin
+    subject         = Column(String(200), nullable=False)
+    body            = Column(Text, nullable=False)
+    message_type    = Column(String(30), default="general")   # general | day_off | concern | feedback | schedule
+    status          = Column(String(20), default="pending")   # pending | read | approved | denied | closed
+    priority        = Column(String(10), default="normal")    # normal | urgent
+
+    # For day-off requests
+    request_dates  = Column(JSON, nullable=True)              # ["2026-08-10","2026-08-11"]
+    request_reason = Column(String(200), nullable=True)
+
+    # Response from HR/admin
+    response_body  = Column(Text, nullable=True)
+    responded_by   = Column(String(100), nullable=True)
+    responded_at   = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    read_at    = Column(DateTime, nullable=True)
+
+    from_staff = relationship("StaffUser", foreign_keys=[from_staff_id], backref="hr_sent")
+    to_staff   = relationship("StaffUser", foreign_keys=[to_staff_id],   backref="hr_received")
+
+
+class HRAnnouncement(Base):
+    """Company announcements — vision, team building, policy updates, achievements."""
+    __tablename__ = "hr_announcements"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    title      = Column(String(200), nullable=False)
+    body       = Column(Text, nullable=False)
+    category   = Column(String(30), default="general")   # general | vision | team_building | achievement | policy | safety | sqf
+    emoji      = Column(String(10), nullable=True)
+    author     = Column(String(100), nullable=False)
+    pinned     = Column(Boolean, default=False)
+    active     = Column(Boolean, default=True)
+    posted_at  = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)

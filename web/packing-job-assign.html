@@ -281,11 +281,13 @@
           </div>
           <div class="form-group">
             <label>Packaging Line / Station ID</label>
-            <input type="text" name="packaging_line_id" placeholder="e.g. LINE-03" />
+            <input type="text" name="packaging_line_id" placeholder="e.g. LINE-03" oninput="buildLotCode()" />
           </div>
           <div class="form-group span2">
             <label>Lead Operator / Packer Name</label>
-            <input type="text" name="lead_operator_name" placeholder="Full name" />
+            <select name="lead_operator_name" id="packerSelect">
+              <option value="">— Loading packers… —</option>
+            </select>
           </div>
         </div>
       </div>
@@ -462,8 +464,8 @@
             </select>
           </div>
           <div class="form-group span2">
-            <label>Finished Good Lot Code Format</label>
-            <input type="text" name="lot_code_format" placeholder="e.g. YYMMDD-LINE-SEQ" />
+            <label>Finished Good Lot Code</label>
+            <input type="text" name="lot_code_format" id="lotCodeFormat" placeholder="Auto-built from order · line · seq" />
           </div>
         </div>
         <div class="dyn-table-wrap">
@@ -587,6 +589,20 @@ async function loadInventory() {
   }
 }
 
+async function loadPackers() {
+  try {
+    const res = await fetch("/production/packers?active_only=true", {credentials:"include"});
+    if (!res.ok) throw new Error();
+    const packers = await res.json();
+    const sel = document.getElementById("packerSelect");
+    sel.innerHTML = '<option value="">— Select packer —</option>'
+      + packers.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
+  } catch {
+    document.getElementById("packerSelect").innerHTML =
+      '<option value="">⚠ Could not load packers</option>';
+  }
+}
+
 async function loadOrders() {
   try {
     const res = await fetch("/orders", {credentials:"include"});
@@ -613,30 +629,91 @@ function onProductChange() {
 }
 
 function onOrderChange() {
-  const orderNum = document.getElementById("salesOrderSelect").value;
-  if (!orderNum) return;
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const yyyy = now.getFullYear();
-  document.getElementById("batchLotNumber").value = `LOT-${orderNum}-${mm}${yyyy}`;
+  buildLotCode();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// Shared builder — called whenever order, line, or seq changes
+let _lotSeq = 1;
+function buildLotCode() {
+  const orderNum = document.getElementById("salesOrderSelect").value;
+  if (!orderNum) return;
+
+  const now = new Date();
+  const mm  = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  const base = `LOT-${orderNum}-${mm}${yyyy}`;
+
+  // Batch/lot (no line/seq — production-level identifier)
+  document.getElementById("batchLotNumber").value = base;
+
+  // Finished good lot code = base + line + seq
+  const line = (document.querySelector('[name="packaging_line_id"]')?.value || "").trim();
+  const seq  = String(_lotSeq).padStart(3, "0");
+  const linePart = line ? `-${line.replace(/\s+/g,"")}` : "";
+  document.getElementById("lotCodeFormat").value = `${base}${linePart}-${seq}`;
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("todayDate").textContent =
     new Date().toLocaleDateString("en-US", {year:"numeric",month:"short",day:"numeric"});
   const pd = document.querySelector('[name="production_date"]');
   if (pd) pd.value = new Date().toISOString().split("T")[0];
 
-  loadInventory();
-  loadOrders();
+  // Load all dropdowns in parallel, then pre-populate from URL params
+  await Promise.all([loadInventory(), loadOrders(), loadPackers()]);
 
-  [
-    {component:"Rolled Oats / Base", allergen:"Gluten"},
-    {component:"Nuts (Almonds, Cashews, etc.)", allergen:"Tree Nut"},
-    {component:"Dried Fruit / Seeds", allergen:"None"},
-    {component:"Sweeteners / Oils / Spices", allergen:"None"},
-    {component:"Primary Film / Pouch", allergen:"None"},
-  ].forEach(d => addRawMaterialRow(d));
+  const params = new URLSearchParams(location.search);
+  const qProduct     = params.get("product");
+  const qOrder       = params.get("order");
+  const qPacker      = params.get("packer");
+  const qLine        = params.get("line");
+  const qIngredients = params.get("ingredients");
+
+  if (qProduct) {
+    const sel = document.getElementById("productSelect");
+    for (const opt of sel.options) {
+      if (opt.value === qProduct) { sel.value = qProduct; break; }
+    }
+    onProductChange();
+  }
+  if (qOrder) {
+    const sel = document.getElementById("salesOrderSelect");
+    if ([...sel.options].some(o => o.value === qOrder)) sel.value = qOrder;
+    buildLotCode();
+  }
+  if (qPacker) {
+    const sel = document.getElementById("packerSelect");
+    if ([...sel.options].some(o => o.value === qPacker)) sel.value = qPacker;
+  }
+  if (qLine) {
+    const el = document.querySelector('[name="packaging_line_id"]');
+    if (el) { el.value = qLine; buildLotCode(); }
+  }
+
+  // Raw materials: if coming from the Product Mixer, seed from its ingredient list
+  if (qIngredients) {
+    try {
+      const ings = JSON.parse(qIngredients);
+      ings.forEach(i => addRawMaterialRow({
+        component: `${i.ingredient_name} (${i.amount_lb} lb / ${i.percentage}%)`,
+        allergen: "None"
+      }));
+      addRawMaterialRow({component:"Primary Film / Pouch", allergen:"None"});
+    } catch(e) {
+      // fallback to defaults on parse error
+      [{component:"Rolled Oats / Base", allergen:"Gluten"},
+       {component:"Nuts (Almonds, Cashews, etc.)", allergen:"Tree Nut"},
+       {component:"Dried Fruit / Seeds", allergen:"None"},
+       {component:"Sweeteners / Oils / Spices", allergen:"None"},
+       {component:"Primary Film / Pouch", allergen:"None"}].forEach(d => addRawMaterialRow(d));
+    }
+  } else {
+    [{component:"Rolled Oats / Base", allergen:"Gluten"},
+     {component:"Nuts (Almonds, Cashews, etc.)", allergen:"Tree Nut"},
+     {component:"Dried Fruit / Seeds", allergen:"None"},
+     {component:"Sweeteners / Oils / Spices", allergen:"None"},
+     {component:"Primary Film / Pouch", allergen:"None"}].forEach(d => addRawMaterialRow(d));
+  }
 
   ["Pre-Start","Mid-Shift 1","Mid-Shift 2","Post-Run"].forEach(l => addMDRow(l));
   [1,2,3,4].forEach(n => addSampleRow(n));

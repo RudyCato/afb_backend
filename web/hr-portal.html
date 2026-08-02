@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFB — HR &amp; Associate Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#EFE4CB;--paper:#FBF6E9;--ink:#241A10;--ink-soft:#5a4a36;
+  --rust:#a3402a;--rust-deep:#7f3121;--gold:#c2932f;
+  --olive:#4f5c3a;--olive-light:#6b7a4e;
+  --hr:#1a6b6e;--hr-light:#2a8a8e;--hr-pale:#e4f2f2;
+  --line:#d8c79a;--line-strong:#c3ab72;
+  --shadow:0 3px 14px rgba(36,26,16,.10);
+  --radius:5px;
+  --green:#2d6a4f;--green-pale:#e8f5ef;
+  --amber:#b8860b;--amber-pale:#fef9e7;
+  --red:#a3402a;--red-pale:#fdecea;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
+
+/* ── Layout shell ── */
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+header{
+  background:var(--ink);color:var(--paper);border-bottom:3px solid var(--hr);
+  padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.brand{display:flex;flex-direction:column;gap:1px;}
+.brand-name{font-family:'Bitter',serif;font-weight:900;font-size:1.05rem;}
+.brand-sub{font-family:'IBM Plex Mono',monospace;font-size:0.57rem;letter-spacing:.22em;color:#5cc8cc;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:14px;}
+.h-user{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:#5cc8cc;letter-spacing:.04em;}
+.h-role{
+  font-family:'IBM Plex Mono',monospace;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 8px;border-radius:20px;background:var(--hr);color:#e0f7f8;
+}
+.h-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.55);
+  text-decoration:none;letter-spacing:.04em;
+}
+.h-btn:hover{color:#5cc8cc;}
+
+.body{display:flex;flex:1;overflow:hidden;}
+
+/* ── Sidebar nav ── */
+.sidebar{
+  width:210px;flex-shrink:0;background:var(--paper);border-right:1px solid var(--line-strong);
+  display:flex;flex-direction:column;overflow-y:auto;padding:16px 0 24px;
+}
+.nav-section{padding:10px 16px 4px;font-family:'IBM Plex Mono',monospace;font-size:.58rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);opacity:.6;}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;
+  font-size:.82rem;font-weight:500;color:var(--ink-soft);border-left:3px solid transparent;
+  transition:all .1s;text-decoration:none;
+}
+.nav-item:hover{background:var(--cream);color:var(--ink);border-left-color:var(--line-strong);}
+.nav-item.active{background:var(--hr-pale);color:var(--hr);border-left-color:var(--hr);font-weight:600;}
+.nav-item .ni{font-size:1rem;width:18px;text-align:center;}
+.nav-badge{
+  margin-left:auto;background:var(--rust);color:#fff;
+  font-family:'IBM Plex Mono',monospace;font-size:.6rem;font-weight:600;
+  padding:1px 6px;border-radius:20px;
+}
+
+/* ── Main content pane ── */
+.content{flex:1;overflow-y:auto;padding:24px 28px 40px;display:flex;flex-direction:column;gap:20px;}
+.hidden{display:none!important;}
+
+/* ── Section header ── */
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;}
+.sec-title{font-family:'Bitter',serif;font-size:1.3rem;font-weight:700;}
+.sec-sub{font-size:.8rem;color:var(--ink-soft);margin-top:2px;}
+
+/* ── Cards / stat boxes ── */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+.stat-card{
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);
+}
+.stat-card .sv{font-family:'Bitter',serif;font-size:2rem;font-weight:900;color:var(--hr);}
+.stat-card .sl{font-size:.74rem;color:var(--ink-soft);margin-top:3px;}
+
+/* ── Panels ── */
+.panel{
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.panel-head{
+  padding:13px 18px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.panel-head h3{font-family:'Bitter',serif;font-size:1rem;font-weight:700;}
+.panel-body{padding:16px 18px;}
+
+/* ── Buttons ── */
+.btn{
+  font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.05em;text-transform:uppercase;
+  padding:7px 16px;border-radius:3px;border:none;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;transition:background .1s;
+}
+.btn-primary{background:var(--hr);color:#fff;}
+.btn-primary:hover{background:var(--hr-light);}
+.btn-ghost{background:transparent;border:1px solid var(--line-strong);color:var(--ink-soft);}
+.btn-ghost:hover{border-color:var(--hr);color:var(--hr);}
+.btn-rust{background:var(--rust);color:#fff;}
+.btn-rust:hover{background:var(--rust-deep);}
+.btn-sm{padding:5px 11px;font-size:.63rem;}
+
+/* ── Forms ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.form-grid.cols-1{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.full{grid-column:1/-1;}
+label{font-family:'IBM Plex Mono',monospace;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);}
+input,select,textarea{
+  font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;padding:8px 10px;
+  border:1px solid var(--line-strong);border-radius:3px;background:var(--cream);color:var(--ink);
+  transition:border-color .1s;width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hr);}
+textarea{resize:vertical;min-height:80px;}
+
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{
+  font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);padding:8px 12px;border-bottom:2px solid var(--line-strong);text-align:left;
+}
+td{padding:9px 12px;border-bottom:1px solid var(--line);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--cream);}
+
+/* ── Badges / chips ── */
+.badge{
+  display:inline-block;padding:2px 8px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:.6rem;
+  letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+}
+.b-green{background:var(--green-pale);color:var(--green);}
+.b-red{background:var(--red-pale);color:var(--red);}
+.b-amber{background:var(--amber-pale);color:var(--amber);}
+.b-blue{background:var(--hr-pale);color:var(--hr);}
+.b-grey{background:#e8e4df;color:var(--ink-soft);}
+
+/* ── Announcement cards ── */
+.ann-card{
+  background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--hr);
+  border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);
+  position:relative;
+}
+.ann-card.pinned{border-left-color:var(--gold);}
+.ann-card.vision{border-left-color:var(--rust);}
+.ann-card.team_building{border-left-color:var(--olive);}
+.ann-card.achievement{border-left-color:#6a5acd;}
+.ann-card.safety{border-left-color:var(--amber);}
+.ann-card .ann-cat{
+  font-family:'IBM Plex Mono',monospace;font-size:.58rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
+}
+.ann-card h4{font-family:'Bitter',serif;font-size:1rem;font-weight:700;margin-bottom:6px;}
+.ann-card p{font-size:.82rem;line-height:1.55;color:var(--ink-soft);}
+.ann-card .ann-meta{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--line-strong);margin-top:10px;}
+.ann-pin{position:absolute;top:10px;right:12px;font-size:.7rem;}
+.ann-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+
+/* ── Training module cards ── */
+.mod-card{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:flex-start;gap:12px;
+}
+.mod-icon{font-size:1.5rem;flex-shrink:0;margin-top:2px;}
+.mod-info{flex:1;}
+.mod-info h4{font-family:'Bitter',serif;font-size:.92rem;font-weight:700;}
+.mod-info p{font-size:.76rem;color:var(--ink-soft);margin-top:3px;line-height:1.4;}
+.mod-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.mod-grid{display:flex;flex-direction:column;gap:10px;}
+
+/* ── Profile ── */
+.profile-header{
+  display:flex;align-items:center;gap:20px;
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
+  padding:22px 24px;box-shadow:var(--shadow);
+}
+.avatar{
+  width:72px;height:72px;border-radius:50%;background:var(--hr);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bitter',serif;font-size:1.6rem;color:#fff;font-weight:900;flex-shrink:0;
+}
+.profile-info h2{font-family:'Bitter',serif;font-size:1.3rem;}
+.profile-info .emp-id{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-soft);letter-spacing:.08em;margin-top:2px;}
+.profile-info .dept{font-size:.82rem;color:var(--ink-soft);margin-top:4px;}
+.profile-tabs{display:flex;gap:0;border-bottom:1px solid var(--line-strong);margin-bottom:16px;}
+.ptab{
+  font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;
+  padding:9px 16px;cursor:pointer;border-bottom:2px solid transparent;color:var(--ink-soft);
+  transition:all .1s;
+}
+.ptab.active{color:var(--hr);border-bottom-color:var(--hr);}
+.ptab:hover{color:var(--ink);}
+
+/* ── Eval form ── */
+.rating-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);}
+.rating-row:last-child{border-bottom:none;}
+.rating-label{font-size:.82rem;flex:1;}
+.rating-stars{display:flex;gap:4px;}
+.star{font-size:1.2rem;cursor:pointer;color:#ccc;transition:color .1s;}
+.star.filled{color:var(--gold);}
+
+/* ── Message thread ── */
+.msg-item{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:border-color .1s;
+}
+.msg-item:hover{border-color:var(--hr);}
+.msg-item.unread{border-left:3px solid var(--rust);}
+.msg-item .msg-subj{font-weight:600;font-size:.88rem;margin-bottom:3px;}
+.msg-item .msg-preview{font-size:.77rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.msg-item .msg-meta{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--line-strong);margin-top:6px;display:flex;gap:12px;}
+.msg-list{display:flex;flex-direction:column;gap:8px;}
+
+/* ── Onboarding checklist ── */
+.ob-step{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+}
+.ob-step.done{opacity:.6;}
+.ob-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
+.ob-step.done .ob-check{background:var(--green);border-color:var(--green);color:#fff;}
+.ob-info{flex:1;}
+.ob-title{font-size:.85rem;font-weight:600;}
+.ob-desc{font-size:.74rem;color:var(--ink-soft);margin-top:2px;}
+.ob-list{display:flex;flex-direction:column;gap:8px;}
+
+/* ── Utility ── */
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.gap-8{gap:8px;}
+.mt-4{margin-top:4px;}
+.mt-8{margin-top:8px;}
+.mt-12{margin-top:12px;}
+.mt-16{margin-top:16px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.dim{color:var(--ink-soft);}
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--paper);
+  font-size:.8rem;padding:10px 18px;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;max-width:320px;
+}
+.toast.show{opacity:1;}
+.loading{text-align:center;padding:40px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;font-size:.8rem;}
+.empty{text-align:center;padding:32px;color:var(--ink-soft);font-size:.85rem;}
+
+/* ── Modal ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(36,26,16,.5);z-index:1000;
+  align-items:center;justify-content:center;
+}
+.modal-bg.open{display:flex;}
+.modal{
+  background:var(--paper);border-radius:var(--radius);box-shadow:0 8px 40px rgba(0,0,0,.25);
+  width:90%;max-width:560px;max-height:90vh;overflow-y:auto;
+}
+.modal-head{
+  padding:16px 20px;border-bottom:1px solid var(--line-strong);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-head h3{font-family:'Bitter',serif;font-size:1.05rem;}
+.modal-close{background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--ink-soft);}
+.modal-body{padding:20px;}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .form-grid{grid-template-columns:1fr;}
+  .stat-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="brand">
+    <div class="brand-name">American Food &amp; Beverage</div>
+    <div class="brand-sub">HR &amp; Associate Portal</div>
+  </div>
+  <div class="header-right">
+    <span class="h-user" id="hUserName">Loading…</span>
+    <span class="h-role" id="hRoleBadge">—</span>
+    <a href="/ops" class="h-btn">Ops Hub</a>
+    <a href="#" class="h-btn" onclick="doLogout()">Sign Out</a>
+  </div>
+</header>
+
+<div class="body">
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar" id="sidebar">
+  <!-- admin nav items injected here by JS -->
+</nav>
+
+<!-- ── CONTENT ── -->
+<div class="content" id="mainContent">
+  <div class="loading">Loading portal…</div>
+</div>
+
+</div><!-- .body -->
+</div><!-- .shell -->
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── NEW ANNOUNCEMENT MODAL ── -->
+<div class="modal-bg" id="annModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>New Announcement</h3>
+      <button class="modal-close" onclick="closeModal('annModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-1">
+        <div class="field"><label>Title</label><input id="annTitle" placeholder="Announcement title"></div>
+        <div class="field">
+          <label>Category</label>
+          <select id="annCategory">
+            <option value="general">General</option>
+            <option value="vision">Company Vision</option>
+            <option value="team_building">Team Building</option>
+            <option value="achievement">Achievement 🏆</option>
+            <option value="policy">Policy Update</option>
+            <option value="safety">Safety</option>
+            <option value="sqf">SQF / Quality</option>
+          </select>
+        </div>
+        <div class="field"><label>Emoji (optional)</label><input id="annEmoji" placeholder="🎉" maxlength="4"></div>
+        <div class="field">
+          <label>Body</label>
+          <textarea id="annBody" rows="5" placeholder="Share your message with the team…"></textarea>
+        </div>
+        <div class="field row">
+          <label style="flex-direction:row;align-items:center;gap:8px;text-transform:none;font-size:.8rem;">
+            <input type="checkbox" id="annPinned" style="width:auto;"> Pin to top
+          </label>
+        </div>
+        <div class="field"><label>Expires (optional)</label><input type="date" id="annExpires"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('annModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAnnouncement()">Post Announcement</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW MODULE MODAL ── -->
+<div class="modal-bg" id="modModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Add Training Module</h3>
+      <button class="modal-close" onclick="closeModal('modModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Module Code</label><input id="modCode" placeholder="TRN-001"></div>
+        <div class="field">
+          <label>Category</label>
+          <select id="modCat">
+            <option value="onboarding">Onboarding</option>
+            <option value="safety">Food Safety</option>
+            <option value="sop">SOP</option>
+            <option value="sqf">SQF</option>
+            <option value="quality">Quality</option>
+            <option value="hr">HR / Policy</option>
+          </select>
+        </div>
+        <div class="field full"><label>Title</label><input id="modTitle" placeholder="Module title"></div>
+        <div class="field full"><label>Description</label><textarea id="modDesc" rows="3"></textarea></div>
+        <div class="field full"><label>Content URL (optional)</label><input id="modUrl" placeholder="https://…"></div>
+        <div class="field"><label>Est. Duration (min)</label><input id="modMins" type="number" value="30" min="5"></div>
+        <div class="field"><label>Passing Score (%)</label><input id="modScore" type="number" value="80" min="0" max="100"></div>
+        <div class="field full row">
+          <label style="flex-direction:row;align-items:center;gap:8px;text-transform:none;font-size:.8rem;">
+            <input type="checkbox" id="modSqfCert" style="width:auto;"> Counts toward SQF Certification
+          </label>
+        </div>
+        <div class="field"><label>Cert Valid Days (0=no expiry)</label><input id="modCertDays" type="number" value="0" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveModule()">Add Module</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW MESSAGE MODAL ── -->
+<div class="modal-bg" id="msgModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Send Message to HR</h3>
+      <button class="modal-close" onclick="closeModal('msgModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid cols-1">
+        <div class="field">
+          <label>Message Type</label>
+          <select id="msgType" onchange="toggleDayOff()">
+            <option value="general">General Message</option>
+            <option value="day_off">Day-Off Request</option>
+            <option value="concern">Concern / Complaint</option>
+            <option value="feedback">Feedback / Suggestion</option>
+            <option value="schedule">Schedule Change</option>
+          </select>
+        </div>
+        <div class="field"><label>Subject</label><input id="msgSubject" placeholder="What is this about?"></div>
+        <div id="dayOffFields" class="hidden">
+          <div class="field mt-8"><label>Dates Requested (comma-separated)</label><input id="msgDates" placeholder="2026-08-15, 2026-08-16"></div>
+          <div class="field mt-8"><label>Reason</label><input id="msgReason" placeholder="Vacation, appointment, family…"></div>
+        </div>
+        <div class="field mt-8"><label>Message</label><textarea id="msgBody" rows="5" placeholder="Describe your request…"></textarea></div>
+        <div class="field">
+          <label>Priority</label>
+          <select id="msgPriority">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('msgModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendMessage()">Send Message</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESPOND TO MESSAGE MODAL ── -->
+<div class="modal-bg" id="respondModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Respond to Message</h3>
+      <button class="modal-close" onclick="closeModal('respondModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="respondOriginal" class="panel-body" style="background:var(--cream);border-radius:3px;margin-bottom:14px;font-size:.82rem;"></div>
+      <div class="form-grid cols-1">
+        <div class="field">
+          <label>Status</label>
+          <select id="respondStatus">
+            <option value="read">Read / Acknowledged</option>
+            <option value="approved">Approved ✓</option>
+            <option value="denied">Denied ✗</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <div class="field"><label>Response</label><textarea id="respondBody" rows="4" placeholder="Your response to the associate…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('respondModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitResponse()">Send Response</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SELF-EVAL MODAL ── -->
+<div class="modal-bg" id="evalModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-head">
+      <h3>Self-Evaluation</h3>
+      <button class="modal-close" onclick="closeModal('evalModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Review Period</label><input id="evalPeriod" placeholder="Q3 2026"></div>
+      <div class="mt-12" style="font-family:'IBM Plex Mono',monospace;font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;">Rate yourself (1 = Needs Improvement → 5 = Exceeds Expectations)</div>
+      <div id="ratingRows">
+        <!-- injected by JS -->
+      </div>
+      <div class="form-grid cols-1 mt-12">
+        <div class="field"><label>Key Strengths</label><textarea id="evalStrengths" rows="3" placeholder="What are you doing well?"></textarea></div>
+        <div class="field"><label>Areas to Improve</label><textarea id="evalImprovements" rows="3" placeholder="Where do you want to grow?"></textarea></div>
+        <div class="field"><label>Goals for Next Period</label><textarea id="evalGoals" rows="3" placeholder="What do you want to achieve?"></textarea></div>
+        <div class="field"><label>Additional Comments</label><textarea id="evalComments" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('evalModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEval()">Submit Evaluation</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════════════════════ */
+let ME = null;          // /hr/me response
+let IS_ADMIN = false;   // whether current user is HR admin / admin / manager
+let currentSection = null;
+let currentRespondId = null;
+let evalRatings = {};   // {dimension: score}
+
+const EVAL_DIMS = [
+  {key:'quality',     label:'Work Quality'},
+  {key:'productivity',label:'Productivity'},
+  {key:'attendance',  label:'Attendance & Punctuality'},
+  {key:'teamwork',    label:'Teamwork & Collaboration'},
+  {key:'safety',      label:'Food Safety & SQF Compliance'},
+  {key:'initiative',  label:'Initiative & Problem Solving'},
+  {key:'communication',label:'Communication'},
+];
+
+const ONBOARDING_STEPS = [
+  {id:'orientation',    title:'Company Orientation',     desc:'Welcome tour, mission & values, company culture'},
+  {id:'safety_training',title:'Food Safety Training',    desc:'GMP, allergen awareness, personal hygiene'},
+  {id:'sqf_intro',      title:'SQF Level 2 Introduction',desc:'SQF fundamentals, PRPs, HACCP overview'},
+  {id:'sop_review',     title:'SOP Review & Sign-off',   desc:'Review all assigned Standard Operating Procedures'},
+  {id:'job_training',   title:'On-the-Job Training',     desc:'Shadow experienced associate, hands-on practice'},
+  {id:'equipment',      title:'Equipment Certification',  desc:'Scales, packing line, safety equipment training'},
+  {id:'systems',        title:'Systems & Paperwork',      desc:'SQF forms, packing logs, inventory processes'},
+  {id:'hr_policies',    title:'HR Policies',              desc:'Time-off, code of conduct, benefits overview'},
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const r = await api('/hr/me');
+    ME = r;
+    IS_ADMIN = r.is_hr_admin;
+    document.getElementById('hUserName').textContent = r.full_name;
+    document.getElementById('hRoleBadge').textContent = roleLabel(r.role);
+    buildSidebar();
+    showSection(IS_ADMIN ? 'dash' : 'my-home');
+  } catch(e) {
+    window.location.href = '/login?next=/hr-portal';
+  }
+});
+
+function roleLabel(r){
+  return {admin:'Admin',manager:'Manager',hr_admin:'HR Admin',associate:'Associate',packer:'Packer'}[r] || r;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIDEBAR BUILD
+═══════════════════════════════════════════════════════════════════════════ */
+function buildSidebar(){
+  const sb = document.getElementById('sidebar');
+  if(IS_ADMIN){
+    sb.innerHTML = `
+      <div class="nav-section">Admin</div>
+      <div class="nav-item active" onclick="showSection('dash')" data-sec="dash">
+        <span class="ni">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('associates')" data-sec="associates">
+        <span class="ni">👥</span> Associates
+      </div>
+      <div class="nav-item" onclick="showSection('onboarding')" data-sec="onboarding">
+        <span class="ni">🚀</span> Onboarding
+      </div>
+      <div class="nav-item" onclick="showSection('training-admin')" data-sec="training-admin">
+        <span class="ni">📚</span> Training Portal
+      </div>
+      <div class="nav-item" onclick="showSection('sqf')" data-sec="sqf">
+        <span class="ni">🏅</span> SQF Certifications
+      </div>
+      <div class="nav-section">Communication</div>
+      <div class="nav-item" onclick="showSection('messages-admin')" data-sec="messages-admin">
+        <span class="ni">💬</span> Messages
+        <span class="nav-badge" id="msgBadge">…</span>
+      </div>
+      <div class="nav-item" onclick="showSection('evaluations')" data-sec="evaluations">
+        <span class="ni">📝</span> Evaluations
+      </div>
+      <div class="nav-item" onclick="showSection('announcements-admin')" data-sec="announcements-admin">
+        <span class="ni">📣</span> Announcements
+      </div>`;
+  } else {
+    sb.innerHTML = `
+      <div class="nav-section">My Portal</div>
+      <div class="nav-item active" onclick="showSection('my-home')" data-sec="my-home">
+        <span class="ni">🏠</span> My Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('my-profile')" data-sec="my-profile">
+        <span class="ni">👤</span> My Profile
+      </div>
+      <div class="nav-item" onclick="showSection('my-onboarding')" data-sec="my-onboarding">
+        <span class="ni">🚀</span> Onboarding
+      </div>
+      <div class="nav-item" onclick="showSection('my-training')" data-sec="my-training">
+        <span class="ni">📚</span> Training &amp; SOPs
+      </div>
+      <div class="nav-section">Communicate</div>
+      <div class="nav-item" onclick="showSection('my-messages')" data-sec="my-messages">
+        <span class="ni">💬</span> My Messages
+      </div>
+      <div class="nav-item" onclick="showSection('my-eval')" data-sec="my-eval">
+        <span class="ni">📝</span> Self-Evaluation
+      </div>
+      <div class="nav-section">Company</div>
+      <div class="nav-item" onclick="showSection('vision')" data-sec="vision">
+        <span class="ni">🌟</span> Company Vision
+      </div>`;
+  }
+  loadUnreadBadge();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION ROUTER
+═══════════════════════════════════════════════════════════════════════════ */
+function showSection(name){
+  currentSection = name;
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.sec === name);
+  });
+  const el = document.getElementById('mainContent');
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  sections[name]?.();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION IMPLEMENTATIONS
+═══════════════════════════════════════════════════════════════════════════ */
+const sections = {
+
+  /* ── ADMIN DASHBOARD ── */
+  async dash(){
+    const c = document.getElementById('mainContent');
+    try{
+      const d = await api('/hr/dashboard');
+      c.innerHTML = `
+        <div class="sec-head"><div><div class="sec-title">HR Dashboard</div><div class="sec-sub">Overview of your team</div></div></div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="sv">${d.total_active_associates}</div><div class="sl">Active Associates</div></div>
+          <div class="stat-card"><div class="sv" style="color:var(--amber)">${d.pending_onboarding}</div><div class="sl">Pending Onboarding</div></div>
+          <div class="stat-card"><div class="sv" style="color:var(--rust)">${d.pending_messages}</div><div class="sl">Pending Messages</div></div>
+          <div class="stat-card"><div class="sv" style="color:var(--olive)">${d.pending_evaluations}</div><div class="sl">Evals to Review</div></div>
+          <div class="stat-card"><div class="sv" style="color:var(--amber)">${d.expiring_certifications_30d}</div><div class="sl">Certs Expiring (30d)</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>🌟 AFB Company Vision</h3></div>
+          <div class="panel-body" style="font-size:.88rem;line-height:1.65;color:var(--ink-soft);">
+            <p><strong>Our Mission:</strong> American Food &amp; Beverage delivers premium quality food products crafted with integrity, consistency, and a deep commitment to food safety. We build lasting partnerships with our customers through reliability, transparency, and continuous improvement.</p>
+            <p class="mt-8"><strong>Our Values:</strong> Quality First · Safety Always · Team Excellence · Continuous Growth · Community Pride</p>
+            <p class="mt-8"><strong>HR Director's Note:</strong> Our associates are our greatest asset. This portal is your space — to grow, communicate, and thrive together as the AFB family.</p>
+          </div>
+        </div>
+        <div class="row mt-4">
+          <button class="btn btn-primary" onclick="showSection('associates')">👥 View Associates</button>
+          <button class="btn btn-ghost" onclick="showSection('messages-admin')">💬 Review Messages</button>
+          <button class="btn btn-ghost" onclick="showSection('evaluations')">📝 Review Evaluations</button>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ASSOCIATES LIST ── */
+  async associates(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading associates…</div>';
+    try{
+      const rows = await api('/hr/associates');
+      const staffList = await api('/hr/associates'); // same data
+
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Associates</div><div class="sec-sub">${rows.length} profiles</div></div>
+          <div class="row">
+            <input placeholder="Search…" oninput="filterTable(this,'assocTable')" style="width:200px;font-size:.8rem;padding:6px 10px;">
+            <button class="btn btn-primary" onclick="openAddAssociateModal()">+ Add Profile</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="tbl-wrap">
+            <table id="assocTable">
+              <thead><tr>
+                <th>Name</th><th>Employee ID</th><th>Department</th><th>Position</th>
+                <th>Hire Date</th><th>Status</th><th>Onboarding</th><th></th>
+              </tr></thead>
+              <tbody>
+                ${rows.length ? rows.map(p=>`
+                  <tr>
+                    <td><strong>${p.full_name||'—'}</strong><br><span class="mono dim" style="font-size:.62rem;">${p.username||''}</span></td>
+                    <td class="mono" style="font-size:.75rem;">${p.employee_id||'—'}</td>
+                    <td>${p.department||'—'}</td>
+                    <td>${p.position||'—'}</td>
+                    <td class="mono" style="font-size:.75rem;">${p.hire_date||'—'}</td>
+                    <td>${badge(p.status,{active:'green',on_leave:'amber',terminated:'red'})}</td>
+                    <td>${p.onboarding_completed ? '<span class="badge b-green">Complete</span>' : '<span class="badge b-amber">In Progress</span>'}</td>
+                    <td><a href="#" class="btn btn-ghost btn-sm" onclick="viewAssociate(${p.id})">View</a></td>
+                  </tr>`).join('') : '<tr><td colspan="8" class="empty">No associate profiles yet.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ONBOARDING (ADMIN) ── */
+  async onboarding(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading onboarding…</div>';
+    try{
+      const rows = await api('/hr/associates?status=active');
+      const incomplete = rows.filter(p=>!p.onboarding_completed);
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Onboarding Tracker</div><div class="sec-sub">${incomplete.length} in progress</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Standard Onboarding Checklist</h3></div>
+          <div class="panel-body ob-list">
+            ${ONBOARDING_STEPS.map(s=>`
+              <div class="ob-step">
+                <div class="ob-check">☐</div>
+                <div class="ob-info"><div class="ob-title">${s.title}</div><div class="ob-desc">${s.desc}</div></div>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Associates Pending Completion</h3></div>
+          <div class="panel-body">
+            ${incomplete.length ? incomplete.map(p=>`
+              <div class="row mt-8">
+                <div class="avatar" style="width:36px;height:36px;font-size:.85rem;">${initials(p.full_name||'?')}</div>
+                <div style="flex:1"><strong>${p.full_name||'?'}</strong> <span class="dim" style="font-size:.78rem;">— ${p.position||'No position'}</span></div>
+                <span class="badge b-amber">Onboarding</span>
+                <button class="btn btn-ghost btn-sm" onclick="markOnboardingComplete(${p.id})">Mark Complete</button>
+              </div>`).join('') : '<div class="empty">✅ All associates have completed onboarding!</div>'}
+          </div>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── TRAINING PORTAL (ADMIN) ── */
+  async 'training-admin'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading modules…</div>';
+    try{
+      const mods = await api('/hr/training/modules?active_only=false');
+      const catColors = {onboarding:'blue',safety:'green',sop:'amber',sqf:'green',quality:'blue',hr:'grey'};
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Training Portal</div><div class="sec-sub">${mods.length} modules</div></div>
+          <button class="btn btn-primary" onclick="openModal('modModal')">+ Add Module</button>
+        </div>
+        <div class="mod-grid">
+          ${mods.length ? mods.map(m=>`
+            <div class="mod-card">
+              <div class="mod-icon">${catIcon(m.category)}</div>
+              <div class="mod-info">
+                <div class="row" style="gap:6px;margin-bottom:3px;">
+                  <span class="mono" style="font-size:.62rem;color:var(--ink-soft);">${m.code}</span>
+                  <span class="badge b-${catColors[m.category]||'grey'}">${m.category}</span>
+                  ${m.sqf_cert_module ? '<span class="badge b-green">SQF Cert</span>' : ''}
+                  ${!m.active ? '<span class="badge b-grey">Inactive</span>' : ''}
+                </div>
+                <h4>${m.title}</h4>
+                <p>${m.description||''}</p>
+                <div class="mod-meta">
+                  <span class="mono dim" style="font-size:.62rem;">⏱ ${m.estimated_minutes} min</span>
+                  ${m.cert_valid_days ? `<span class="mono dim" style="font-size:.62rem;">♻ Recert ${m.cert_valid_days}d</span>` : ''}
+                  ${m.content_url ? `<a href="${m.content_url}" target="_blank" class="btn btn-ghost btn-sm">Open Content ↗</a>` : ''}
+                </div>
+              </div>
+            </div>`).join('') : '<div class="empty">No training modules yet. Add the first one above.</div>'}
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── SQF CERTIFICATIONS ── */
+  async sqf(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading certifications…</div>';
+    try{
+      const comps = await api('/hr/training/completions');
+      const sqfComps = comps.filter(c=>c.certified_until);
+      const now = new Date();
+      const soon = new Date(now.getTime() + 30*24*60*60*1000);
+
+      const grouped = {};
+      sqfComps.forEach(c=>{
+        if(!grouped[c.staff_name]) grouped[c.staff_name]=[];
+        grouped[c.staff_name].push(c);
+      });
+
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">SQF Certifications</div><div class="sec-sub">Certification expiry tracker</div></div>
+        </div>
+        <div class="panel">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Associate</th><th>Module</th><th>Completed</th><th>Certified Until</th><th>Status</th></tr></thead>
+              <tbody>
+                ${sqfComps.length ? sqfComps.map(c=>{
+                  const exp = new Date(c.certified_until);
+                  const expired = exp < now;
+                  const expiringSoon = !expired && exp < soon;
+                  const st = expired ? '<span class="badge b-red">Expired</span>'
+                    : expiringSoon ? '<span class="badge b-amber">Expiring Soon</span>'
+                    : '<span class="badge b-green">Valid</span>';
+                  return `<tr>
+                    <td><strong>${c.staff_name||'?'}</strong></td>
+                    <td>${c.module_title||'?'}<br><span class="mono dim" style="font-size:.62rem;">${c.module_code||''}</span></td>
+                    <td class="mono" style="font-size:.75rem;">${c.completed_at?c.completed_at.slice(0,10):'—'}</td>
+                    <td class="mono" style="font-size:.75rem;">${c.certified_until?c.certified_until.slice(0,10):'—'}</td>
+                    <td>${st}</td>
+                  </tr>`;
+                }).join('') : '<tr><td colspan="5" class="empty">No certifications recorded yet.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── MESSAGES (ADMIN) ── */
+  async 'messages-admin'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading messages…</div>';
+    try{
+      const msgs = await api('/hr/messages');
+      loadUnreadBadge();
+      const typeLabel = {general:'Message',day_off:'Day-Off',concern:'Concern',feedback:'Feedback',schedule:'Schedule'};
+      const statusColor = {pending:'amber',read:'grey',approved:'green',denied:'red',closed:'grey'};
+
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Messages &amp; Requests</div><div class="sec-sub">${msgs.length} messages</div></div>
+        </div>
+        <div class="msg-list">
+          ${msgs.length ? msgs.map(m=>`
+            <div class="msg-item ${m.status==='pending'?'unread':''}" onclick="openRespond(${m.id})">
+              <div class="row" style="justify-content:space-between;margin-bottom:4px;">
+                <span class="msg-subj">${m.subject}</span>
+                <div class="row gap-8">
+                  <span class="badge b-blue">${typeLabel[m.message_type]||m.message_type}</span>
+                  ${badge(m.status,statusColor)}
+                  ${m.priority==='urgent'?'<span class="badge b-red">Urgent</span>':''}
+                </div>
+              </div>
+              <div class="msg-preview">${m.body}</div>
+              <div class="msg-meta">
+                <span>From: ${m.from_name||'?'}</span>
+                <span>${m.created_at?m.created_at.slice(0,16).replace('T',' '):'—'}</span>
+                ${m.request_dates?.length ? `<span>📅 ${m.request_dates.join(', ')}</span>` : ''}
+              </div>
+            </div>`).join('') : '<div class="empty">No messages yet.</div>'}
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── EVALUATIONS (ADMIN) ── */
+  async evaluations(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading evaluations…</div>';
+    try{
+      const evals = await api('/hr/evaluations');
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Self-Evaluations</div><div class="sec-sub">${evals.length} submitted</div></div>
+        </div>
+        <div class="panel">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Associate</th><th>Period</th><th>Submitted</th><th>Status</th><th>Overall</th><th></th></tr></thead>
+              <tbody>
+                ${evals.length ? evals.map(e=>`
+                  <tr>
+                    <td><strong>${e.staff_name||'?'}</strong></td>
+                    <td>${e.period}</td>
+                    <td class="mono" style="font-size:.75rem;">${e.submitted_at?e.submitted_at.slice(0,10):'—'}</td>
+                    <td>${e.reviewed_by ? '<span class="badge b-green">Reviewed</span>' : '<span class="badge b-amber">Pending Review</span>'}</td>
+                    <td>${e.overall_rating ? starDisplay(e.overall_rating) : '—'}</td>
+                    <td><button class="btn btn-ghost btn-sm" onclick="viewEval(${JSON.stringify(e).replace(/"/g,'&quot;')})">Review</button></td>
+                  </tr>`).join('') : '<tr><td colspan="6" class="empty">No evaluations submitted yet.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ANNOUNCEMENTS (ADMIN) ── */
+  async 'announcements-admin'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading announcements…</div>';
+    try{
+      const anns = await api('/hr/announcements?include_expired=true');
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Announcements</div><div class="sec-sub">Company communications</div></div>
+          <button class="btn btn-primary" onclick="openModal('annModal')">+ New Announcement</button>
+        </div>
+        <div class="ann-grid">
+          ${anns.length ? anns.map(a=>`
+            <div class="ann-card ${a.category} ${a.pinned?'pinned':''}">
+              ${a.pinned ? '<div class="ann-pin">📌</div>' : ''}
+              <div class="ann-cat">${a.emoji||''} ${a.category.replace('_',' ')}</div>
+              <h4>${a.title}</h4>
+              <p>${a.body}</p>
+              <div class="ann-meta">By ${a.author} · ${a.posted_at?a.posted_at.slice(0,10):'—'} ${a.active?'':'· <em>Inactive</em>'}</div>
+              <div class="row mt-8">
+                <button class="btn btn-ghost btn-sm" onclick="toggleAnnPin(${a.id},${!a.pinned})">${a.pinned?'Unpin':'Pin'}</button>
+                ${a.active ? `<button class="btn btn-ghost btn-sm" style="color:var(--rust)" onclick="deactivateAnn(${a.id})">Remove</button>` : ''}
+              </div>
+            </div>`).join('') : '<div class="empty">No announcements yet. Create the first one.</div>'}
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ASSOCIATE: MY DASHBOARD ── */
+  async 'my-home'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading…</div>';
+    try{
+      const [anns, msgs] = await Promise.all([
+        api('/hr/announcements'),
+        api('/hr/messages'),
+      ]);
+      const name = ME?.full_name?.split(' ')[0] || 'there';
+      const pendingMsgs = msgs.filter(m=>['approved','denied'].includes(m.status) && !m.read_at);
+
+      c.innerHTML = `
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Welcome back, ${name}! 👋</div>
+            <div class="sec-sub">Here's what's happening at AFB today.</div>
+          </div>
+        </div>
+        ${pendingMsgs.length ? `
+          <div class="panel" style="border-left:4px solid var(--rust);">
+            <div class="panel-body row"><span>📬</span><span>${pendingMsgs.length} message response${pendingMsgs.length>1?'s':''} waiting for you.</span>
+            <button class="btn btn-ghost btn-sm" onclick="showSection('my-messages')">View →</button></div>
+          </div>` : ''}
+        <div>
+          <div class="sec-title" style="font-size:1rem;margin-bottom:12px;">📣 Team Announcements</div>
+          <div class="ann-grid">
+            ${anns.length ? anns.slice(0,6).map(a=>`
+              <div class="ann-card ${a.category} ${a.pinned?'pinned':''}">
+                ${a.pinned ? '<div class="ann-pin">📌</div>' : ''}
+                <div class="ann-cat">${a.emoji||''} ${a.category.replace('_',' ')}</div>
+                <h4>${a.title}</h4>
+                <p>${a.body}</p>
+                <div class="ann-meta">By ${a.author} · ${a.posted_at?a.posted_at.slice(0,10):'—'}</div>
+              </div>`).join('') : '<div class="empty">No announcements right now.</div>'}
+          </div>
+        </div>
+        <div class="row mt-4">
+          <button class="btn btn-primary" onclick="showSection('my-training')">📚 My Training</button>
+          <button class="btn btn-ghost" onclick="showSection('my-messages')">💬 Send Message to HR</button>
+          <button class="btn btn-ghost" onclick="showSection('my-eval')">📝 Submit Evaluation</button>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ASSOCIATE: MY PROFILE ── */
+  async 'my-profile'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading profile…</div>';
+    try{
+      let profile;
+      try{ profile = await api('/hr/associates/me'); }
+      catch(e){
+        c.innerHTML = `
+          <div class="panel panel-body">
+            <div class="empty">No profile found yet. Please ask HR to create your associate profile.</div>
+            <div class="row" style="justify-content:center;margin-top:16px;">
+              <button class="btn btn-ghost" onclick="showSection('my-messages')">💬 Message HR to Request Profile</button>
+            </div>
+          </div>`;
+        return;
+      }
+
+      c.innerHTML = `
+        <div class="profile-header">
+          <div class="avatar">${initials(profile.full_name||'?')}</div>
+          <div class="profile-info">
+            <h2>${profile.full_name||'—'}</h2>
+            <div class="emp-id">${profile.employee_id ? 'EMP # '+profile.employee_id : 'No employee ID'}</div>
+            <div class="dept">${[profile.position, profile.department].filter(Boolean).join(' · ')}</div>
+            <div class="row mt-8">
+              ${badge(profile.status,{active:'green',on_leave:'amber',terminated:'red'})}
+              ${profile.onboarding_completed ? '<span class="badge b-green">✓ Onboarding Complete</span>' : '<span class="badge b-amber">Onboarding In Progress</span>'}
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-tabs">
+          <div class="ptab active" onclick="profileTab(this,'pInfo')">Personal Info</div>
+          <div class="ptab" onclick="profileTab(this,'pEmergency')">Emergency Contact</div>
+          <div class="ptab" onclick="profileTab(this,'pSkills')">Skills &amp; Certs</div>
+        </div>
+
+        <div id="pInfo">
+          <div class="panel">
+            <div class="panel-head"><h3>Personal Information</h3><button class="btn btn-ghost btn-sm" onclick="editProfile(${profile.id})">Edit</button></div>
+            <div class="panel-body form-grid">
+              <div class="field"><label>Hire Date</label><div>${profile.hire_date||'—'}</div></div>
+              <div class="field"><label>Phone</label><div>${profile.phone||'—'}</div></div>
+              <div class="field full"><label>Address</label><div>${profile.address||'—'}</div></div>
+              <div class="field full"><label>Bio</label><div>${profile.bio||'—'}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="pEmergency" class="hidden">
+          <div class="panel">
+            <div class="panel-head"><h3>Emergency Contact</h3><button class="btn btn-ghost btn-sm" onclick="editProfile(${profile.id})">Edit</button></div>
+            <div class="panel-body form-grid">
+              <div class="field"><label>Name</label><div>${profile.ec_name||'—'}</div></div>
+              <div class="field"><label>Relationship</label><div>${profile.ec_relation||'—'}</div></div>
+              <div class="field"><label>Phone</label><div>${profile.ec_phone||'—'}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="pSkills" class="hidden">
+          <div class="panel">
+            <div class="panel-head"><h3>Skills &amp; Certifications</h3></div>
+            <div class="panel-body">
+              <label class="mt-4">Skills</label>
+              <div class="row mt-8">${(profile.skills||[]).map(s=>`<span class="badge b-blue">${s}</span>`).join('')||'<span class="dim">None recorded</span>'}</div>
+              <label class="mt-12">Certifications</label>
+              <div class="row mt-8">${(profile.certifications||[]).map(s=>`<span class="badge b-green">${s}</span>`).join('')||'<span class="dim">None recorded</span>'}</div>
+            </div>
+          </div>
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ASSOCIATE: MY ONBOARDING ── */
+  async 'my-onboarding'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">…</div>';
+    let profile;
+    try{ profile = await api('/hr/associates/me'); }catch(e){ profile = null; }
+
+    const done = profile?.onboarding_completed;
+    c.innerHTML = `
+      <div class="sec-head">
+        <div><div class="sec-title">Onboarding Checklist</div>
+        <div class="sec-sub">${done ? '✅ Completed!' : 'Work through each step with your supervisor.'}</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Getting Started at AFB</h3></div>
+        <div class="panel-body ob-list">
+          ${ONBOARDING_STEPS.map(s=>`
+            <div class="ob-step ${done?'done':''}">
+              <div class="ob-check">${done?'✓':'☐'}</div>
+              <div class="ob-info">
+                <div class="ob-title">${s.title}</div>
+                <div class="ob-desc">${s.desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+      ${!done ? '<div class="panel panel-body dim" style="font-size:.82rem;">When you\'ve completed all steps, ask your supervisor or HR to mark your onboarding as complete.</div>' : ''}`;
+  },
+
+  /* ── ASSOCIATE: MY TRAINING ── */
+  async 'my-training'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading training status…</div>';
+    try{
+      const status = await api(`/hr/training/status/${ME.id}`);
+      const done = status.filter(m=>m.completed && !m.expired).length;
+      const total = status.length;
+      const pct = total ? Math.round(done/total*100) : 0;
+
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">My Training &amp; SOPs</div><div class="sec-sub">${done} of ${total} complete (${pct}%)</div></div>
+        </div>
+        <div style="height:8px;background:var(--line);border-radius:4px;margin-bottom:20px;">
+          <div style="height:100%;width:${pct}%;background:var(--green);border-radius:4px;transition:width .5s;"></div>
+        </div>
+        <div class="mod-grid">
+          ${status.map(m=>{
+            const icon = m.completed && !m.expired ? '✅' : m.expired ? '⚠️' : catIcon(m.category);
+            const statusBadge = m.completed && !m.expired
+              ? '<span class="badge b-green">Complete</span>'
+              : m.expired ? '<span class="badge b-red">Expired</span>'
+              : m.is_required ? '<span class="badge b-amber">Required</span>'
+              : '<span class="badge b-grey">Optional</span>';
+            return `
+              <div class="mod-card">
+                <div class="mod-icon">${icon}</div>
+                <div class="mod-info">
+                  <div class="row" style="gap:6px;margin-bottom:3px;">
+                    <span class="mono dim" style="font-size:.62rem;">${m.code}</span>
+                    ${statusBadge}
+                    ${m.sqf_cert_module ? '<span class="badge b-green">SQF</span>' : ''}
+                  </div>
+                  <h4>${m.title}</h4>
+                  <p>${m.description||''}</p>
+                  <div class="mod-meta">
+                    <span class="mono dim" style="font-size:.62rem;">⏱ ${m.estimated_minutes} min</span>
+                    ${m.completion ? `<span class="mono dim" style="font-size:.62rem;">✓ ${m.completion.completed_at?.slice(0,10)||''}</span>` : ''}
+                    ${m.content_url ? `<a href="${m.content_url}" target="_blank" class="btn btn-ghost btn-sm">Open ↗</a>` : ''}
+                    ${!m.completed ? `<button class="btn btn-primary btn-sm" onclick="recordCompletion(${m.id},'${m.title}')">Mark Complete</button>` : ''}
+                  </div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ASSOCIATE: MY MESSAGES ── */
+  async 'my-messages'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">Loading messages…</div>';
+    try{
+      const msgs = await api('/hr/messages');
+      const statusColor = {pending:'amber',read:'blue',approved:'green',denied:'red',closed:'grey'};
+      const typeLabel = {general:'Message',day_off:'Day-Off Request',concern:'Concern',feedback:'Feedback',schedule:'Schedule'};
+
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">My Messages</div><div class="sec-sub">Messages sent to HR</div></div>
+          <button class="btn btn-primary" onclick="openModal('msgModal')">+ New Message</button>
+        </div>
+        <div class="msg-list">
+          ${msgs.length ? msgs.map(m=>`
+            <div class="msg-item">
+              <div class="row" style="justify-content:space-between;margin-bottom:4px;">
+                <span class="msg-subj">${m.subject}</span>
+                <div class="row gap-8">
+                  <span class="badge b-blue">${typeLabel[m.message_type]||m.message_type}</span>
+                  ${badge(m.status,statusColor)}
+                </div>
+              </div>
+              <div class="msg-preview">${m.body}</div>
+              ${m.response_body ? `
+                <div style="margin-top:10px;padding:10px;background:var(--green-pale);border-radius:3px;border-left:3px solid var(--green);font-size:.78rem;">
+                  <strong>HR Response (${m.responded_by}):</strong> ${m.response_body}
+                </div>` : ''}
+              ${m.request_dates?.length ? `<div class="mono dim mt-8" style="font-size:.7rem;">📅 Requested: ${m.request_dates.join(', ')}</div>` : ''}
+              <div class="msg-meta">
+                <span>${m.created_at?m.created_at.slice(0,16).replace('T',' '):'—'}</span>
+              </div>
+            </div>`).join('') : '<div class="empty">No messages yet. Send your first message to HR above.</div>'}
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── ASSOCIATE: SELF EVALUATION ── */
+  async 'my-eval'(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">…</div>';
+    try{
+      const evals = await api('/hr/evaluations');
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">Self-Evaluations</div><div class="sec-sub">Reflect, grow, thrive.</div></div>
+          <button class="btn btn-primary" onclick="openEvalModal()">+ Submit Evaluation</button>
+        </div>
+        <div class="panel panel-body" style="font-size:.84rem;line-height:1.6;color:var(--ink-soft);border-left:4px solid var(--hr);">
+          <strong>Why evaluate yourself?</strong> Self-evaluations help you take ownership of your growth, communicate your achievements, and collaborate with HR on your career path at AFB. Your honest input is valued and respected.
+        </div>
+        ${evals.length ? `
+          <div class="panel">
+            <div class="panel-head"><h3>My Evaluations</h3></div>
+            <div class="tbl-wrap">
+              <table>
+                <thead><tr><th>Period</th><th>Submitted</th><th>Status</th><th>Rating</th><th>Manager Comments</th></tr></thead>
+                <tbody>
+                  ${evals.map(e=>`
+                    <tr>
+                      <td><strong>${e.period}</strong></td>
+                      <td class="mono" style="font-size:.75rem;">${e.submitted_at?e.submitted_at.slice(0,10):'—'}</td>
+                      <td>${e.reviewed_by ? '<span class="badge b-green">Reviewed</span>' : '<span class="badge b-amber">Pending</span>'}</td>
+                      <td>${e.overall_rating ? starDisplay(e.overall_rating) : '—'}</td>
+                      <td style="max-width:300px;font-size:.78rem;">${e.manager_comments||'—'}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>` : ''}`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+
+  /* ── COMPANY VISION ── */
+  async vision(){
+    const c = document.getElementById('mainContent');
+    c.innerHTML = '<div class="loading">…</div>';
+    try{
+      const anns = await api('/hr/announcements');
+      c.innerHTML = `
+        <div class="sec-head">
+          <div><div class="sec-title">🌟 Company Vision &amp; Culture</div>
+          <div class="sec-sub">AFB team updates, achievements &amp; company direction</div></div>
+        </div>
+
+        <div class="ann-card vision" style="margin-bottom:4px;">
+          <div class="ann-cat">Our Mission</div>
+          <h4>American Food &amp; Beverage — Building Something Great Together</h4>
+          <p>We deliver premium quality food products crafted with integrity, consistency, and a deep commitment to food safety. Our team is our greatest strength — every packer, associate, and team member contributes to the excellence our customers trust.</p>
+          <p class="mt-8"><strong>Values:</strong> Quality First · Safety Always · Team Excellence · Continuous Growth · Community Pride</p>
+          <div class="ann-meta">American Food &amp; Beverage HR</div>
+        </div>
+
+        <div class="ann-grid">
+          ${anns.length ? anns.map(a=>`
+            <div class="ann-card ${a.category} ${a.pinned?'pinned':''}">
+              ${a.pinned ? '<div class="ann-pin">📌</div>' : ''}
+              <div class="ann-cat">${a.emoji||''} ${a.category.replace('_',' ')}</div>
+              <h4>${a.title}</h4>
+              <p>${a.body}</p>
+              <div class="ann-meta">By ${a.author} · ${a.posted_at?a.posted_at.slice(0,10):'—'}</div>
+            </div>`).join('') : '<div class="empty">No announcements yet — check back soon!</div>'}
+        </div>`;
+    }catch(e){ c.innerHTML = err(e); }
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACTIONS & HELPERS
+═══════════════════════════════════════════════════════════════════════════ */
+
+function profileTab(el, showId){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['pInfo','pEmergency','pSkills'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('hidden', id!==showId);
+  });
+}
+
+function filterTable(input, tableId){
+  const q = input.value.toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr=>{
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+async function markOnboardingComplete(profileId){
+  if(!confirm('Mark this associate\'s onboarding as complete?')) return;
+  try{
+    await api(`/hr/associates/${profileId}`,'PATCH',{onboarding_completed:true});
+    toast('✅ Onboarding marked complete');
+    sections.onboarding();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+async function toggleAnnPin(id, pinned){
+  try{
+    await api(`/hr/announcements/${id}`,'PATCH',{pinned});
+    toast(pinned ? '📌 Pinned' : 'Unpinned');
+    sections['announcements-admin']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+async function deactivateAnn(id){
+  if(!confirm('Remove this announcement?')) return;
+  try{
+    await api(`/hr/announcements/${id}`,'DELETE');
+    toast('Announcement removed');
+    sections['announcements-admin']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+async function saveAnnouncement(){
+  const body={
+    title:v('annTitle'), body:v('annBody'),
+    category:v('annCategory'), emoji:v('annEmoji'),
+    pinned:document.getElementById('annPinned').checked,
+    expires_at:v('annExpires')||null,
+  };
+  if(!body.title||!body.body){ toast('Title and body are required','red'); return; }
+  try{
+    await api('/hr/announcements','POST',body);
+    closeModal('annModal');
+    toast('📣 Announcement posted!');
+    sections['announcements-admin']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+async function saveModule(){
+  const certDays = parseInt(v('modCertDays'))||0;
+  const body={
+    code:v('modCode'), title:v('modTitle'), category:v('modCat'),
+    description:v('modDesc'), content_url:v('modUrl'),
+    estimated_minutes:parseInt(v('modMins'))||30,
+    passing_score:parseInt(v('modScore'))||80,
+    sqf_cert_module:document.getElementById('modSqfCert').checked,
+    cert_valid_days:certDays||null,
+  };
+  if(!body.code||!body.title){ toast('Code and title are required','red'); return; }
+  try{
+    await api('/hr/training/modules','POST',body);
+    closeModal('modModal');
+    toast('📚 Training module added!');
+    sections['training-admin']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+function toggleDayOff(){
+  const t = document.getElementById('msgType').value;
+  document.getElementById('dayOffFields').classList.toggle('hidden', t !== 'day_off');
+}
+
+async function sendMessage(){
+  const type = v('msgType');
+  const dates = type==='day_off' ? v('msgDates').split(',').map(d=>d.trim()).filter(Boolean) : null;
+  const body={
+    subject:v('msgSubject'), body:v('msgBody'),
+    message_type:type, priority:v('msgPriority'),
+    request_dates:dates, request_reason:type==='day_off'?v('msgReason'):null,
+  };
+  if(!body.subject||!body.body){ toast('Subject and message are required','red'); return; }
+  try{
+    await api('/hr/messages','POST',body);
+    closeModal('msgModal');
+    toast('💬 Message sent to HR!');
+    sections['my-messages']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+let currentMsgId = null;
+function openRespond(id){
+  const c = document.getElementById('mainContent');
+  const items = c.querySelectorAll('.msg-item');
+  // We need the message data — re-fetch
+  api(`/hr/messages`).then(msgs=>{
+    const m = msgs.find(x=>x.id===id);
+    if(!m) return;
+    currentMsgId = id;
+    document.getElementById('respondOriginal').innerHTML = `
+      <strong>${m.subject}</strong><br><span class="dim">${m.message_type} from ${m.from_name}</span><br><br>${m.body}
+      ${m.request_dates?.length ? `<br><br>📅 Dates requested: ${m.request_dates.join(', ')}` : ''}
+      ${m.request_reason ? `<br>Reason: ${m.request_reason}` : ''}`;
+    document.getElementById('respondStatus').value = m.status === 'pending' ? 'read' : m.status;
+    document.getElementById('respondBody').value = m.response_body || '';
+    openModal('respondModal');
+  });
+}
+
+async function submitResponse(){
+  if(!currentMsgId) return;
+  try{
+    await api(`/hr/messages/${currentMsgId}`,'PATCH',{
+      status:v('respondStatus'),
+      response_body:v('respondBody'),
+      mark_read:true,
+    });
+    closeModal('respondModal');
+    toast('Response sent ✓');
+    sections['messages-admin']();
+    loadUnreadBadge();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+function openEvalModal(){
+  evalRatings = {};
+  const rows = document.getElementById('ratingRows');
+  rows.innerHTML = EVAL_DIMS.map(d=>`
+    <div class="rating-row">
+      <div class="rating-label">${d.label}</div>
+      <div class="rating-stars" id="stars_${d.key}">
+        ${[1,2,3,4,5].map(n=>`<span class="star" onclick="setRating('${d.key}',${n})" data-val="${n}">★</span>`).join('')}
+      </div>
+    </div>`).join('');
+  document.getElementById('evalPeriod').value = '';
+  document.getElementById('evalStrengths').value = '';
+  document.getElementById('evalImprovements').value = '';
+  document.getElementById('evalGoals').value = '';
+  document.getElementById('evalComments').value = '';
+  openModal('evalModal');
+}
+
+function setRating(dim, val){
+  evalRatings[dim] = val;
+  document.querySelectorAll(`#stars_${dim} .star`).forEach(s=>{
+    s.classList.toggle('filled', parseInt(s.dataset.val) <= val);
+  });
+}
+
+async function submitEval(){
+  const period = v('evalPeriod');
+  if(!period){ toast('Please enter a review period','red'); return; }
+  if(Object.keys(evalRatings).length < EVAL_DIMS.length){
+    toast('Please rate all dimensions','red'); return;
+  }
+  try{
+    await api('/hr/evaluations','POST',{
+      period, ratings:evalRatings,
+      strengths:v('evalStrengths'), improvements:v('evalImprovements'),
+      goals:v('evalGoals'), comments:v('evalComments'),
+    });
+    closeModal('evalModal');
+    toast('📝 Evaluation submitted!');
+    sections['my-eval']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+function viewEval(evalObj){
+  // Simple alert-style view for now — shows details
+  const dims = Object.entries(evalObj.ratings||{}).map(([k,v])=>`${k}: ${starDisplay(v)}`).join('<br>');
+  const w = window.open('','_blank','width=600,height=700');
+  w.document.write(`<html><body style="font-family:sans-serif;padding:24px;">
+    <h2>${evalObj.staff_name} — ${evalObj.period}</h2>
+    <p><strong>Ratings:</strong><br>${dims}</p>
+    <p><strong>Strengths:</strong><br>${evalObj.strengths||'—'}</p>
+    <p><strong>Areas to Improve:</strong><br>${evalObj.improvements||'—'}</p>
+    <p><strong>Goals:</strong><br>${evalObj.goals||'—'}</p>
+    <p><strong>Comments:</strong><br>${evalObj.comments||'—'}</p>
+    ${evalObj.reviewed_by ? `<hr><p><strong>Manager Review (${evalObj.reviewed_by}):</strong><br>${evalObj.manager_comments||'—'}<br><strong>Overall: ${starDisplay(evalObj.overall_rating)}</strong></p>` : ''}
+    <button onclick="window.close()">Close</button>
+  </body></html>`);
+}
+
+async function recordCompletion(moduleId, title){
+  const method = prompt(`How did you complete "${title}"?\n(self_study / classroom / on_job)`, 'self_study');
+  if(!method) return;
+  try{
+    await api('/hr/training/completions','POST',{module_id:moduleId, method, passed:true});
+    toast('✅ Completion recorded!');
+    sections['my-training']();
+  }catch(e){ toast('Error: '+e.message,'red'); }
+}
+
+async function loadUnreadBadge(){
+  try{
+    const r = await api('/hr/messages/unread-count');
+    const badge = document.getElementById('msgBadge');
+    if(badge){ badge.textContent = r.count > 0 ? r.count : ''; badge.style.display = r.count > 0 ? '' : 'none'; }
+  }catch(e){}
+}
+
+function viewAssociate(profileId){
+  window.open(`/hr-portal?view=associate&id=${profileId}`,'_blank');
+}
+
+function editProfile(profileId){
+  const newBio = prompt('Update bio:');
+  if(newBio === null) return;
+  api(`/hr/associates/${profileId}`,'PATCH',{bio:newBio}).then(()=>{
+    toast('Profile updated ✓');
+    sections['my-profile']();
+  }).catch(e=>toast('Error: '+e.message,'red'));
+}
+
+function openAddAssociateModal(){
+  toast('To add an associate profile, first create their staff account via /change-password, then create their profile here. Coming: quick-add form.', 'amber');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════════════════════ */
+
+async function api(path, method='GET', body=null){
+  const opts = {method, headers:{'Content-Type':'application/json'}, credentials:'include'};
+  if(body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  if(!r.ok){
+    const t = await r.text();
+    let msg;
+    try{ msg = JSON.parse(t).detail || t; }catch{ msg = t; }
+    throw new Error(msg);
+  }
+  if(r.status === 204) return null;
+  return r.json();
+}
+
+function v(id){ return (document.getElementById(id)?.value||'').trim(); }
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+let toastTimer;
+function toast(msg, type='green'){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderLeft = `4px solid ${type==='red'?'var(--rust)':type==='amber'?'var(--gold)':'#2d6a4f'}`;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3500);
+}
+
+function err(e){ return `<div class="empty" style="color:var(--rust);">Error: ${e.message}</div>`; }
+
+function initials(name){
+  return name.split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase();
+}
+
+function badge(val, colorMap){
+  const cls = {green:'b-green',amber:'b-amber',red:'b-red',blue:'b-blue',grey:'b-grey'}[colorMap[val]||'grey']||'b-grey';
+  return `<span class="badge ${cls}">${val}</span>`;
+}
+
+function starDisplay(n){
+  return '★'.repeat(n||0)+'☆'.repeat(5-(n||0));
+}
+
+function catIcon(cat){
+  return {onboarding:'🚀',safety:'🛡',sop:'📋',sqf:'🏅',quality:'🔬',hr:'👥'}[cat]||'📄';
+}
+
+async function doLogout(){
+  await fetch('/auth/logout',{method:'POST',credentials:'include'});
+  window.location.href = '/login';
+}
+
+// Close modals on background click
+document.querySelectorAll('.modal-bg').forEach(bg=>{
+  bg.addEventListener('click', e=>{ if(e.target===bg) bg.classList.remove('open'); });
+});
+</script>
+</body>
+</html>

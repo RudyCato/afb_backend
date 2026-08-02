@@ -3,228 +3,251 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>American Food &amp; Beverage — Operations Hub</title>
+<title>AFB — Operations</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AFB Ops">
 <meta name="theme-color" content="#241A10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
-    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
-    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#5a4a36;
+    --rust:#a3402a; --gold:#c2932f; --olive:#4f5c3a;
+    --line:#d8c79a; --line-strong:#c3ab72;
+    --shadow:0 2px 12px rgba(36,26,16,0.10);
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;}
-  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
-  .mono{font-family:'IBM Plex Mono',monospace;}
-  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 72px;}
-
-  /* Header */
-  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:16px 0;}
-  header .inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
-  header .top{font-family:'Bitter',serif;font-weight:900;font-size:1.2rem;}
-  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-top:3px;}
-  .header-actions{display:flex;align-items:center;gap:14px;}
-  .header-link{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.73rem;text-decoration:none;letter-spacing:0.04em;}
-  .header-link:hover{color:var(--cream);}
-
-  /* Hero strip */
-  .hero{
-    background:var(--paper);border:1px solid var(--line-strong);border-left:5px solid var(--rust);
-    border-radius:4px;padding:20px 24px;margin-bottom:28px;box-shadow:var(--shadow);
-    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:var(--cream);}
+  body{
+    font-family:'IBM Plex Sans',sans-serif;color:var(--ink);
+    display:flex;flex-direction:column;min-height:100vh;
   }
-  .hero h2{font-size:1.25rem;color:var(--ink);}
-  .hero p{margin:4px 0 0;color:var(--ink-soft);font-size:0.88rem;}
-  .hero .ts{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);}
 
-  /* Section labels */
-  .section-label{
-    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;
-    letter-spacing:0.12em;color:var(--ink-soft);margin:28px 0 12px;
-    display:flex;align-items:center;gap:10px;
+  /* ── Header ── */
+  header{
+    background:var(--ink);color:var(--paper);
+    border-bottom:3px solid var(--rust);
+    padding:14px 28px;
+    display:flex;align-items:center;justify-content:space-between;
+    flex-shrink:0;
   }
-  .section-label::after{content:'';flex:1;height:1px;background:var(--line-strong);}
+  .brand{display:flex;flex-direction:column;gap:1px;}
+  .brand-name{font-family:'Bitter',serif;font-weight:900;font-size:1.1rem;letter-spacing:0.02em;}
+  .brand-sub{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;}
+  .header-right{display:flex;align-items:center;gap:18px;}
+  .hlink{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-decoration:none;letter-spacing:0.04em;opacity:.85;}
+  .hlink:hover{opacity:1;color:var(--cream);}
+  #ts{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--ink-soft);opacity:.7;}
 
-  /* Card grid */
-  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
-  .nav-card{
-    background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;
-    padding:22px 20px;box-shadow:var(--shadow);cursor:pointer;
-    transition:transform .12s ease, border-color .12s ease;
-    text-decoration:none;display:block;color:inherit;
+  /* ── Main layout ── */
+  main{
+    flex:1;display:flex;flex-direction:column;
+    padding:28px 32px 24px;max-width:1200px;width:100%;margin:0 auto;
   }
-  .nav-card:hover{transform:translateY(-3px);border-color:var(--rust);}
-  .nav-card .icon{font-size:1.6rem;margin-bottom:10px;line-height:1;}
-  .nav-card h3{font-size:1rem;margin-bottom:5px;}
-  .nav-card p{margin:0;color:var(--ink-soft);font-size:0.81rem;line-height:1.45;}
-  .nav-card .cta{
-    margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:0.67rem;
+
+  /* ── Page label ── */
+  .page-label{
+    font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.18em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:20px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .page-label::after{content:'';flex:1;height:1px;background:var(--line-strong);}
+
+  /* ── Card grid ── */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;flex:1;
+  }
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line-strong);
+    border-left:4px solid transparent;
+    border-radius:4px;
+    padding:18px 16px 16px;
+    box-shadow:var(--shadow);
+    text-decoration:none;color:inherit;
+    display:flex;flex-direction:column;gap:6px;
+    transition:transform .12s, border-color .12s, box-shadow .12s;
+    cursor:pointer;
+  }
+  .card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(36,26,16,0.16);
+    border-left-color:var(--rust);
+    border-color:var(--line-strong);
+    border-left-color:var(--rust);
+  }
+  .card .icon{font-size:1.5rem;line-height:1;margin-bottom:4px;}
+  .card h3{font-family:'Bitter',serif;font-size:0.92rem;font-weight:700;line-height:1.25;color:var(--ink);}
+  .card p{font-size:0.76rem;color:var(--ink-soft);line-height:1.4;flex:1;}
+  .card .arrow{
+    font-family:'IBM Plex Mono',monospace;font-size:0.62rem;
     color:var(--rust);text-transform:uppercase;letter-spacing:0.06em;
+    margin-top:4px;opacity:0;transition:opacity .12s;
+  }
+  .card:hover .arrow{opacity:1;}
+
+  /* Left-border color by category */
+  .c-ops   { border-left-color: var(--rust); }
+  .c-ops:hover{ border-left-color:var(--rust); }
+  .c-order { border-left-color: var(--gold); }
+  .c-order:hover{ border-left-color:var(--gold); }
+  .c-hr    { border-left-color: var(--olive); }
+  .c-hr:hover{ border-left-color:var(--olive); }
+  .c-admin { border-left-color: var(--line-strong); }
+  .c-admin:hover{ border-left-color:var(--ink-soft); }
+
+  /* ── Divider label between rows ── */
+  .row-label{
+    grid-column:1/-1;
+    font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;
+    text-transform:uppercase;color:var(--ink-soft);padding:8px 0 2px;
+    border-top:1px solid var(--line);
+    opacity:.65;
   }
 
-  /* Accent variants */
-  .nav-card.primary{border-left:4px solid var(--rust);}
-  .nav-card.secondary{border-left:4px solid var(--gold);}
-  .nav-card.tertiary{border-left:4px solid var(--olive);}
-  .nav-card.muted{border-left:4px solid var(--line-strong);}
-
-  /* Quick-link row */
-  .quick-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;}
-  .quick-btn{
-    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;
-    letter-spacing:0.05em;padding:8px 16px;border-radius:20px;
-    border:1px solid var(--line-strong);background:var(--paper);color:var(--ink-soft);
-    text-decoration:none;cursor:pointer;transition:all .12s;
+  /* ── Footer ── */
+  footer{
+    flex-shrink:0;padding:10px 32px;
+    display:flex;align-items:center;gap:16px;
+    background:var(--paper);border-top:1px solid var(--line);
   }
-  .quick-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
-
-  @media(max-width:640px){
-    .card-grid{grid-template-columns:1fr 1fr;}
-    .hero{flex-direction:column;align-items:flex-start;}
+  .ql{
+    font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.04em;
+    color:var(--ink-soft);text-decoration:none;
+    padding:4px 10px;border-radius:20px;border:1px solid var(--line);
+    transition:all .1s;
   }
-  @media(max-width:400px){.card-grid{grid-template-columns:1fr;}}
+  .ql:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .ql-sep{color:var(--line-strong);font-size:0.7rem;}
+
+  /* ── Responsive ── */
+  @media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr);}main{padding:16px;}.row-label{display:none;}}
+  @media(max-width:360px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="inner">
-    <div>
-      <div class="top">American Food &amp; Beverage</div>
-      <div class="bottom">Operations Hub</div>
-    </div>
-    <div class="header-actions">
-      <a href="/store" class="header-link">Public Site &rarr;</a>
-      <a href="/login" class="header-link">Staff Login</a>
-      <a href="/docs" class="header-link mono" style="font-size:0.68rem;opacity:.7;">API Docs</a>
-    </div>
+  <div class="brand">
+    <div class="brand-name">American Food &amp; Beverage</div>
+    <div class="brand-sub">Internal Operations</div>
+  </div>
+  <div class="header-right">
+    <span id="ts"></span>
+    <a href="/store" class="hlink">Store &rarr;</a>
+    <a href="/login" class="hlink">Login</a>
   </div>
 </header>
 
-<div class="wrap">
+<main>
+  <div class="page-label">Select a module to begin</div>
 
-  <div class="hero">
-    <div>
-      <h2>Operations Hub</h2>
-      <p>All internal tools &amp; workflows in one place.</p>
-    </div>
-    <div class="ts" id="ts"></div>
-  </div>
+  <div class="grid">
 
-  <!-- Core Ops -->
-  <div class="section-label">Core Operations</div>
-  <div class="card-grid">
-    <a href="/dashboard" class="nav-card primary">
+    <!-- Row 1: Order & Production Flow -->
+    <div class="row-label">Order &amp; Production Flow</div>
+
+    <a href="/dashboard" class="card c-ops">
       <div class="icon">📊</div>
-      <h3>Operations Dashboard</h3>
-      <p>KPIs, active orders, inventory alerts, shipping status, and cycle-time reports.</p>
-      <div class="cta">Open Dashboard &rarr;</div>
+      <h3>Dashboard</h3>
+      <p>KPIs, active orders, inventory alerts &amp; cycle-time reports.</p>
+      <div class="arrow">Open &rarr;</div>
     </a>
-    <a href="/production" class="nav-card primary">
-      <div class="icon">📦</div>
-      <h3>Packing &amp; Production</h3>
-      <p>Packing manager assignments, packer logs, and line-by-line production tracking.</p>
-      <div class="cta">Open Production &rarr;</div>
-    </a>
-    <a href="/packing-job-assign" class="nav-card primary">
-      <div class="icon">📋</div>
-      <h3>Assign Packing Job</h3>
-      <p>SQF-compliant production &amp; packing log — line clearance, traceability, CCP, yield reconciliation.</p>
-      <div class="cta">New Packing Job &rarr;</div>
-    </a>
-    <a href="/stock" class="nav-card secondary">
-      <div class="icon">🗂</div>
-      <h3>Inventory / Stock Count</h3>
-      <p>Barcode lookup, on-hand quantities, location tracking, and manual adjustments.</p>
-      <div class="cta">Open Stock Count &rarr;</div>
-    </a>
-  </div>
 
-  <!-- Customer & Orders -->
-  <div class="section-label">Customers &amp; Orders</div>
-  <div class="card-grid">
-    <a href="/order" class="nav-card secondary">
+    <a href="/order" class="card c-order">
       <div class="icon">🛒</div>
-      <h3>Place / Track Order</h3>
-      <p>Customer-facing order entry and real-time order status tracking.</p>
-      <div class="cta">Open Order Page &rarr;</div>
+      <h3>Orders</h3>
+      <p>Place and track customer orders in real time.</p>
+      <div class="arrow">Open &rarr;</div>
     </a>
-    <a href="/store" class="nav-card tertiary">
-      <div class="icon">🌐</div>
-      <h3>Public Marketing Site</h3>
-      <p>Retail and wholesale ordering site served at <span class="mono">/store</span>.</p>
-      <div class="cta">View Site &rarr;</div>
-    </a>
-  </div>
 
-  <!-- Admin & HR -->
-  <div class="section-label">Admin &amp; HR</div>
-  <div class="card-grid">
-    <a href="/applications-admin" class="nav-card tertiary">
+    <a href="/stock" class="card c-ops">
+      <div class="icon">🗂</div>
+      <h3>Inventory</h3>
+      <p>Barcode lookup, on-hand quantities &amp; adjustments.</p>
+      <div class="arrow">Open &rarr;</div>
+    </a>
+
+    <a href="/production" class="card c-ops">
+      <div class="icon">📦</div>
+      <h3>Production</h3>
+      <p>Packing assignments, packer logs &amp; production tracking.</p>
+      <div class="arrow">Open &rarr;</div>
+    </a>
+
+    <a href="/packing-job-assign" class="card c-ops">
+      <div class="icon">📋</div>
+      <h3>SQF Packing Log</h3>
+      <p>PRD-FORM-014: line clearance, traceability &amp; CCP log.</p>
+      <div class="arrow">Open &rarr;</div>
+    </a>
+
+    <!-- Row 2: People, Admin & Dev -->
+    <div class="row-label">People, Admin &amp; Developer</div>
+
+    <a href="/hr-portal" class="card c-hr">
+      <div class="icon">👥</div>
+      <h3>HR Portal</h3>
+      <p>Associates, onboarding, training, evaluations &amp; messages.</p>
+      <div class="arrow">Open &rarr;</div>
+    </a>
+
+    <a href="/applications-admin" class="card c-hr">
       <div class="icon">💼</div>
       <h3>Job Applications</h3>
-      <p>Review incoming applications, update applicant status, and manage hiring pipeline.</p>
-      <div class="cta">Open Applications &rarr;</div>
+      <p>Review applicants, update pipeline &amp; manage hiring.</p>
+      <div class="arrow">Open &rarr;</div>
     </a>
-    <a href="/review-admin" class="nav-card tertiary">
-      <div class="icon">🔍</div>
-      <h3>Site Review Portal</h3>
-      <p>Share workflow pages with external reviewers and triage comments.</p>
-      <div class="cta">Open Review Admin &rarr;</div>
-    </a>
-  </div>
 
-  <!-- Account -->
-  <div class="section-label">Account &amp; Developer</div>
-  <div class="card-grid">
-    <a href="/login" class="nav-card muted">
-      <div class="icon">🔐</div>
-      <h3>Staff Login</h3>
-      <p>Sign in to access protected operations pages.</p>
-      <div class="cta">Log In &rarr;</div>
+    <a href="/review-admin" class="card c-admin">
+      <div class="icon">🔍</div>
+      <h3>Review Portal</h3>
+      <p>Share pages with external reviewers and triage feedback.</p>
+      <div class="arrow">Open &rarr;</div>
     </a>
-    <a href="/change-password" class="nav-card muted">
-      <div class="icon">🔑</div>
-      <h3>Change Password</h3>
-      <p>Update your staff account credentials.</p>
-      <div class="cta">Change Password &rarr;</div>
+
+    <a href="/store" class="card c-admin">
+      <div class="icon">🌐</div>
+      <h3>Public Site</h3>
+      <p>Retail &amp; wholesale ordering site served at /store.</p>
+      <div class="arrow">Open &rarr;</div>
     </a>
-    <a href="/docs" class="nav-card muted">
+
+    <a href="/docs" class="card c-admin">
       <div class="icon">📖</div>
       <h3>API Docs</h3>
-      <p>Interactive Swagger UI for every endpoint — callable directly from the browser.</p>
-      <div class="cta">Open API Docs &rarr;</div>
+      <p>Interactive Swagger UI for every endpoint.</p>
+      <div class="arrow">Open &rarr;</div>
     </a>
-  </div>
 
-  <!-- Quick links -->
-  <div class="section-label">Quick Links</div>
-  <div class="quick-row">
-    <a href="/dashboard" class="quick-btn">Dashboard</a>
-    <a href="/production" class="quick-btn">Production</a>
-    <a href="/packing-job-assign" class="quick-btn">Packing Job</a>
-    <a href="/stock" class="quick-btn">Stock Count</a>
-    <a href="/order" class="quick-btn">Orders</a>
-    <a href="/applications-admin" class="quick-btn">Applications</a>
-    <a href="/review-admin" class="quick-btn">Review Portal</a>
-    <a href="/store" class="quick-btn">Public Site</a>
-    <a href="/docs" class="quick-btn">API Docs</a>
-    <a href="/login" class="quick-btn">Login</a>
   </div>
+</main>
 
-</div>
+<footer>
+  <a href="/dashboard" class="ql">Dashboard</a>
+  <span class="ql-sep">·</span>
+  <a href="/production" class="ql">Production</a>
+  <span class="ql-sep">·</span>
+  <a href="/stock" class="ql">Inventory</a>
+  <span class="ql-sep">·</span>
+  <a href="/hr-portal" class="ql">HR Portal</a>
+  <span class="ql-sep">·</span>
+  <a href="/change-password" class="ql">Change Password</a>
+  <span class="ql-sep">·</span>
+  <a href="/login" class="ql">Login / Logout</a>
+</footer>
 
 <script>
-  const ts = document.getElementById('ts');
-  const d = new Date();
-  ts.textContent = d.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'})
-    + '  ·  ' + d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const t = new Date();
+  document.getElementById('ts').textContent =
+    t.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) +
+    ' · ' + t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 </script>
 </body>
 </html>
