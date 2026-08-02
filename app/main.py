@@ -2,13 +2,13 @@ import os
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import get_current_staff_optional
 from .database import Base, engine
-from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan, employee_applications, jobs, review
+from .routers import customers, products, inventory, orders, packing, shipping, reports, production, pallets, packaging, order_tasks, mixes, applications, sops, admin, returns, receipts, report_pdfs, scan, employee_applications, jobs, review, packing_jobs
 from .routers import auth as auth_router
 
 Base.metadata.create_all(bind=engine)
@@ -82,6 +82,7 @@ app.include_router(scan.router)
 app.include_router(employee_applications.router)
 app.include_router(jobs.router)
 app.include_router(review.router)
+app.include_router(packing_jobs.router)
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "..", "web")
 
@@ -175,34 +176,22 @@ def review_reviewer_page(token: str):
     return FileResponse(os.path.join(WEB_DIR, "review.html"))
 
 
+@app.get("/packing-job-assign")
+def packing_job_assign_page(staff=Depends(get_current_staff_optional)):
+    gate = _staff_gate("/packing-job-assign", staff)
+    if gate:
+        return gate
+    return FileResponse(os.path.join(WEB_DIR, "packing-job-assign.html"))
+
+
 @app.get("/", response_class=FileResponse)
 def home_page():
     return FileResponse(os.path.join(WEB_DIR, "home.html"))
 
 
-@app.get("/ops", response_class=HTMLResponse)
+@app.get("/ops", response_class=FileResponse)
 def internal_links():
-    return """
-    <html>
-    <head><title>American Food & Beverage — Operations</title></head>
-    <body style="font-family:-apple-system,sans-serif;max-width:640px;margin:60px auto;padding:0 24px;color:#241A10;">
-      <h1>American Food &amp; Beverage — Operations</h1>
-      <p>Internal tools. Pick where to go:</p>
-      <ul style="line-height:2.2;font-size:1.05rem;">
-        <li><a href="/store">Main site</a> — public marketing &amp; ordering site</li>
-        <li><a href="/order">Place / track an order</a> — legacy customer-facing order page</li>
-        <li><a href="/dashboard">Operations dashboard</a> — inventory, orders, shipping, reports (staff login required)</li>
-        <li><a href="/production">Packing &amp; production</a> — packing manager assignments and packer daily logs (staff login required)</li>
-        <li><a href="/stock">Inventory / stock count</a> — barcode, on-hand, location, adjust (staff login required)</li>
-        <li><a href="/applications-admin">Job applications</a> — review and update applicant status (staff login required)</li>
-        <li><a href="/review-admin">Site review portal</a> — share workflow pages with reviewers, triage comments (staff login required)</li>
-        <li><a href="/login">Staff login</a></li>
-        <li><a href="/change-password">Change password</a> — staff account settings (staff login required)</li>
-        <li><a href="/docs">API docs</a> — every endpoint, callable directly from the browser</li>
-      </ul>
-    </body>
-    </html>
-    """
+    return FileResponse(os.path.join(WEB_DIR, "ops.html"))
 SITE_DIR = SITE_DIR = os.path.join(os.path.dirname(__file__), "..", "afb-site")
 
 app.mount("/store", StaticFiles(directory=SITE_DIR, html=True), name="store")

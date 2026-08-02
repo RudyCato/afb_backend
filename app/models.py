@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Enum, Text
+    Column, Integer, String, Float, Boolean, Date, DateTime, ForeignKey, Enum, Text, JSON
 )
 from sqlalchemy.orm import relationship
 
@@ -500,3 +500,69 @@ class CustomerReturn(Base):
 
     customer = relationship("Customer")
     product = relationship("Product")
+
+
+# ── SQF Packing Job ──────────────────────────────────────────────────────────
+
+class PackingJob(Base):
+    """SQF-Compliant Production & Packing Log (SOP-PRD-FORM-014 v3.1).
+    Covers all 7 sections: header, line clearance, raw material traceability,
+    CCP/metal detector, net weight QC, yield reconciliation, and CAPA.
+    """
+    __tablename__ = "packing_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Section 1 — Header & Document Control
+    document_id = Column(String(50), default="SOP-PRD-FORM-014")
+    revision = Column(String(20), default="v3.1")
+    product_name = Column(String(255), nullable=False)
+    product_sku = Column(String(100), nullable=False)
+    batch_lot_number = Column(String(100), nullable=False)
+    production_date = Column(String(20), nullable=False)   # MM/DD/YYYY
+    shift = Column(String(10), nullable=False)             # Day / Night
+    packaging_line_id = Column(String(100), nullable=True)
+    lead_operator_name = Column(String(150), nullable=True)
+
+    # Section 2 — Line Clearance & Allergen Sanitation
+    line_cleared_status = Column(String(10), nullable=True)
+    line_cleared_initials = Column(String(20), nullable=True)
+    surfaces_sanitized_status = Column(String(10), nullable=True)
+    surfaces_sanitized_initials = Column(String(20), nullable=True)
+    allergen_changeover_status = Column(String(10), nullable=True)
+    allergen_changeover_initials = Column(String(20), nullable=True)
+    allergen_swab_status = Column(String(10), nullable=True)
+    allergen_swab_initials = Column(String(20), nullable=True)
+
+    # Section 3 — Raw Material & Ingredient Traceability (JSON list)
+    raw_materials = Column(JSON, default=list)
+
+    # Section 4 — CCP / Foreign Material Monitoring
+    ccp_type = Column(String(50), nullable=True)
+    metal_detector_log = Column(JSON, default=list)
+
+    # Section 5 — Net Weight & Packaging Quality Checks
+    target_net_weight = Column(Float, nullable=True)
+    target_net_weight_unit = Column(String(10), nullable=True)
+    tare_weight = Column(Float, nullable=True)
+    tare_weight_unit = Column(String(10), nullable=True)
+    lot_code_format = Column(String(100), nullable=True)
+    quality_samples = Column(JSON, default=list)
+
+    # Section 6 — Yield Reconciliation & Mass Balance
+    total_bulk_input_weight = Column(Float, nullable=True)
+    total_packed_weight = Column(Float, nullable=True)
+    scrap_waste_weight = Column(Float, nullable=True)
+    unused_bulk_returned = Column(Float, nullable=True)
+    variance_percent = Column(Float, nullable=True)
+
+    # Section 7 — CAPA
+    corrective_actions = Column(JSON, default=list)
+
+    # Workflow
+    status = Column(String(20), default="draft")   # draft / submitted / approved / rejected
+    submitted_by = Column(String(150), nullable=True)
+    approved_by = Column(String(150), nullable=True)
+    notes = Column(Text, nullable=True)

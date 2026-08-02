@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>American Food &amp; Beverage — Operations Hub</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AFB Ops">
+<meta name="theme-color" content="#241A10">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
+    --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
+    --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;}
+  h1,h2,h3{font-family:'Bitter',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 72px;}
+
+  /* Header */
+  header{background:var(--ink);color:var(--paper);border-bottom:3px solid var(--rust);padding:16px 0;}
+  header .inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  header .top{font-family:'Bitter',serif;font-weight:900;font-size:1.2rem;}
+  header .bottom{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:var(--gold);text-transform:uppercase;margin-top:3px;}
+  .header-actions{display:flex;align-items:center;gap:14px;}
+  .header-link{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.73rem;text-decoration:none;letter-spacing:0.04em;}
+  .header-link:hover{color:var(--cream);}
+
+  /* Hero strip */
+  .hero{
+    background:var(--paper);border:1px solid var(--line-strong);border-left:5px solid var(--rust);
+    border-radius:4px;padding:20px 24px;margin-bottom:28px;box-shadow:var(--shadow);
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  }
+  .hero h2{font-size:1.25rem;color:var(--ink);}
+  .hero p{margin:4px 0 0;color:var(--ink-soft);font-size:0.88rem;}
+  .hero .ts{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ink-soft);}
+
+  /* Section labels */
+  .section-label{
+    font-family:'IBM Plex Mono',monospace;font-size:0.68rem;text-transform:uppercase;
+    letter-spacing:0.12em;color:var(--ink-soft);margin:28px 0 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .section-label::after{content:'';flex:1;height:1px;background:var(--line-strong);}
+
+  /* Card grid */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+  .nav-card{
+    background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;
+    padding:22px 20px;box-shadow:var(--shadow);cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease;
+    text-decoration:none;display:block;color:inherit;
+  }
+  .nav-card:hover{transform:translateY(-3px);border-color:var(--rust);}
+  .nav-card .icon{font-size:1.6rem;margin-bottom:10px;line-height:1;}
+  .nav-card h3{font-size:1rem;margin-bottom:5px;}
+  .nav-card p{margin:0;color:var(--ink-soft);font-size:0.81rem;line-height:1.45;}
+  .nav-card .cta{
+    margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:0.67rem;
+    color:var(--rust);text-transform:uppercase;letter-spacing:0.06em;
+  }
+
+  /* Accent variants */
+  .nav-card.primary{border-left:4px solid var(--rust);}
+  .nav-card.secondary{border-left:4px solid var(--gold);}
+  .nav-card.tertiary{border-left:4px solid var(--olive);}
+  .nav-card.muted{border-left:4px solid var(--line-strong);}
+
+  /* Quick-link row */
+  .quick-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;}
+  .quick-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:0.05em;padding:8px 16px;border-radius:20px;
+    border:1px solid var(--line-strong);background:var(--paper);color:var(--ink-soft);
+    text-decoration:none;cursor:pointer;transition:all .12s;
+  }
+  .quick-btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  @media(max-width:640px){
+    .card-grid{grid-template-columns:1fr 1fr;}
+    .hero{flex-direction:column;align-items:flex-start;}
+  }
+  @media(max-width:400px){.card-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div>
+      <div class="top">American Food &amp; Beverage</div>
+      <div class="bottom">Operations Hub</div>
+    </div>
+    <div class="header-actions">
+      <a href="/store" class="header-link">Public Site &rarr;</a>
+      <a href="/login" class="header-link">Staff Login</a>
+      <a href="/docs" class="header-link mono" style="font-size:0.68rem;opacity:.7;">API Docs</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <h2>Operations Hub</h2>
+      <p>All internal tools &amp; workflows in one place.</p>
+    </div>
+    <div class="ts" id="ts"></div>
+  </div>
+
+  <!-- Core Ops -->
+  <div class="section-label">Core Operations</div>
+  <div class="card-grid">
+    <a href="/dashboard" class="nav-card primary">
+      <div class="icon">📊</div>
+      <h3>Operations Dashboard</h3>
+      <p>KPIs, active orders, inventory alerts, shipping status, and cycle-time reports.</p>
+      <div class="cta">Open Dashboard &rarr;</div>
+    </a>
+    <a href="/production" class="nav-card primary">
+      <div class="icon">📦</div>
+      <h3>Packing &amp; Production</h3>
+      <p>Packing manager assignments, packer logs, and line-by-line production tracking.</p>
+      <div class="cta">Open Production &rarr;</div>
+    </a>
+    <a href="/packing-job-assign" class="nav-card primary">
+      <div class="icon">📋</div>
+      <h3>Assign Packing Job</h3>
+      <p>SQF-compliant production &amp; packing log — line clearance, traceability, CCP, yield reconciliation.</p>
+      <div class="cta">New Packing Job &rarr;</div>
+    </a>
+    <a href="/stock" class="nav-card secondary">
+      <div class="icon">🗂</div>
+      <h3>Inventory / Stock Count</h3>
+      <p>Barcode lookup, on-hand quantities, location tracking, and manual adjustments.</p>
+      <div class="cta">Open Stock Count &rarr;</div>
+    </a>
+  </div>
+
+  <!-- Customer & Orders -->
+  <div class="section-label">Customers &amp; Orders</div>
+  <div class="card-grid">
+    <a href="/order" class="nav-card secondary">
+      <div class="icon">🛒</div>
+      <h3>Place / Track Order</h3>
+      <p>Customer-facing order entry and real-time order status tracking.</p>
+      <div class="cta">Open Order Page &rarr;</div>
+    </a>
+    <a href="/store" class="nav-card tertiary">
+      <div class="icon">🌐</div>
+      <h3>Public Marketing Site</h3>
+      <p>Retail and wholesale ordering site served at <span class="mono">/store</span>.</p>
+      <div class="cta">View Site &rarr;</div>
+    </a>
+  </div>
+
+  <!-- Admin & HR -->
+  <div class="section-label">Admin &amp; HR</div>
+  <div class="card-grid">
+    <a href="/applications-admin" class="nav-card tertiary">
+      <div class="icon">💼</div>
+      <h3>Job Applications</h3>
+      <p>Review incoming applications, update applicant status, and manage hiring pipeline.</p>
+      <div class="cta">Open Applications &rarr;</div>
+    </a>
+    <a href="/review-admin" class="nav-card tertiary">
+      <div class="icon">🔍</div>
+      <h3>Site Review Portal</h3>
+      <p>Share workflow pages with external reviewers and triage comments.</p>
+      <div class="cta">Open Review Admin &rarr;</div>
+    </a>
+  </div>
+
+  <!-- Account -->
+  <div class="section-label">Account &amp; Developer</div>
+  <div class="card-grid">
+    <a href="/login" class="nav-card muted">
+      <div class="icon">🔐</div>
+      <h3>Staff Login</h3>
+      <p>Sign in to access protected operations pages.</p>
+      <div class="cta">Log In &rarr;</div>
+    </a>
+    <a href="/change-password" class="nav-card muted">
+      <div class="icon">🔑</div>
+      <h3>Change Password</h3>
+      <p>Update your staff account credentials.</p>
+      <div class="cta">Change Password &rarr;</div>
+    </a>
+    <a href="/docs" class="nav-card muted">
+      <div class="icon">📖</div>
+      <h3>API Docs</h3>
+      <p>Interactive Swagger UI for every endpoint — callable directly from the browser.</p>
+      <div class="cta">Open API Docs &rarr;</div>
+    </a>
+  </div>
+
+  <!-- Quick links -->
+  <div class="section-label">Quick Links</div>
+  <div class="quick-row">
+    <a href="/dashboard" class="quick-btn">Dashboard</a>
+    <a href="/production" class="quick-btn">Production</a>
+    <a href="/packing-job-assign" class="quick-btn">Packing Job</a>
+    <a href="/stock" class="quick-btn">Stock Count</a>
+    <a href="/order" class="quick-btn">Orders</a>
+    <a href="/applications-admin" class="quick-btn">Applications</a>
+    <a href="/review-admin" class="quick-btn">Review Portal</a>
+    <a href="/store" class="quick-btn">Public Site</a>
+    <a href="/docs" class="quick-btn">API Docs</a>
+    <a href="/login" class="quick-btn">Login</a>
+  </div>
+
+</div>
+
+<script>
+  const ts = document.getElementById('ts');
+  const d = new Date();
+  ts.textContent = d.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'})
+    + '  ·  ' + d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+</script>
+</body>
+</html>

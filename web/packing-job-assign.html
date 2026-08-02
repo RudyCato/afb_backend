@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assign Packing Job — AFB Operations</title>
+  <style>
+    :root {
+      --green:   #2d6a4f;
+      --green-l: #40916c;
+      --green-x: #e8f5ee;
+      --amber:   #d97706;
+      --red:     #dc2626;
+      --gray1:   #1f2937;
+      --gray2:   #374151;
+      --gray3:   #6b7280;
+      --gray4:   #d1d5db;
+      --gray5:   #f3f4f6;
+      --white:   #ffffff;
+      --radius:  6px;
+      --shadow:  0 1px 4px rgba(0,0,0,.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px; color: var(--gray1); background: var(--gray5);
+      min-height: 100vh;
+    }
+
+    /* ── Top Bar ── */
+    .topbar {
+      background: var(--green); color: #fff;
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 20px; height: 52px; position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    .topbar a { color: rgba(255,255,255,.75); text-decoration: none; font-size: 13px; }
+    .topbar a:hover { color: #fff; }
+    .topbar .sep { color: rgba(255,255,255,.4); }
+    .topbar h1 { font-size: 15px; font-weight: 600; }
+
+    /* ── Layout ── */
+    .page { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+
+    /* ── Doc header banner ── */
+    .doc-banner {
+      background: var(--white); border: 1px solid var(--gray4);
+      border-left: 5px solid var(--green); border-radius: var(--radius);
+      padding: 14px 18px; margin-bottom: 20px;
+      display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .doc-banner .meta { font-size: 12px; color: var(--gray3); }
+    .doc-banner .meta span { font-weight: 600; color: var(--gray2); }
+
+    /* ── Section cards ── */
+    .card {
+      background: var(--white); border: 1px solid var(--gray4);
+      border-radius: var(--radius); margin-bottom: 20px;
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .card-header {
+      background: var(--green); color: #fff;
+      padding: 10px 18px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-header .sec-num {
+      background: rgba(255,255,255,.25); border-radius: 50%;
+      width: 24px; height: 24px; display: flex; align-items: center;
+      justify-content: center; font-size: 12px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .card-header h2 { font-size: 14px; font-weight: 600; }
+    .card-header .sub { font-size: 11px; opacity: .8; margin-left: auto; }
+    .card-body { padding: 18px; }
+
+    /* ── Form controls ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group.span2 { grid-column: span 2; }
+    .form-group.span3 { grid-column: span 3; }
+    .form-group label { font-size: 12px; font-weight: 600; color: var(--gray2); }
+    .form-group label .req { color: var(--red); }
+    .form-group input[type=text],
+    .form-group input[type=date],
+    .form-group input[type=number],
+    .form-group select,
+    .form-group textarea {
+      border: 1px solid var(--gray4); border-radius: var(--radius);
+      padding: 7px 10px; font-size: 14px; color: var(--gray1);
+      background: var(--white); transition: border-color .15s;
+      width: 100%;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none; border-color: var(--green-l);
+      box-shadow: 0 0 0 3px rgba(64,145,108,.15);
+    }
+    .form-group textarea { resize: vertical; min-height: 72px; }
+
+    /* ── Verification table ── */
+    .verif-table { width: 100%; border-collapse: collapse; }
+    .verif-table th {
+      background: var(--gray5); font-size: 12px; font-weight: 600;
+      padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--gray4);
+    }
+    .verif-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray4); vertical-align: middle; }
+    .verif-table tr:last-child td { border-bottom: none; }
+    .verif-table .item-label { font-size: 13px; }
+
+    .radio-group { display: flex; gap: 12px; }
+    .radio-group label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 400; cursor: pointer;
+      color: var(--gray1);
+    }
+    .radio-group label input { accent-color: var(--green); }
+
+    .initials-input {
+      width: 72px !important; text-align: center; text-transform: uppercase;
+    }
+
+    /* ── Dynamic rows ── */
+    .dyn-table-wrap { overflow-x: auto; }
+    .dyn-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    .dyn-table th {
+      background: var(--gray5); font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      padding: 7px 10px; text-align: left; border: 1px solid var(--gray4);
+    }
+    .dyn-table td { padding: 5px 6px; border: 1px solid var(--gray4); vertical-align: middle; }
+    .dyn-table input[type=text],
+    .dyn-table input[type=number],
+    .dyn-table select { border: none; background: transparent; width: 100%;
+      font-size: 13px; padding: 2px 4px; }
+    .dyn-table input:focus, .dyn-table select:focus {
+      outline: 1px solid var(--green-l); border-radius: 3px; }
+    .dyn-table .checkbox-cell { text-align: center; }
+    .dyn-table input[type=checkbox] { accent-color: var(--green); width: 15px; height: 15px; }
+    .btn-add-row {
+      margin-top: 10px; display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-x); color: var(--green); border: 1px solid var(--green-l);
+      border-radius: var(--radius); padding: 6px 14px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .btn-add-row:hover { background: #d1ead9; }
+    .btn-del-row {
+      background: none; border: none; color: var(--gray3); cursor: pointer;
+      font-size: 16px; padding: 0 4px; line-height: 1;
+    }
+    .btn-del-row:hover { color: var(--red); }
+
+    /* ── CCP pills ── */
+    .ccp-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .ccp-pill { display: none; }
+    .ccp-pill + label {
+      display: flex; align-items: center; gap: 6px;
+      border: 2px solid var(--gray4); border-radius: 20px;
+      padding: 6px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+    }
+    .ccp-pill:checked + label {
+      border-color: var(--green); background: var(--green-x); color: var(--green);
+    }
+
+    /* ── Yield grid ── */
+    .yield-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .yield-card {
+      background: var(--gray5); border: 1px solid var(--gray4);
+      border-radius: var(--radius); padding: 12px 14px;
+    }
+    .yield-card label { font-size: 11px; font-weight: 700; color: var(--gray3);
+      text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 6px; }
+    .yield-card input { border: 1px solid var(--gray4); border-radius: 4px;
+      padding: 6px 8px; font-size: 15px; font-weight: 700; width: 100%;
+      color: var(--gray1); }
+    .variance-warning { color: var(--red); font-size: 12px; font-weight: 600;
+      margin-top: 4px; display: none; }
+
+    /* ── Submit bar ── */
+    .submit-bar {
+      background: var(--white); border: 1px solid var(--gray4);
+      border-radius: var(--radius); padding: 16px 18px;
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .btn {
+      padding: 9px 22px; border-radius: var(--radius); border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: var(--green-l); }
+    .btn-secondary { background: var(--gray5); color: var(--gray2);
+      border: 1px solid var(--gray4); }
+    .btn-secondary:hover { background: var(--gray4); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: var(--gray1); color: #fff; padding: 12px 20px;
+      border-radius: var(--radius); font-size: 14px; font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,.3); opacity: 0;
+      transform: translateY(12px); transition: all .25s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--green); }
+    #toast.error   { background: var(--red); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/production">← Packing Manager</a>
+  <span class="sep">/</span>
+  <h1>Assign Packing Job</h1>
+</div>
+
+<div class="page">
+
+  <div class="doc-banner">
+    <div class="meta">Doc ID: <span>SOP-PRD-FORM-014</span></div>
+    <div class="meta">Rev: <span>v3.1</span></div>
+    <div class="meta">SQF System: <span>PRPs · HACCP · Allergen · Traceability</span></div>
+    <div class="meta" style="margin-left:auto;">Date: <span id="todayDate"></span></div>
+  </div>
+
+  <form id="packingForm" novalidate>
+
+    <!-- Section 1 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">1</div>
+        <h2>Header &amp; Document Control</h2>
+        <span class="sub">SQF: Document Control &amp; Records</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group span2">
+            <label>Product Name <span class="req">*</span></label>
+            <input type="text" name="product_name" required placeholder="e.g. Classic Granola — Dark Chocolate" />
+          </div>
+          <div class="form-group">
+            <label>Product SKU / Item Code <span class="req">*</span></label>
+            <input type="text" name="product_sku" required placeholder="e.g. GRL-DC-12OZ" />
+          </div>
+          <div class="form-group">
+            <label>Batch / Lot Number <span class="req">*</span></label>
+            <input type="text" name="batch_lot_number" required placeholder="e.g. LOT-20260802-A" />
+          </div>
+          <div class="form-group">
+            <label>Production Date <span class="req">*</span></label>
+            <input type="date" name="production_date" required />
+          </div>
+          <div class="form-group">
+            <label>Shift <span class="req">*</span></label>
+            <select name="shift" required>
+              <option value="">— Select —</option>
+              <option value="Day">Day</option>
+              <option value="Night">Night</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Packaging Line / Station ID</label>
+            <input type="text" name="packaging_line_id" placeholder="e.g. LINE-03" />
+          </div>
+          <div class="form-group span2">
+            <label>Lead Operator / Packer Name</label>
+            <input type="text" name="lead_operator_name" placeholder="Full name" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">2</div>
+        <h2>Line Clearance &amp; Allergen Sanitation Verification</h2>
+        <span class="sub">SQF: Food Safety Fundamentals / Allergen Management</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--gray3);margin-bottom:14px;">
+          Must be completed <strong>prior</strong> to loading any raw material onto the packing line.
+        </p>
+        <div class="dyn-table-wrap">
+          <table class="verif-table">
+            <thead>
+              <tr>
+                <th style="width:55%">Verification Item</th>
+                <th>Status</th>
+                <th>Initials</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="item-label">Line cleared of previous product, labeling &amp; packaging materials</td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="line_cleared_status" value="PASS"> PASS</label>
+                    <label><input type="radio" name="line_cleared_status" value="FAIL"> FAIL</label>
+                  </div>
+                </td>
+                <td><input type="text" name="line_cleared_initials" class="initials-input" maxlength="4" placeholder="———" /></td>
+              </tr>
+              <tr>
+                <td class="item-label">Work surfaces, hoppers &amp; scales cleaned &amp; sanitized</td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="surfaces_sanitized_status" value="PASS"> PASS</label>
+                    <label><input type="radio" name="surfaces_sanitized_status" value="FAIL"> FAIL</label>
+                  </div>
+                </td>
+                <td><input type="text" name="surfaces_sanitized_initials" class="initials-input" maxlength="4" placeholder="———" /></td>
+              </tr>
+              <tr>
+                <td class="item-label">
+                  Allergen Changeover Inspection
+                  <div style="font-size:11px;color:var(--gray3);margin-top:3px;">Required if previous run contained different allergens</div>
+                </td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="allergen_changeover_status" value="N/A" checked> N/A</label>
+                    <label><input type="radio" name="allergen_changeover_status" value="PASS"> PASS</label>
+                  </div>
+                </td>
+                <td><input type="text" name="allergen_changeover_initials" class="initials-input" maxlength="4" placeholder="———" /></td>
+              </tr>
+              <tr>
+                <td class="item-label">Allergen swab / test performed (if applicable)</td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="allergen_swab_status" value="N/A" checked> N/A</label>
+                    <label><input type="radio" name="allergen_swab_status" value="PASS"> PASS</label>
+                  </div>
+                </td>
+                <td><input type="text" name="allergen_swab_initials" class="initials-input" maxlength="4" placeholder="———" /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">3</div>
+        <h2>Raw Material &amp; Ingredient Traceability — One Step Back</h2>
+        <span class="sub">SQF: Traceability, Withdrawal &amp; Recall</span>
+      </div>
+      <div class="card-body">
+        <div class="dyn-table-wrap">
+          <table class="dyn-table">
+            <thead>
+              <tr>
+                <th>Component / Raw Material</th>
+                <th>Internal / Supplier Lot #</th>
+                <th>Exp / Best-By Date</th>
+                <th>Allergen Declaration</th>
+                <th>Qty Used</th>
+                <th>Unit</th>
+                <th>QA Sign-off</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rawMaterialsBody"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-add-row" onclick="addRawMaterialRow()">＋ Add Ingredient</button>
+      </div>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">4</div>
+        <h2>Critical Control Point (CCP) / Foreign Material Monitoring</h2>
+        <span class="sub">SQF: HACCP Plan / Foreign Matter Mitigation</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--gray3);margin-bottom:12px;">CCP Type:</p>
+        <div class="ccp-pills">
+          <input type="radio" name="ccp_type" id="ccp1" value="Metal Detector" class="ccp-pill" checked>
+          <label for="ccp1">🔍 Metal Detector</label>
+          <input type="radio" name="ccp_type" id="ccp2" value="X-Ray" class="ccp-pill">
+          <label for="ccp2">🔬 X-Ray</label>
+          <input type="radio" name="ccp_type" id="ccp3" value="In-Line Magnet/Sifter" class="ccp-pill">
+          <label for="ccp3">🧲 In-Line Magnet / Sifter</label>
+        </div>
+        <p style="font-size:12px;color:var(--gray3);margin-bottom:10px;">
+          Challenge test at <strong>start of run</strong>, every <strong>2 hours</strong>, and <strong>end of run</strong>.
+        </p>
+        <div class="dyn-table-wrap">
+          <table class="dyn-table">
+            <thead>
+              <tr>
+                <th>Check</th><th>Time</th>
+                <th class="checkbox-cell">Ferrous ✓<br><small>1.5mm</small></th>
+                <th class="checkbox-cell">Non-Ferrous ✓<br><small>1.5mm</small></th>
+                <th class="checkbox-cell">SS ✓<br><small>2.0mm</small></th>
+                <th class="checkbox-cell">Reject Mech ✓</th>
+                <th>Operator Initials</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="mdBody"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-add-row" onclick="addMDRow()">＋ Add Check</button>
+      </div>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">5</div>
+        <h2>Net Weight &amp; Packaging Quality Checks</h2>
+        <span class="sub">SQF: Net Content Control &amp; Label Verification</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid" style="margin-bottom:18px;">
+          <div class="form-group">
+            <label>Target Net Weight</label>
+            <input type="number" name="target_net_weight" step="0.01" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label>Unit</label>
+            <select name="target_net_weight_unit">
+              <option value="oz">oz</option>
+              <option value="g">g</option>
+              <option value="lbs">lbs</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tare Weight</label>
+            <input type="number" name="tare_weight" step="0.01" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label>Tare Unit</label>
+            <select name="tare_weight_unit">
+              <option value="oz">oz</option>
+              <option value="g">g</option>
+            </select>
+          </div>
+          <div class="form-group span2">
+            <label>Finished Good Lot Code Format</label>
+            <input type="text" name="lot_code_format" placeholder="e.g. YYMMDD-LINE-SEQ" />
+          </div>
+        </div>
+        <div class="dyn-table-wrap">
+          <table class="dyn-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Time</th><th>Gross Wt</th><th>Net Wt</th>
+                <th class="checkbox-cell">Seal ✓</th>
+                <th class="checkbox-cell">Label/Lot ✓</th>
+                <th class="checkbox-cell">Visual ✓</th>
+                <th>Initials</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="samplesBody"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-add-row" onclick="addSampleRow()">＋ Add Sample</button>
+      </div>
+    </div>
+
+    <!-- Section 6 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">6</div>
+        <h2>Yield Reconciliation &amp; Mass Balance</h2>
+        <span class="sub">SQF: Product Release &amp; Quantity Control</span>
+      </div>
+      <div class="card-body">
+        <div class="yield-grid">
+          <div class="yield-card">
+            <label>Total Bulk Input (lbs)</label>
+            <input type="number" name="total_bulk_input_weight" step="0.01" placeholder="0.00" oninput="recalcVariance()" />
+          </div>
+          <div class="yield-card">
+            <label>Total Packed Weight (lbs)</label>
+            <input type="number" name="total_packed_weight" step="0.01" placeholder="0.00" oninput="recalcVariance()" />
+          </div>
+          <div class="yield-card">
+            <label>Scrap / Floor Waste (lbs)</label>
+            <input type="number" name="scrap_waste_weight" step="0.01" placeholder="0.00" oninput="recalcVariance()" />
+          </div>
+          <div class="yield-card">
+            <label>Unused Bulk Returned (lbs)</label>
+            <input type="number" name="unused_bulk_returned" step="0.01" placeholder="0.00" oninput="recalcVariance()" />
+          </div>
+          <div class="yield-card">
+            <label>Variance / Unaccounted Loss (%)</label>
+            <input type="number" name="variance_percent" id="varianceField" step="0.01" placeholder="auto" readonly />
+            <div class="variance-warning" id="varianceWarning">⚠ Exceeds 1.5% target — corrective action required</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 7 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="sec-num">7</div>
+        <h2>Corrective Actions Log (CAPA)</h2>
+        <span class="sub">SQF: Corrective &amp; Preventative Action</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--gray3);margin-bottom:12px;">
+          Document any non-conformances (e.g. metal detector failure, weight out-of-spec, seal failure) and actions taken.
+        </p>
+        <div id="capaRows"></div>
+        <button type="button" class="btn-add-row" onclick="addCAPA()">＋ Add Non-Conformance</button>
+      </div>
+    </div>
+
+    <!-- Submit bar -->
+    <div class="submit-bar">
+      <div class="form-group" style="flex:1;min-width:180px;">
+        <label style="font-size:12px;font-weight:600;">Submitted By</label>
+        <input type="text" name="submitted_by" placeholder="Name" />
+      </div>
+      <div class="form-group">
+        <label style="font-size:12px;font-weight:600;">Job Status</label>
+        <select name="status" style="padding:8px 14px;border:1px solid var(--gray4);border-radius:var(--radius);font-size:14px;font-weight:600;">
+          <option value="draft">Draft</option>
+          <option value="submitted" selected>Submit for Review</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:2;">
+        <label style="font-size:12px;font-weight:600;">Notes</label>
+        <input type="text" name="notes" placeholder="Optional production notes" />
+      </div>
+      <button type="submit" class="btn btn-primary" id="submitBtn">Save Packing Job</button>
+      <button type="button" class="btn btn-secondary" onclick="location.reload()">Clear</button>
+    </div>
+
+  </form>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API_BASE = "/packing-jobs";
+const ALLERGEN_OPTIONS = ["None","Gluten","Tree Nut","Peanut","Soy","Sesame","Dairy","Egg","Sulfites","Fish","Shellfish"];
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("todayDate").textContent =
+    new Date().toLocaleDateString("en-US", {year:"numeric",month:"short",day:"numeric"});
+  const pd = document.querySelector('[name="production_date"]');
+  if (pd) pd.value = new Date().toISOString().split("T")[0];
+
+  [
+    {component:"Rolled Oats / Base", allergen:"Gluten"},
+    {component:"Nuts (Almonds, Cashews, etc.)", allergen:"Tree Nut"},
+    {component:"Dried Fruit / Seeds", allergen:"None"},
+    {component:"Sweeteners / Oils / Spices", allergen:"None"},
+    {component:"Primary Film / Pouch", allergen:"None"},
+  ].forEach(d => addRawMaterialRow(d));
+
+  ["Pre-Start","Mid-Shift 1","Mid-Shift 2","Post-Run"].forEach(l => addMDRow(l));
+  [1,2,3,4].forEach(n => addSampleRow(n));
+});
+
+function allergenSelect(sel) {
+  return `<select style="width:130px">${ALLERGEN_OPTIONS.map(a=>`<option value="${a}"${a===sel?" selected":""}>${a}</option>`).join("")}</select>`;
+}
+
+let rmIdx=0;
+function addRawMaterialRow(d={}) {
+  const i=rmIdx++, tr=document.createElement("tr"); tr.id=`rm-${i}`;
+  tr.innerHTML=`
+    <td><input type="text" placeholder="Component" value="${d.component||""}" /></td>
+    <td><input type="text" placeholder="Lot #" /></td>
+    <td><input type="text" placeholder="MM/DD/YYYY" /></td>
+    <td>${allergenSelect(d.allergen||"None")}</td>
+    <td><input type="number" step="0.01" placeholder="0.00" style="width:80px" /></td>
+    <td><select style="width:60px"><option value="lbs">lbs</option><option value="kg">kg</option></select></td>
+    <td><input type="text" class="initials-input" maxlength="4" placeholder="——" style="width:60px" /></td>
+    <td><button type="button" class="btn-del-row" onclick="delRow('rm-${i}')">✕</button></td>`;
+  document.getElementById("rawMaterialsBody").appendChild(tr);
+}
+
+let mdIdx=0;
+function addMDRow(label) {
+  const i=mdIdx++, lbl=label||`Check ${i+1}`, tr=document.createElement("tr"); tr.id=`md-${i}`;
+  tr.innerHTML=`
+    <td><input type="text" value="${lbl}" style="width:110px" /></td>
+    <td><input type="text" placeholder="HH:MM" style="width:70px" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td><input type="text" class="initials-input" maxlength="4" placeholder="——" style="width:60px" /></td>
+    <td><button type="button" class="btn-del-row" onclick="delRow('md-${i}')">✕</button></td>`;
+  document.getElementById("mdBody").appendChild(tr);
+}
+
+let sampleIdx=0;
+function addSampleRow(num) {
+  const i=sampleIdx++, n=num||i+1, tr=document.createElement("tr"); tr.id=`smp-${i}`;
+  tr.innerHTML=`
+    <td style="text-align:center;font-weight:700;">${n}</td>
+    <td><input type="text" placeholder="HH:MM" style="width:70px" /></td>
+    <td><input type="number" step="0.001" placeholder="0.000" style="width:80px" /></td>
+    <td><input type="number" step="0.001" placeholder="0.000" style="width:80px" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td class="checkbox-cell"><input type="checkbox" /></td>
+    <td><input type="text" class="initials-input" maxlength="4" placeholder="——" style="width:60px" /></td>
+    <td><button type="button" class="btn-del-row" onclick="delRow('smp-${i}')">✕</button></td>`;
+  document.getElementById("samplesBody").appendChild(tr);
+}
+
+let capaIdx=0;
+function addCAPA() {
+  const i=capaIdx++, div=document.createElement("div"); div.id=`capa-${i}`;
+  div.style.cssText="border:1px solid var(--gray4);border-radius:6px;padding:14px;margin-bottom:12px;background:var(--gray5);";
+  div.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <strong style="font-size:13px;color:var(--red);">⚠ Non-Conformance #${i+1}</strong>
+      <button type="button" class="btn-del-row" onclick="delRow('capa-${i}')" style="font-size:18px;">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Time</label><input type="text" placeholder="HH:MM" /></div>
+      <div class="form-group span2"><label>Non-Conformance Description <span class="req">*</span></label><input type="text" placeholder="Describe the non-conformance" /></div>
+      <div class="form-group span3"><label>Root Cause</label><input type="text" placeholder="Root cause analysis" /></div>
+      <div class="form-group span3"><label>Corrective Action Taken</label><textarea placeholder="Immediate corrective action"></textarea></div>
+      <div class="form-group span3"><label>Preventive Action</label><textarea placeholder="Long-term preventive action"></textarea></div>
+      <div class="form-group"><label>Resolved By</label><input type="text" placeholder="Name / initials" /></div>
+      <div class="form-group"><label>Date Resolved</label><input type="date" /></div>
+    </div>`;
+  document.getElementById("capaRows").appendChild(div);
+}
+
+function delRow(id) { const el=document.getElementById(id); if(el) el.remove(); }
+
+function recalcVariance() {
+  const g=n=>parseFloat(document.querySelector(`[name="${n}"]`)?.value||0)||0;
+  const inp=g("total_bulk_input_weight"), out=g("total_packed_weight")+g("scrap_waste_weight")+g("unused_bulk_returned");
+  const vf=document.getElementById("varianceField"), vw=document.getElementById("varianceWarning");
+  if(inp>0){
+    const v=Math.abs(inp-out)/inp*100;
+    vf.value=v.toFixed(2);
+    vw.style.display=v>1.5?"block":"none";
+    vf.style.color=v>1.5?"var(--red)":v>1.0?"var(--amber)":"var(--green)";
+  } else { vf.value=""; vw.style.display="none"; }
+}
+
+function fv(n){const e=document.querySelector(`[name="${n}"]`);return e?e.value||null:null;}
+function fvf(n){const v=fv(n);return v?parseFloat(v):null;}
+function rv(n){const e=document.querySelector(`[name="${n}"]:checked`);return e?e.value:null;}
+function toMDY(s){if(!s)return null;const[y,m,d]=s.split("-");return`${m}/${d}/${y}`;}
+
+function buildPayload(){
+  return {
+    product_name:fv("product_name"), product_sku:fv("product_sku"),
+    batch_lot_number:fv("batch_lot_number"), production_date:toMDY(fv("production_date")),
+    shift:fv("shift"), packaging_line_id:fv("packaging_line_id"), lead_operator_name:fv("lead_operator_name"),
+    line_cleared_status:rv("line_cleared_status"), line_cleared_initials:fv("line_cleared_initials"),
+    surfaces_sanitized_status:rv("surfaces_sanitized_status"), surfaces_sanitized_initials:fv("surfaces_sanitized_initials"),
+    allergen_changeover_status:rv("allergen_changeover_status"), allergen_changeover_initials:fv("allergen_changeover_initials"),
+    allergen_swab_status:rv("allergen_swab_status"), allergen_swab_initials:fv("allergen_swab_initials"),
+    raw_materials: Array.from(document.querySelectorAll("#rawMaterialsBody tr")).map(tr=>{
+      const inp=tr.querySelectorAll("input,select");
+      return {component:inp[0]?.value||"",lot_number:inp[1]?.value||"",expiration_date:inp[2]?.value||"",
+        allergen_declaration:inp[3]?.value||"None",quantity_used:parseFloat(inp[4]?.value)||0,
+        quantity_unit:inp[5]?.value||"lbs",qa_signoff:inp[6]?.value||""};
+    }),
+    ccp_type:rv("ccp_type"),
+    metal_detector_log: Array.from(document.querySelectorAll("#mdBody tr")).map(tr=>{
+      const inp=tr.querySelectorAll("input");
+      return {check_label:inp[0]?.value||"",time:inp[1]?.value||"",ferrous_pass:inp[2]?.checked||false,
+        non_ferrous_pass:inp[3]?.checked||false,stainless_pass:inp[4]?.checked||false,
+        rejection_test_pass:inp[5]?.checked||false,operator_initials:inp[6]?.value||""};
+    }),
+    target_net_weight:fvf("target_net_weight"), target_net_weight_unit:fv("target_net_weight_unit"),
+    tare_weight:fvf("tare_weight"), tare_weight_unit:fv("tare_weight_unit"), lot_code_format:fv("lot_code_format"),
+    quality_samples: Array.from(document.querySelectorAll("#samplesBody tr")).map((tr,idx)=>{
+      const inp=tr.querySelectorAll("input");
+      return {sample_number:idx+1,time:inp[0]?.value||"",gross_wt:parseFloat(inp[1]?.value)||0,
+        net_wt:parseFloat(inp[2]?.value)||0,seal_pass:inp[3]?.checked||false,
+        label_verified:inp[4]?.checked||false,visual_ok:inp[5]?.checked||false,initials:inp[6]?.value||""};
+    }),
+    total_bulk_input_weight:fvf("total_bulk_input_weight"), total_packed_weight:fvf("total_packed_weight"),
+    scrap_waste_weight:fvf("scrap_waste_weight"), unused_bulk_returned:fvf("unused_bulk_returned"),
+    variance_percent:fvf("variance_percent"),
+    corrective_actions: Array.from(document.querySelectorAll("#capaRows > div")).map(div=>{
+      const inp=div.querySelectorAll("input"), ta=div.querySelectorAll("textarea");
+      return {time:inp[0]?.value||"",nonconformance_description:inp[1]?.value||"",
+        root_cause:inp[2]?.value||"",corrective_action:ta[0]?.value||"",
+        preventive_action:ta[1]?.value||"",resolved_by:inp[3]?.value||"",date_resolved:inp[4]?.value||""};
+    }),
+    status:fv("status"), submitted_by:fv("submitted_by"), notes:fv("notes"),
+  };
+}
+
+document.getElementById("packingForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const p=buildPayload();
+  for(const k of ["product_name","product_sku","batch_lot_number","production_date","shift"]){
+    if(!p[k]){showToast(`Required: ${k.replace(/_/g," ")}`,"error");return;}
+  }
+  const btn=document.getElementById("submitBtn");
+  btn.disabled=true; btn.textContent="Saving…";
+  try {
+    const res=await fetch(API_BASE,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(p),credentials:"include"});
+    if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.detail||`HTTP ${res.status}`);}
+    const data=await res.json();
+    showToast(`✓ Packing job #${data.id} saved — Batch ${data.batch_lot_number}`,"success");
+    setTimeout(()=>{window.location.href="/production";},1800);
+  } catch(err){
+    showToast("Error: "+err.message,"error");
+    btn.disabled=false; btn.textContent="Save Packing Job";
+  }
+});
+
+function showToast(msg,type=""){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.className=`show ${type}`;
+  clearTimeout(t._timer); t._timer=setTimeout(()=>{t.className="";},4000);
+}
+</script>
+</body>
+</html>
