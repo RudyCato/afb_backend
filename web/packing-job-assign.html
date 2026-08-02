@@ -246,15 +246,26 @@
         <div class="form-grid">
           <div class="form-group span2">
             <label>Product Name <span class="req">*</span></label>
-            <input type="text" name="product_name" required placeholder="e.g. Classic Granola — Dark Chocolate" />
+            <select name="product_name" id="productSelect" required onchange="onProductChange()">
+              <option value="">— Loading inventory… —</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>Product SKU / Item Code <span class="req">*</span></label>
-            <input type="text" name="product_sku" required placeholder="e.g. GRL-DC-12OZ" />
+            <label>Product SKU / Item Code</label>
+            <input type="text" name="product_sku" id="productSku" readonly
+              style="background:var(--gray5);color:var(--gray3);cursor:not-allowed;"
+              placeholder="Auto-filled from inventory" />
+          </div>
+          <div class="form-group">
+            <label>Sales Order <span class="req">*</span></label>
+            <select name="_sales_order" id="salesOrderSelect" onchange="onOrderChange()">
+              <option value="">— Loading orders… —</option>
+            </select>
           </div>
           <div class="form-group">
             <label>Batch / Lot Number <span class="req">*</span></label>
-            <input type="text" name="batch_lot_number" required placeholder="e.g. LOT-20260802-A" />
+            <input type="text" name="batch_lot_number" id="batchLotNumber" required
+              placeholder="Auto-built from order + date" />
           </div>
           <div class="form-group">
             <label>Production Date <span class="req">*</span></label>
@@ -553,11 +564,71 @@
 const API_BASE = "/packing-jobs";
 const ALLERGEN_OPTIONS = ["None","Gluten","Tree Nut","Peanut","Soy","Sesame","Dairy","Egg","Sulfites","Fish","Shellfish"];
 
+// inventory cache: product_id → {name, sku}
+let _inventory = [];
+// orders cache: order_number → order
+let _orders = [];
+
+async function loadInventory() {
+  try {
+    const res = await fetch("/inventory", {credentials:"include"});
+    if (!res.ok) throw new Error();
+    _inventory = await res.json(); // [{product_id, name, sku, …}]
+    const sel = document.getElementById("productSelect");
+    sel.innerHTML = '<option value="">— Select product —</option>'
+      + _inventory
+          .filter(i => i.qty_on_hand > 0 || true) // show all
+          .sort((a,b) => a.name.localeCompare(b.name))
+          .map(i => `<option value="${i.name}" data-sku="${i.sku}">${i.name}</option>`)
+          .join("");
+  } catch {
+    document.getElementById("productSelect").innerHTML =
+      '<option value="">⚠ Could not load inventory</option>';
+  }
+}
+
+async function loadOrders() {
+  try {
+    const res = await fetch("/orders", {credentials:"include"});
+    if (!res.ok) throw new Error();
+    _orders = await res.json();
+    const sel = document.getElementById("salesOrderSelect");
+    sel.innerHTML = '<option value="">— Select sales order —</option>'
+      + _orders
+          .map(o => {
+            const cust = o.customer ? ` · ${o.customer.name || o.customer.email}` : "";
+            return `<option value="${o.order_number}">${o.order_number}${cust}</option>`;
+          })
+          .join("");
+  } catch {
+    document.getElementById("salesOrderSelect").innerHTML =
+      '<option value="">⚠ Could not load orders</option>';
+  }
+}
+
+function onProductChange() {
+  const sel = document.getElementById("productSelect");
+  const opt = sel.selectedOptions[0];
+  document.getElementById("productSku").value = opt ? (opt.dataset.sku || "") : "";
+}
+
+function onOrderChange() {
+  const orderNum = document.getElementById("salesOrderSelect").value;
+  if (!orderNum) return;
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = now.getFullYear();
+  document.getElementById("batchLotNumber").value = `LOT-${orderNum}-${mm}${yyyy}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("todayDate").textContent =
     new Date().toLocaleDateString("en-US", {year:"numeric",month:"short",day:"numeric"});
   const pd = document.querySelector('[name="production_date"]');
   if (pd) pd.value = new Date().toISOString().split("T")[0];
+
+  loadInventory();
+  loadOrders();
 
   [
     {component:"Rolled Oats / Base", allergen:"Gluten"},
@@ -707,7 +778,9 @@ function buildPayload(){
 document.getElementById("packingForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const p=buildPayload();
-  for(const k of ["product_name","product_sku","batch_lot_number","production_date","shift"]){
+  if(!p.product_name){showToast("Select a product from inventory","error");return;}
+  if(!p.batch_lot_number){showToast("Select a sales order to generate the Batch/Lot number","error");return;}
+  for(const k of ["production_date","shift"]){
     if(!p[k]){showToast(`Required: ${k.replace(/_/g," ")}`,"error");return;}
   }
   const btn=document.getElementById("submitBtn");
