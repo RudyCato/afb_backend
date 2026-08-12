@@ -185,6 +185,12 @@
     .variance-warning { color: var(--red); font-size: 12px; font-weight: 600;
       margin-top: 4px; display: none; }
 
+    /* ── QC Total cell ── */
+    .rm-qc-total {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      color: var(--gray3); white-space: nowrap; min-width: 140px;
+    }
+
     /* ── Submit bar ── */
     .submit-bar {
       background: var(--white); border: 1px solid var(--gray4);
@@ -403,6 +409,7 @@
                 <th>Allergen Declaration</th>
                 <th>Qty Used</th>
                 <th>Unit</th>
+                <th>QC Total</th>
                 <th>QA Sign-off</th>
                 <th></th>
               </tr>
@@ -800,16 +807,74 @@ function allergenSelect(sel) {
   return `<select style="width:130px">${ALLERGEN_OPTIONS.map(a=>`<option value="${a}"${a===sel?" selected":""}>${a}</option>`).join("")}</select>`;
 }
 
+/* ── Component / Raw Material inventory search combo ── */
+function filterRmComponent(input, dropId, q) {
+  const drop = document.getElementById(dropId);
+  if (!q || q.length < 2 || !_inventory.length) { drop.style.display = "none"; return; }
+  const matches = _inventory
+    .filter(i => i.name.toLowerCase().includes(q.toLowerCase()) || (i.sku||"").toLowerCase().includes(q.toLowerCase()))
+    .slice(0, 20);
+  if (!matches.length) {
+    drop.innerHTML = `<div style="padding:8px 12px;color:var(--gray3);font-size:12px;">No matches for "${escHtml(q)}"</div>`;
+    drop.style.display = "block"; return;
+  }
+  drop.innerHTML = matches.map(i => `
+    <div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gray4);font-size:13px;transition:background .1s;"
+      onmouseover="this.style.background='#e8f5ee'" onmouseout="this.style.background=''"
+      data-name="${escHtml(i.name)}" data-sku="${escHtml(i.sku||'')}"
+      onclick="selectRmComponent(this,'${dropId}')">
+      <div style="font-weight:600;">${highlight(i.name, q)}</div>
+      <div style="font-size:11px;color:var(--gray3);font-family:monospace;">${highlight(i.sku||'', q)}</div>
+    </div>`).join("");
+  drop.style.display = "block";
+}
+
+function selectRmComponent(el, dropId) {
+  const row = el.closest("tr");
+  if (!row) return;
+  row.querySelector(".rm-comp-input").value = el.dataset.name;
+  document.getElementById(dropId).style.display = "none";
+  updateRmQcTotal(row);
+}
+
+function updateRmQcTotal(row) {
+  const lot  = (row.querySelector(".rm-lot")?.value || "").trim();
+  const qty  = parseFloat(row.querySelector(".rm-qty")?.value) || 0;
+  const unit = row.querySelector(".rm-unit")?.value || "";
+  const cell = row.querySelector(".rm-qc-total");
+  if (!cell) return;
+  if (lot && qty > 0 && unit) {
+    cell.textContent = `${lot}(${qty}×${unit})`;
+    cell.style.color = "var(--green, #2d6a4f)";
+    cell.style.fontFamily = "monospace";
+    cell.style.fontSize = "12px";
+  } else {
+    cell.textContent = "—";
+    cell.style.color = "var(--gray3)";
+  }
+}
+
 let rmIdx=0;
 function addRawMaterialRow(d={}) {
-  const i=rmIdx++, tr=document.createElement("tr"); tr.id=`rm-${i}`;
+  const i=rmIdx++, dropId=`rm-drop-${i}`, tr=document.createElement("tr"); tr.id=`rm-${i}`;
   tr.innerHTML=`
-    <td><input type="text" placeholder="Component" value="${d.component||""}" /></td>
-    <td><input type="text" placeholder="Lot #" /></td>
-    <td><input type="text" placeholder="MM/DD/YYYY" /></td>
+    <td style="position:relative;min-width:180px;">
+      <input type="text" class="rm-comp-input" placeholder="Type 2+ letters…" value="${escHtml(d.component||'')}"
+        autocomplete="off"
+        oninput="filterRmComponent(this,'${dropId}',this.value)"
+        onfocus="filterRmComponent(this,'${dropId}',this.value)" />
+      <div id="${dropId}" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;
+        background:#fff;border:1px solid var(--gray4);border-radius:var(--radius);
+        max-height:200px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,.18);"></div>
+    </td>
+    <td><input type="text" class="rm-lot" placeholder="Lot #" oninput="updateRmQcTotal(this.closest('tr'))" /></td>
+    <td><input type="text" class="rm-bestby" placeholder="MM/DD/YYYY" /></td>
     <td>${allergenSelect(d.allergen||"None")}</td>
-    <td><input type="number" step="0.01" placeholder="0.00" style="width:80px" /></td>
-    <td><select style="width:60px"><option value="lbs">lbs</option><option value="kg">kg</option></select></td>
+    <td><input type="number" class="rm-qty" step="0.01" placeholder="0.00" style="width:80px" oninput="updateRmQcTotal(this.closest('tr'))" /></td>
+    <td><select class="rm-unit" style="width:60px" onchange="updateRmQcTotal(this.closest('tr'))">
+      <option value="lbs">lbs</option><option value="kg">kg</option><option value="oz">oz</option><option value="ea">ea</option>
+    </select></td>
+    <td class="rm-qc-total" style="white-space:nowrap;">—</td>
     <td><input type="text" class="initials-input" maxlength="4" placeholder="——" style="width:60px" /></td>
     <td><button type="button" class="btn-del-row" onclick="delRow('rm-${i}')">✕</button></td>`;
   document.getElementById("rawMaterialsBody").appendChild(tr);
@@ -897,10 +962,16 @@ function buildPayload(){
     allergen_changeover_status:rv("allergen_changeover_status"), allergen_changeover_initials:fv("allergen_changeover_initials"),
     allergen_swab_status:rv("allergen_swab_status"), allergen_swab_initials:fv("allergen_swab_initials"),
     raw_materials: Array.from(document.querySelectorAll("#rawMaterialsBody tr")).map(tr=>{
-      const inp=tr.querySelectorAll("input,select");
-      return {component:inp[0]?.value||"",lot_number:inp[1]?.value||"",expiration_date:inp[2]?.value||"",
-        allergen_declaration:inp[3]?.value||"None",quantity_used:parseFloat(inp[4]?.value)||0,
-        quantity_unit:inp[5]?.value||"lbs",qa_signoff:inp[6]?.value||""};
+      return {
+        component:  tr.querySelector(".rm-comp-input")?.value||"",
+        lot_number: tr.querySelector(".rm-lot")?.value||"",
+        expiration_date: tr.querySelector(".rm-bestby")?.value||"",
+        allergen_declaration: tr.querySelector("select")?.value||"None",
+        quantity_used: parseFloat(tr.querySelector(".rm-qty")?.value)||0,
+        quantity_unit: tr.querySelector(".rm-unit")?.value||"lbs",
+        qc_total:   tr.querySelector(".rm-qc-total")?.textContent||"",
+        qa_signoff: tr.querySelector(".initials-input")?.value||"",
+      };
     }),
     ccp_type:rv("ccp_type"),
     metal_detector_log: Array.from(document.querySelectorAll("#mdBody tr")).map(tr=>{

@@ -17,6 +17,7 @@
     --cream:#EFE4CB; --paper:#FBF6E9; --ink:#241A10; --ink-soft:#4a3c2c;
     --olive:#4f5c3a; --olive-deep:#3a4429; --rust:#a3402a; --rust-deep:#7f3121;
     --gold:#c2932f; --line:#d8c79a; --line-strong:#c3ab72; --shadow:0 6px 18px rgba(36,26,16,0.12);
+    --green:#2d6a4f; --green-l:#40916c; --green-x:#e8f5ee;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--cream);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;}
@@ -51,6 +52,9 @@
   .btn:hover{background:var(--rust-deep);}
   .btn.secondary{background:var(--olive);}
   .btn.secondary:hover{background:var(--olive-deep);}
+  .btn.green{background:var(--green);color:#fff;}
+  .btn.green:hover{background:var(--green-l);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
   table{width:100%;border-collapse:collapse;}
   th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);border-bottom:2px solid var(--ink);padding-bottom:8px;}
   td{padding:8px 6px;border-bottom:1px dotted var(--line);font-size:0.88rem;}
@@ -60,19 +64,115 @@
   .pill.completed{background:var(--olive-deep);}
   .pill.cancelled{background:#999;}
   .empty{color:var(--ink-soft);font-style:italic;font-size:0.85rem;}
-  .assignment-card{
+  .msg{font-size:0.85rem;padding:8px 12px;border-radius:3px;margin-bottom:14px;display:none;}
+  .msg.ok{background:#e3f0d8;color:var(--olive-deep);display:block;}
+  .msg.err{background:#f7dcd8;color:var(--rust-deep);display:block;}
+
+  /* ── SQF job card — manager view ── */
+  .sqf-launch{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+    background:var(--green-x);border:2px solid var(--green-l);border-radius:6px;
+    padding:18px 22px;margin-bottom:22px;
+  }
+  .sqf-launch h3{font-family:'IBM Plex Mono',monospace;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--green);}
+  .sqf-launch p{font-size:0.82rem;color:var(--ink-soft);margin:4px 0 0;}
+  .sqf-launch a.btn{display:inline-block;text-decoration:none;background:var(--green);font-size:0.78rem;}
+  .sqf-launch a.btn:hover{background:var(--green-l);}
+
+  /* ── Packer portal — step system ── */
+  .step-card{
+    background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;
+    margin-bottom:20px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .step-header{
+    display:flex;align-items:center;gap:10px;padding:12px 18px;
+    background:var(--ink);color:var(--paper);
+  }
+  .step-header.locked{background:#888;}
+  .step-header.done{background:var(--green);}
+  .step-num{
+    background:rgba(255,255,255,.2);border-radius:50%;width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0;
+  }
+  .step-title{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;}
+  .step-sub{font-size:0.7rem;opacity:.75;margin-left:auto;}
+  .step-body{padding:18px;}
+  .step-body.locked{opacity:.45;pointer-events:none;}
+  .lock-notice{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;
+    letter-spacing:0.04em;color:var(--ink-soft);background:var(--cream);
+    border:1px dashed var(--line-strong);border-radius:3px;padding:10px 14px;
+    margin:0 18px 18px;
+  }
+
+  /* ── Verification table ── */
+  .verif-table{width:100%;border-collapse:collapse;}
+  .verif-table th{background:var(--cream);font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.04em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--line-strong);}
+  .verif-table td{padding:10px 12px;border-bottom:1px dotted var(--line);vertical-align:middle;font-size:0.88rem;}
+  .verif-table tr:last-child td{border-bottom:none;}
+  .radio-group{display:flex;gap:12px;}
+  .radio-group label{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:400;cursor:pointer;color:var(--ink);font-family:'IBM Plex Sans',sans-serif;text-transform:none;letter-spacing:normal;margin-bottom:0;}
+  .radio-group label input{accent-color:var(--green);width:auto;padding:0;margin:0;}
+  .initials-input{width:72px!important;text-align:center;text-transform:uppercase;}
+
+  /* ── Traceability table ── */
+  .trace-table{width:100%;border-collapse:collapse;min-width:700px;}
+  .trace-table th{background:var(--cream);font-family:'IBM Plex Mono',monospace;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.04em;padding:7px 8px;text-align:left;border:1px solid var(--line-strong);}
+  .trace-table td{padding:4px 5px;border:1px solid var(--line);vertical-align:middle;}
+  .trace-table input[type=text],
+  .trace-table input[type=number],
+  .trace-table select{border:none;background:transparent;width:100%;font-size:0.82rem;padding:3px 5px;margin:0;}
+  .trace-table input:focus,.trace-table select:focus{outline:1px solid var(--green-l);border-radius:2px;}
+  .qc-total{
+    font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--green);
+    font-weight:600;white-space:nowrap;
+  }
+  .btn-del-row{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:15px;padding:2px 4px;}
+  .btn-del-row:hover{color:var(--rust);}
+  .btn-add-row{
+    margin-top:10px;display:inline-flex;align-items:center;gap:6px;
+    background:var(--green-x);color:var(--green);border:1px solid var(--green-l);
+    border-radius:3px;padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+    text-transform:uppercase;letter-spacing:0.04em;cursor:pointer;
+  }
+  .btn-add-row:hover{background:#d1ead9;}
+
+  /* ── Inventory search combo (for Component field) ── */
+  .comp-wrap{position:relative;}
+  .comp-drop{
+    display:none;position:absolute;top:100%;left:0;right:0;z-index:400;
+    background:#fff;border:1px solid var(--line-strong);border-radius:3px;
+    max-height:190px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,.18);
+  }
+  .comp-drop-item{
+    padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--line);font-size:0.82rem;
+    transition:background .1s;
+  }
+  .comp-drop-item:hover{background:var(--green-x);}
+  .comp-drop-item .comp-name{font-weight:600;}
+  .comp-drop-item .comp-sku{font-size:0.7rem;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+
+  /* ── Job cards ── */
+  .job-card{
     background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:14px 16px;margin-bottom:12px;
   }
+  .job-card .jc-row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .job-card .jc-prod{font-weight:600;}
+  .job-card .jc-detail{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);margin-bottom:8px;}
+
+  /* ── Log table ── */
+  .assignment-card{background:#fff;border:1px solid var(--line-strong);border-radius:4px;padding:14px 16px;margin-bottom:12px;}
   .assignment-card .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .assignment-card .prod{font-weight:600;}
   .assignment-card .progress{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--ink-soft);margin-bottom:10px;}
   .assignment-card .log-row{display:flex;gap:8px;align-items:center;}
   .assignment-card .log-row input{width:90px;margin:0;}
   .assignment-card .log-row button{margin:0;}
-  .msg{font-size:0.85rem;padding:8px 12px;border-radius:3px;margin-bottom:14px;display:none;}
-  .msg.ok{background:#e3f0d8;color:var(--olive-deep);display:block;}
-  .msg.err{background:#f7dcd8;color:var(--rust-deep);display:block;}
   @media (max-width:700px){ .form-grid{grid-template-columns:1fr;} }
+
+  /* ── Packaging Specs (manager) ── */
+  .spec-section{margin-top:20px;}
 </style>
 </head>
 <body>
@@ -86,7 +186,6 @@
     <div style="display:flex;align-items:center;gap:14px;">
       <a href="/dashboard" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">&larr; Dashboard</a>
       <a href="/stock" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;">Inventory</a>
-      <a href="#" style="color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;text-decoration:none;" onclick="fetch('/auth/logout',{method:'POST'}).then(()=>location.href='/login');return false;">Log out</a>
     </div>
   </div>
 </header>
@@ -94,15 +193,27 @@
 <div class="wrap">
 
   <nav class="tabs">
-    <button id="tabManagerBtn" class="active" onclick="switchTab('manager')">Packing Manager</button>
+    <button id="tabManagerBtn" class="active" onclick="switchTab('manager')">SQF Packing Jobs</button>
     <button id="tabPackerBtn" onclick="switchTab('packer')">Packer Portal</button>
     <button id="tabMixerBtn" onclick="switchTab('mixer')">Product Mixer</button>
   </nav>
 
-  <!-- MANAGER VIEW -->
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 1 — SQF Packing Jobs  (manager view)
+  ══════════════════════════════════════════════════════════ -->
   <div id="managerView" class="view active">
+
+    <div class="sqf-launch">
+      <div>
+        <h3>SQF Packing Job — SOP-PRD-FORM-014 v3.1</h3>
+        <p>Create a new packing job record with Line Clearance, Traceability, CCP Log, Yield &amp; CAPA sections.</p>
+      </div>
+      <a href="/packing-job-assign" class="btn">＋ New Packing Job</a>
+    </div>
+
     <div class="panel">
-      <h2 class="section-title" style="margin-top:0;">Assign a Packing Job</h2>
+      <h2 class="section-title" style="margin-top:0;">Assign a Packing Job to a Packer</h2>
+      <p style="font-size:0.82rem;color:var(--ink-soft);margin-bottom:14px;">Use this to queue a job for a packer. The packer then works through the SQF form in the Packer Portal tab.</p>
       <div id="managerMsg" class="msg"></div>
       <div class="form-grid">
         <div>
@@ -154,87 +265,236 @@
       </table>
     </div>
 
-    <h2 class="section-title">Packaging Specs</h2>
-    <p style="font-size:0.85rem;color:var(--ink-soft);margin-top:-6px;">Define what container, lid, and box each product uses, and how many units fit per box. This is what powers the materials calculation above.</p>
-    <div class="panel">
-      <div id="specMsg" class="msg"></div>
-      <div class="form-grid">
-        <div>
-          <label>Product</label>
-          <select id="sProduct"></select>
+    <div class="spec-section">
+      <h2 class="section-title">Packaging Specs</h2>
+      <p style="font-size:0.85rem;color:var(--ink-soft);margin-top:-6px;">Define what container, lid, and box each product uses, and how many units fit per box.</p>
+      <div class="panel">
+        <div id="specMsg" class="msg"></div>
+        <div class="form-grid">
+          <div>
+            <label>Product</label>
+            <select id="sProduct"></select>
+          </div>
+          <div>
+            <label>Units Per Box</label>
+            <input type="number" id="sUnitsPerBox" min="1" value="12">
+          </div>
+          <div>
+            <label>Container</label>
+            <select id="sContainer"><option value="">— none —</option></select>
+          </div>
+          <div>
+            <label>Container Qty per Unit</label>
+            <input type="number" id="sContainerQty" min="1" value="1">
+          </div>
+          <div>
+            <label>Lid (separate item)</label>
+            <select id="sLid"><option value="">— none —</option></select>
+          </div>
+          <div>
+            <label>Lid Qty per Unit</label>
+            <input type="number" id="sLidQty" min="1" value="1">
+          </div>
+          <div>
+            <label>Box</label>
+            <select id="sBox"><option value="">— none —</option></select>
+          </div>
         </div>
-        <div>
-          <label>Units Per Box</label>
-          <input type="number" id="sUnitsPerBox" min="1" value="12">
-        </div>
-        <div>
-          <label>Container</label>
-          <select id="sContainer"><option value="">— none —</option></select>
-        </div>
-        <div>
-          <label>Container Qty per Unit</label>
-          <input type="number" id="sContainerQty" min="1" value="1">
-        </div>
-        <div>
-          <label>Lid (separate item)</label>
-          <select id="sLid"><option value="">— none —</option></select>
-        </div>
-        <div>
-          <label>Lid Qty per Unit</label>
-          <input type="number" id="sLidQty" min="1" value="1">
-        </div>
-        <div>
-          <label>Box</label>
-          <select id="sBox"><option value="">— none —</option></select>
-        </div>
+        <button class="btn secondary" onclick="saveSpec()">Save Packaging Spec</button>
+        <table style="margin-top:18px;">
+          <thead><tr><th>Product</th><th>Container</th><th>Lid</th><th>Units/Box</th><th>Box</th></tr></thead>
+          <tbody id="specRows"></tbody>
+        </table>
       </div>
-      <button class="btn secondary" onclick="saveSpec()">Save Packaging Spec</button>
-
-      <table style="margin-top:18px;">
-        <thead><tr><th>Product</th><th>Container</th><th>Lid</th><th>Units/Box</th><th>Box</th></tr></thead>
-        <tbody id="specRows"></tbody>
-      </table>
     </div>
   </div>
 
-  <!-- PACKER VIEW -->
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 2 — PACKER PORTAL  (gated SQF workflow)
+  ══════════════════════════════════════════════════════════ -->
   <div id="packerView" class="view">
-    <div class="panel">
-      <label>Who are you?</label>
-      <select id="packerSelect" onchange="loadPackerTasks()"></select>
+
+    <!-- Step 0: Identity & Job Selection -->
+    <div class="step-card">
+      <div class="step-header" id="stepHeader0">
+        <div class="step-num">▶</div>
+        <span class="step-title">Select Packer &amp; Job</span>
+      </div>
+      <div class="step-body">
+        <div class="form-grid">
+          <div>
+            <label>Who are you?</label>
+            <select id="packerSelect" onchange="onPackerChange()">
+              <option value="">— Select your name —</option>
+            </select>
+          </div>
+          <div>
+            <label>Job / Assignment</label>
+            <select id="jobSelect" onchange="onJobSelect()" disabled>
+              <option value="">— Select name first —</option>
+            </select>
+          </div>
+        </div>
+        <!-- One-off product search (shown when "one-off" is selected) -->
+        <div id="oneOffPanel" style="display:none;background:var(--cream);border:1px solid var(--line-strong);border-radius:4px;padding:14px;margin-top:-6px;margin-bottom:14px;">
+          <label style="margin-bottom:6px;">Product for One-Off Production</label>
+          <div class="comp-wrap">
+            <input type="text" id="oneOffProductSearch" placeholder="Type product name or SKU…"
+              autocomplete="off" style="margin-bottom:0;"
+              oninput="filterOneOffProduct(this.value)"
+              onfocus="filterOneOffProduct(this.value)" />
+            <div id="oneOffProductDrop" class="comp-drop"></div>
+          </div>
+          <input type="hidden" id="oneOffProductId" />
+        </div>
+        <div id="packerMsg" class="msg"></div>
+      </div>
     </div>
 
-    <h2 class="section-title">My Assigned Jobs</h2>
-    <div id="myAssignments"><p class="empty">Select your name above.</p></div>
+    <!-- My Assigned Jobs (visible once packer selected) -->
+    <div id="myAssignmentsSection" style="display:none;">
+      <h2 class="section-title" style="margin-top:0;">My Assigned Jobs</h2>
+      <div id="myAssignments"><p class="empty">Loading…</p></div>
+    </div>
 
-    <h2 class="section-title">Log Production Not Tied to a Job</h2>
-    <div class="panel">
-      <div id="packerMsg" class="msg"></div>
-      <div class="form-grid">
-        <div>
-          <label>Product</label>
-          <select id="pProduct"></select>
+    <!-- ── STEP 2: Line Clearance & Allergen Sanitation ── -->
+    <div class="step-card" id="lineClearanceCard" style="display:none;">
+      <div class="step-header" id="stepHeader2">
+        <div class="step-num">2</div>
+        <span class="step-title">Line Clearance &amp; Allergen Sanitation Verification</span>
+        <span class="step-sub">Complete before loading any raw material</span>
+      </div>
+      <div class="step-body" id="lineClearanceBody">
+        <p style="font-size:0.82rem;color:var(--ink-soft);margin-bottom:14px;">
+          All items below must be verified <strong>prior</strong> to loading raw material onto the packing line.
+        </p>
+        <div style="overflow-x:auto;">
+          <table class="verif-table">
+            <thead>
+              <tr>
+                <th style="width:55%">Verification Item</th>
+                <th>Status</th>
+                <th>Initials</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Line cleared of previous product, labeling &amp; packaging materials</td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="lc_line_cleared" value="PASS" onchange="checkLineClearanceDone()"> PASS</label>
+                    <label><input type="radio" name="lc_line_cleared" value="FAIL" onchange="checkLineClearanceDone()"> FAIL</label>
+                  </div>
+                </td>
+                <td><input type="text" class="initials-input" id="lc_ini_1" maxlength="4" placeholder="———" oninput="checkLineClearanceDone()" /></td>
+              </tr>
+              <tr>
+                <td>Work surfaces, hoppers &amp; scales cleaned &amp; sanitized</td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="lc_surfaces" value="PASS" onchange="checkLineClearanceDone()"> PASS</label>
+                    <label><input type="radio" name="lc_surfaces" value="FAIL" onchange="checkLineClearanceDone()"> FAIL</label>
+                  </div>
+                </td>
+                <td><input type="text" class="initials-input" id="lc_ini_2" maxlength="4" placeholder="———" oninput="checkLineClearanceDone()" /></td>
+              </tr>
+              <tr>
+                <td>
+                  Allergen Changeover Inspection
+                  <div style="font-size:0.72rem;color:var(--ink-soft);margin-top:3px;">Required if previous run contained different allergens</div>
+                </td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="lc_allergen_changeover" value="N/A" checked onchange="checkLineClearanceDone()"> N/A</label>
+                    <label><input type="radio" name="lc_allergen_changeover" value="PASS" onchange="checkLineClearanceDone()"> PASS</label>
+                    <label><input type="radio" name="lc_allergen_changeover" value="FAIL" onchange="checkLineClearanceDone()"> FAIL</label>
+                  </div>
+                </td>
+                <td><input type="text" class="initials-input" id="lc_ini_3" maxlength="4" placeholder="———" oninput="checkLineClearanceDone()" /></td>
+              </tr>
+              <tr>
+                <td>Allergen swab / test performed (if applicable)</td>
+                <td>
+                  <div class="radio-group">
+                    <label><input type="radio" name="lc_allergen_swab" value="N/A" checked onchange="checkLineClearanceDone()"> N/A</label>
+                    <label><input type="radio" name="lc_allergen_swab" value="PASS" onchange="checkLineClearanceDone()"> PASS</label>
+                  </div>
+                </td>
+                <td><input type="text" class="initials-input" id="lc_ini_4" maxlength="4" placeholder="———" oninput="checkLineClearanceDone()" /></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div>
-          <label>Quantity Packed</label>
-          <input type="number" id="pQty" min="1" value="10">
+        <div style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <button class="btn green" id="confirmLineClearanceBtn" onclick="confirmLineClearance()" disabled>
+            ✓ Confirm Line Clearance
+          </button>
+          <span id="lcStatusMsg" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--ink-soft);">
+            Complete all items and enter initials to continue.
+          </span>
         </div>
       </div>
-      <label>Notes (optional)</label>
-      <textarea id="pNotes" placeholder="e.g. Extra units packed ahead of schedule"></textarea>
-      <button class="btn secondary" onclick="logAdHocProduction()">Log Production</button>
     </div>
 
-    <h2 class="section-title">My Log Today</h2>
-    <div class="panel">
-      <table>
-        <thead><tr><th>Product</th><th>Qty</th><th>Time</th><th>Notes</th></tr></thead>
-        <tbody id="myLogRows"></tbody>
-      </table>
+    <!-- ── STEP 3: Raw Material & Ingredient Traceability ── -->
+    <div class="step-card" id="traceabilityCard" style="display:none;">
+      <div class="step-header locked" id="stepHeader3">
+        <div class="step-num">3</div>
+        <span class="step-title">Raw Material &amp; Ingredient Traceability — One Step Back</span>
+        <span class="step-sub">SQF: Traceability, Withdrawal &amp; Recall</span>
+      </div>
+      <div id="traceLockNotice" class="lock-notice">🔒 Complete Line Clearance above first</div>
+      <div class="step-body locked" id="traceBody">
+        <div style="overflow-x:auto;">
+          <table class="trace-table">
+            <thead>
+              <tr>
+                <th style="min-width:180px;">Component / Raw Material</th>
+                <th style="min-width:130px;">Internal / Supplier Lot #</th>
+                <th style="min-width:110px;">Exp / Best-By Date</th>
+                <th style="min-width:130px;">Allergen Declaration</th>
+                <th style="min-width:80px;">Qty Used</th>
+                <th style="min-width:60px;">Unit</th>
+                <th style="min-width:160px;">QC Total</th>
+                <th style="min-width:60px;">QA Init.</th>
+                <th style="width:30px;"></th>
+              </tr>
+            </thead>
+            <tbody id="traceBody_rows"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn-add-row" onclick="addTraceRow()">＋ Add Ingredient / Material</button>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line-strong);">
+          <label>Packing Notes (optional)</label>
+          <textarea id="packingNotes" placeholder="e.g. Extra checks performed, hold placed, etc."></textarea>
+          <div id="submitMsg" class="msg"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button class="btn green" onclick="submitProductionLog()">✓ Complete &amp; Log Production</button>
+            <a href="/packing-job-assign" id="fullSqfLink" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--rust);text-decoration:none;">
+              📋 Open Full SQF Form (SOP-PRD-FORM-014) →
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- My Log Today -->
+    <div id="myLogSection" style="display:none;">
+      <h2 class="section-title">My Log Today</h2>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Product</th><th>Qty</th><th>Time</th><th>Notes</th></tr></thead>
+          <tbody id="myLogRows"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-  <!-- PRODUCT MIXER VIEW -->
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 3 — PRODUCT MIXER
+  ══════════════════════════════════════════════════════════ -->
   <div id="mixerView" class="view">
     <div class="panel">
       <h2 class="section-title" style="margin-top:0;">Check Required Ingredients</h2>
@@ -270,7 +530,6 @@
       <button class="btn secondary" onclick="addIngredientRow()" style="margin-bottom:12px;">+ Add Ingredient</button>
       <div id="ingredientTotal" style="font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:var(--ink-soft);margin-bottom:12px;"></div>
       <button class="btn" onclick="saveMixRecipe()">Save Recipe</button>
-
       <table style="margin-top:20px;">
         <thead><tr><th>Product</th><th>Unit Weight</th><th>Ingredients</th></tr></thead>
         <tbody id="recipeRows"></tbody>
@@ -278,24 +537,20 @@
     </div>
   </div>
 
-</div>
+</div><!-- /.wrap -->
 
 <script>
 const API = '';
 async function api(path, opts={}){
-  const res = await fetch(API + path, {
-    headers: {'Content-Type':'application/json'}, ...opts
-  });
-  if(!res.ok){
-    const body = await res.text();
-    throw new Error(body || res.statusText);
-  }
+  const res = await fetch(API + path, {headers:{'Content-Type':'application/json'}, ...opts});
+  if(!res.ok){ const body = await res.text(); throw new Error(body || res.statusText); }
   return res.status === 204 ? null : res.json();
 }
 
 let PRODUCTS = [];
 let MATERIALS = [];
 let PACKERS = [];
+let _inventory = []; // full inventory list for combo search
 
 function switchTab(tab){
   document.getElementById('managerView').classList.toggle('active', tab==='manager');
@@ -305,7 +560,7 @@ function switchTab(tab){
   document.getElementById('tabPackerBtn').classList.toggle('active', tab==='packer');
   document.getElementById('tabMixerBtn').classList.toggle('active', tab==='mixer');
   if(tab==='manager'){ loadAssignments(); loadSpecs(); }
-  if(tab==='packer') loadPackerTasks();
+  if(tab==='packer') { /* packer state already set */ }
   if(tab==='mixer'){ loadMixRecipes(); }
 }
 
@@ -316,20 +571,23 @@ function packerOptions(){
   return PACKERS.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
 }
 function materialsListHtml(materials){
-  if(!materials.length) return '<span class="empty">No packaging spec set for this product yet.</span>';
+  if(!materials || !materials.length) return '<span class="empty">No packaging spec set.</span>';
   return materials.map(m => `<div>${m.qty_needed} &times; ${m.name} <span class="mono" style="color:var(--ink-soft);">(${m.role})</span></div>`).join('');
 }
 
 async function init(){
-  PRODUCTS = await api('/products?item_type=sellable');
-  MATERIALS = await api('/products?item_type=indirect_material');
-  PACKERS = await api('/production/packers');
+  [PRODUCTS, MATERIALS, PACKERS, _inventory] = await Promise.all([
+    api('/products?item_type=sellable'),
+    api('/products?item_type=indirect_material'),
+    api('/production/packers'),
+    fetch('/inventory',{credentials:'include'}).then(r=>r.ok?r.json():[]),
+  ]);
+  _inventory.sort((a,b)=>a.name.localeCompare(b.name));
 
   document.getElementById('mProduct').innerHTML = productOptions(PRODUCTS);
-  document.getElementById('pProduct').innerHTML = productOptions(PRODUCTS);
   document.getElementById('sProduct').innerHTML = productOptions(PRODUCTS);
   document.getElementById('mPacker').innerHTML = packerOptions();
-  document.getElementById('packerSelect').innerHTML = '<option value="">— select —</option>' + packerOptions();
+  document.getElementById('packerSelect').innerHTML = '<option value="">— Select your name —</option>' + packerOptions();
 
   const matOpts = '<option value="">— none —</option>' + MATERIALS.map(m=>`<option value="${m.id}">${m.sku} — ${m.name}</option>`).join('');
   document.getElementById('sContainer').innerHTML = matOpts;
@@ -350,33 +608,25 @@ function showMsg(id, text, ok){
   setTimeout(()=>{ el.className = 'msg'; }, 4000);
 }
 
+/* ── Manager: preview materials ── */
 async function previewMaterials(){
   const productId = parseInt(document.getElementById('mProduct').value);
   const qty = parseInt(document.getElementById('mQty').value) || 0;
   const box = document.getElementById('materialsPreview');
-
-  // Live current-inventory readout next to the product picker.
   const stockLine = document.getElementById('mStockLine');
   if(productId){
     try {
       const inv = await api(`/production/inventory/${productId}`);
       const low = inv.reorder_threshold && inv.qty_on_hand <= inv.reorder_threshold;
-      stockLine.innerHTML = `Current inventory: <b style="color:${low ? 'var(--rust-deep)' : 'var(--olive-deep)'};">${inv.qty_on_hand}</b> on hand · ${inv.qty_reserved} reserved · reorder at ${inv.reorder_threshold}`;
-    } catch(e){
-      stockLine.textContent = '';
-    }
-  } else {
-    stockLine.textContent = '';
-  }
-
+      stockLine.innerHTML = `Current inventory: <b style="color:${low?'var(--rust-deep)':'var(--olive-deep)'};">${inv.qty_on_hand}</b> on hand · ${inv.qty_reserved} reserved · reorder at ${inv.reorder_threshold}`;
+    } catch(e){ stockLine.textContent = ''; }
+  } else { stockLine.textContent = ''; }
   if(!productId || !qty){ box.style.display = 'none'; return; }
   try {
     const result = await api(`/packaging/materials-needed?product_id=${productId}&qty=${qty}`);
     box.style.display = 'block';
     document.getElementById('materialsPreviewList').innerHTML = materialsListHtml(result.materials);
-  } catch(e){
-    box.style.display = 'none';
-  }
+  } catch(e){ box.style.display = 'none'; }
 }
 
 async function createAssignment(){
@@ -391,7 +641,7 @@ async function createAssignment(){
     await api('/production/assignments', {method:'POST', body: JSON.stringify({
       product_id, qty_assigned, assigned_to, assigned_by, purpose, order_number, notes
     })});
-    showMsg('managerMsg', `Assigned ${qty_assigned} units to ${assigned_to}. Notes emailed to the packing inbox.`, true);
+    showMsg('managerMsg', `Assigned ${qty_assigned} units to ${assigned_to}.`, true);
     document.getElementById('mNotes').value = '';
     document.getElementById('mOrderNumber').value = '';
     loadAssignments();
@@ -407,8 +657,7 @@ async function loadAssignments(){
   if(!rows.length){ tbody.innerHTML = '<tr><td colspan="10" class="empty">No assignments yet.</td></tr>'; return; }
   tbody.innerHTML = rows.map(a=>{
     const purposeLabel = a.purpose ? a.purpose.replace('_',' ') : 'inventory';
-    return `
-    <tr>
+    return `<tr>
       <td class="mono">${a.sku}</td>
       <td>${a.product_name}</td>
       <td>${a.qty_completed} / ${a.qty_assigned}</td>
@@ -419,8 +668,8 @@ async function loadAssignments(){
       <td><span class="pill ${a.status}">${a.status.replace('_',' ')}</span></td>
       <td style="font-size:0.78rem;">${materialsListHtml(a.materials_needed)}</td>
       <td>${new Date(a.created_at).toLocaleDateString()}</td>
-    </tr>
-  `;}).join('');
+    </tr>`;
+  }).join('');
 }
 
 async function saveSpec(){
@@ -442,9 +691,7 @@ async function saveSpec(){
     showMsg('specMsg', 'Packaging spec saved.', true);
     loadSpecs();
     previewMaterials();
-  } catch(e){
-    showMsg('specMsg', 'Could not save spec: ' + e.message, false);
-  }
+  } catch(e){ showMsg('specMsg', 'Could not save spec: ' + e.message, false); }
 }
 
 async function loadSpecs(){
@@ -452,61 +699,72 @@ async function loadSpecs(){
   const rows = document.getElementById('specRows');
   if(!specs.length){ rows.innerHTML = '<tr><td colspan="5" class="empty">No packaging specs defined yet.</td></tr>'; return; }
   rows.innerHTML = specs.map(s=>`
-    <tr>
-      <td>${s.product_name}</td>
-      <td>${s.container_name || '—'}</td>
-      <td>${s.lid_name || '—'}</td>
-      <td>${s.units_per_box}</td>
-      <td>${s.box_name || '—'}</td>
-    </tr>
+    <tr><td>${s.product_name}</td><td>${s.container_name||'—'}</td><td>${s.lid_name||'—'}</td><td>${s.units_per_box}</td><td>${s.box_name||'—'}</td></tr>
   `).join('');
 }
 
-async function loadPackerTasks(){
+/* ════════════════════════════════════════════════
+   PACKER PORTAL
+════════════════════════════════════════════════ */
+let _activeAssignments = [];
+let _selectedJob = null; // {id, product_name, sku, order_number, qty_assigned, qty_completed} or {oneOff:true}
+let _lineClearanceDone = false;
+
+async function onPackerChange(){
   const packer = document.getElementById('packerSelect').value;
-  const container = document.getElementById('myAssignments');
-  const logRows = document.getElementById('myLogRows');
+  _selectedJob = null;
+  _lineClearanceDone = false;
+  resetPackerPortal();
+
   if(!packer){
-    container.innerHTML = '<p class="empty">Select your name above.</p>';
-    logRows.innerHTML = '';
+    document.getElementById('myAssignmentsSection').style.display = 'none';
+    document.getElementById('myLogSection').style.display = 'none';
     return;
   }
+
+  document.getElementById('myAssignmentsSection').style.display = 'block';
+  document.getElementById('myLogSection').style.display = 'block';
+
   const [assignments, logs] = await Promise.all([
     api(`/production/assignments?assigned_to=${encodeURIComponent(packer)}`),
     api(`/production/log?packer_name=${encodeURIComponent(packer)}`),
   ]);
-  const open = assignments.filter(a => a.status === 'assigned' || a.status === 'in_progress');
-  if(!open.length){
-    container.innerHTML = '<p class="empty">No open jobs assigned right now.</p>';
+  _activeAssignments = assignments.filter(a => a.status === 'assigned' || a.status === 'in_progress');
+
+  // Populate job selector
+  const jobSel = document.getElementById('jobSelect');
+  jobSel.disabled = false;
+  jobSel.innerHTML = '<option value="">— Select job —</option>'
+    + _activeAssignments.map(a => {
+        const ord = a.order_number ? ` · Order ${a.order_number}` : '';
+        return `<option value="${a.id}">${a.product_name} (${a.sku})${ord}</option>`;
+      }).join('')
+    + '<option value="one-off">— One-off production (no Sales Order) —</option>';
+
+  // Render job cards
+  if(!_activeAssignments.length){
+    document.getElementById('myAssignments').innerHTML = '<p class="empty">No open jobs assigned right now.</p>';
   } else {
-    container.innerHTML = open.map(a=>`
-      <div class="assignment-card">
-        <div class="row1">
-          <span class="prod">${a.product_name} <span class="mono" style="color:var(--ink-soft);">(${a.sku})</span></span>
+    document.getElementById('myAssignments').innerHTML = _activeAssignments.map(a=>`
+      <div class="job-card">
+        <div class="jc-row1">
+          <span class="jc-prod">${a.product_name} <span class="mono" style="color:var(--ink-soft);font-size:0.78rem;">(${a.sku})</span></span>
           <span class="pill ${a.status}">${a.status.replace('_',' ')}</span>
         </div>
-        <div class="progress">${a.qty_completed} of ${a.qty_assigned} packed${a.notes ? ' &middot; ' + a.notes : ''}</div>
-        ${a.materials_needed.length ? `<div style="font-size:0.78rem;color:var(--ink-soft);margin-bottom:8px;"><b>Pull:</b> ${a.materials_needed.map(m=>`${m.qty_needed} ${m.name}`).join(', ')}</div>` : ''}
-        <div class="log-row">
-          <input type="number" id="qty-${a.id}" min="1" value="${Math.max(1, a.qty_assigned - a.qty_completed)}">
-          <button class="btn" onclick="logAssignmentProduction(${a.id}, ${a.product_id})">Log Completed</button>
-        </div>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px dotted var(--line);">
-          <a href="/packing-job-assign?packer=${encodeURIComponent(packer)}&product=${encodeURIComponent(a.product_name)}&sku=${encodeURIComponent(a.sku)}&order=${encodeURIComponent(a.order_number||'')}"
-             style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--rust);text-decoration:none;">
-            📋 Open SQF Packing Log (SOP-PRD-FORM-014) &rarr;
-          </a>
-        </div>
+        <div class="jc-detail">${a.qty_completed} of ${a.qty_assigned} packed${a.order_number ? ' &middot; Order ' + a.order_number : ''}${a.notes ? ' &middot; ' + a.notes : ''}</div>
+        ${a.materials_needed && a.materials_needed.length ? `<div style="font-size:0.78rem;color:var(--ink-soft);margin-bottom:8px;"><b>Pull:</b> ${a.materials_needed.map(m=>`${m.qty_needed} ${m.name}`).join(', ')}</div>` : ''}
+        <button class="btn secondary" style="font-size:0.72rem;padding:7px 16px;" onclick="selectJobById(${a.id})">▶ Start This Job</button>
       </div>
     `).join('');
   }
 
+  // Log today
   const today = new Date().toDateString();
   const todayLogs = logs.filter(l => new Date(l.logged_at).toDateString() === today);
   if(!todayLogs.length){
-    logRows.innerHTML = '<tr><td colspan="4" class="empty">Nothing logged today yet.</td></tr>';
+    document.getElementById('myLogRows').innerHTML = '<tr><td colspan="4" class="empty">Nothing logged today yet.</td></tr>';
   } else {
-    logRows.innerHTML = todayLogs.map(l=>`
+    document.getElementById('myLogRows').innerHTML = todayLogs.map(l=>`
       <tr><td>${l.product_name}</td><td>${l.qty_completed}</td>
         <td>${new Date(l.logged_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</td>
         <td>${l.notes || ''}</td></tr>
@@ -514,38 +772,344 @@ async function loadPackerTasks(){
   }
 }
 
-async function logAssignmentProduction(assignmentId, productId){
-  const packer_name = document.getElementById('packerSelect').value;
-  const qty_completed = parseInt(document.getElementById(`qty-${assignmentId}`).value);
-  if(!qty_completed || qty_completed <= 0) return;
+function selectJobById(id){
+  const sel = document.getElementById('jobSelect');
+  sel.value = String(id);
+  onJobSelect();
+}
+
+function onJobSelect(){
+  const val = document.getElementById('jobSelect').value;
+  _selectedJob = null;
+  _lineClearanceDone = false;
+  resetLineClearance();
+
+  if(!val){
+    document.getElementById('lineClearanceCard').style.display = 'none';
+    document.getElementById('traceabilityCard').style.display = 'none';
+    document.getElementById('oneOffPanel').style.display = 'none';
+    return;
+  }
+
+  if(val === 'one-off'){
+    _selectedJob = {oneOff: true};
+    document.getElementById('oneOffPanel').style.display = 'block';
+    document.getElementById('oneOffProductSearch').value = '';
+    document.getElementById('oneOffProductId').value = '';
+    updateFullSqfLink(null, null);
+  } else {
+    document.getElementById('oneOffPanel').style.display = 'none';
+    const job = _activeAssignments.find(a => a.id === parseInt(val));
+    if(job){
+      _selectedJob = job;
+      updateFullSqfLink(job.order_number, job.product_name, job.sku);
+    }
+  }
+
+  // Show Line Clearance step
+  document.getElementById('lineClearanceCard').style.display = 'block';
+  document.getElementById('lineClearanceCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+  // Traceability stays hidden until line clearance confirmed
+  document.getElementById('traceabilityCard').style.display = 'none';
+}
+
+function resetPackerPortal(){
+  document.getElementById('jobSelect').disabled = true;
+  document.getElementById('jobSelect').innerHTML = '<option value="">— Select name first —</option>';
+  document.getElementById('lineClearanceCard').style.display = 'none';
+  document.getElementById('traceabilityCard').style.display = 'none';
+  document.getElementById('oneOffPanel').style.display = 'none';
+  document.getElementById('myAssignments').innerHTML = '<p class="empty">Select your name above.</p>';
+  document.getElementById('myLogRows').innerHTML = '';
+}
+
+function resetLineClearance(){
+  // Uncheck all radio groups except N/A defaults
+  document.querySelectorAll('[name^="lc_"]').forEach(r => r.checked = false);
+  document.querySelector('[name="lc_allergen_changeover"][value="N/A"]').checked = true;
+  document.querySelector('[name="lc_allergen_swab"][value="N/A"]').checked = true;
+  ['lc_ini_1','lc_ini_2','lc_ini_3','lc_ini_4'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('confirmLineClearanceBtn').disabled = true;
+  document.getElementById('lcStatusMsg').textContent = 'Complete all items and enter initials to continue.';
+  document.getElementById('stepHeader2').classList.remove('done');
+  document.getElementById('stepHeader2').classList.remove('locked');
+  _lineClearanceDone = false;
+}
+
+function checkLineClearanceDone(){
+  // line_cleared and surfaces must have PASS or FAIL
+  const lcVal = document.querySelector('[name="lc_line_cleared"]:checked')?.value;
+  const sfVal = document.querySelector('[name="lc_surfaces"]:checked')?.value;
+  const ini1  = document.getElementById('lc_ini_1').value.trim();
+  const ini2  = document.getElementById('lc_ini_2').value.trim();
+
+  // allergen changeover may be N/A or PASS (FAIL blocks)
+  const acVal = document.querySelector('[name="lc_allergen_changeover"]:checked')?.value;
+
+  const hasFail = (lcVal === 'FAIL') || (sfVal === 'FAIL') || (acVal === 'FAIL');
+  const allRequired = lcVal && sfVal && acVal && ini1 && ini2;
+
+  const btn = document.getElementById('confirmLineClearanceBtn');
+  const msg = document.getElementById('lcStatusMsg');
+
+  if(hasFail){
+    btn.disabled = true;
+    msg.textContent = '⚠ FAIL detected — corrective action required before proceeding.';
+    msg.style.color = 'var(--rust)';
+  } else if(allRequired){
+    btn.disabled = false;
+    msg.textContent = 'Ready to confirm.';
+    msg.style.color = 'var(--green)';
+  } else {
+    btn.disabled = true;
+    msg.textContent = 'Complete all items and enter initials to continue.';
+    msg.style.color = 'var(--ink-soft)';
+  }
+}
+
+function confirmLineClearance(){
+  _lineClearanceDone = true;
+  document.getElementById('stepHeader2').classList.add('done');
+  document.getElementById('confirmLineClearanceBtn').disabled = true;
+  document.getElementById('lcStatusMsg').textContent = '✓ Line Clearance confirmed.';
+
+  // Unlock traceability
+  const tc = document.getElementById('traceabilityCard');
+  tc.style.display = 'block';
+  document.getElementById('stepHeader3').classList.remove('locked');
+  document.getElementById('stepHeader3').style.background = 'var(--ink)';
+  document.getElementById('traceLockNotice').style.display = 'none';
+  document.getElementById('traceBody').classList.remove('locked');
+
+  // Seed default rows if empty
+  if(!document.getElementById('traceBody_rows').children.length){
+    addTraceRow({component:''});
+    addTraceRow({component:''});
+    addTraceRow({component:'Primary Film / Pouch', allergen:'None'});
+  }
+
+  tc.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ── Inventory search combo (Component / Raw Material) ── */
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function highlight(text, q){
+  if(!q || !text) return escHtml(text);
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx<0) return escHtml(text);
+  return escHtml(text.slice(0,idx))
+    + `<mark style="background:#fff3cd;border-radius:2px;">${escHtml(text.slice(idx,idx+q.length))}</mark>`
+    + escHtml(text.slice(idx+q.length));
+}
+
+function filterComponentSearch(input, dropId, q){
+  const drop = document.getElementById(dropId);
+  if(!q || q.length < 2 || !_inventory.length){ drop.style.display='none'; return; }
+  const matches = _inventory
+    .filter(i => i.name.toLowerCase().includes(q.toLowerCase()) || (i.sku||'').toLowerCase().includes(q.toLowerCase()))
+    .slice(0, 20);
+  if(!matches.length){
+    drop.innerHTML = `<div class="comp-drop-item" style="pointer-events:none;color:var(--ink-soft);">No matches for "${escHtml(q)}"</div>`;
+    drop.style.display = 'block';
+    return;
+  }
+  drop.innerHTML = matches.map(i => `
+    <div class="comp-drop-item"
+      data-name="${escHtml(i.name)}" data-sku="${escHtml(i.sku||'')}" data-id="${i.product_id}"
+      onclick="selectComponent(this, '${dropId}')">
+      <div class="comp-name">${highlight(i.name, q)}</div>
+      <div class="comp-sku">${highlight(i.sku||'', q)}</div>
+    </div>`).join('');
+  drop.style.display = 'block';
+}
+
+function selectComponent(el, dropId){
+  const row = el.closest('tr');
+  if(!row) return;
+  // Set component input value
+  const compInput = row.querySelector('.comp-input');
+  if(compInput) compInput.value = el.dataset.name;
+  // Hide dropdown
+  document.getElementById(dropId).style.display = 'none';
+  // Auto-fill lot# and best-by from any inventory data we might have (placeholder; user enters from label)
+  // Note: lot_number and best_by_date live on physical labels — fields are left editable for manual entry
+  // Trigger QC total recalc
+  recalcQcTotal(row);
+}
+
+// Close all comp dropdowns on outside click
+document.addEventListener('click', e => {
+  if(!e.target.closest('.comp-wrap')){
+    document.querySelectorAll('.comp-drop').forEach(d => d.style.display='none');
+  }
+});
+
+/* ── Traceability rows ── */
+const ALLERGEN_OPTIONS = ['None','Gluten','Tree Nut','Peanut','Soy','Sesame','Dairy','Egg','Sulfites','Fish','Shellfish'];
+let traceIdx = 0;
+
+function addTraceRow(d={}){
+  const i = traceIdx++;
+  const dropId = `comp-drop-${i}`;
+  const tr = document.createElement('tr');
+  tr.id = `tr-${i}`;
+  tr.innerHTML = `
+    <td>
+      <div class="comp-wrap">
+        <input type="text" class="comp-input"
+          placeholder="Type 2+ letters…" value="${escHtml(d.component||'')}"
+          autocomplete="off"
+          oninput="filterComponentSearch(this,'${dropId}',this.value)"
+          onfocus="filterComponentSearch(this,'${dropId}',this.value)" />
+        <div class="comp-drop" id="${dropId}"></div>
+      </div>
+    </td>
+    <td><input type="text" class="lot-input" placeholder="Lot #" value="${escHtml(d.lot||'')}" oninput="recalcQcTotal(this.closest('tr'))" /></td>
+    <td><input type="text" class="bestby-input" placeholder="MM/DD/YYYY" value="${escHtml(d.bestBy||'')}" /></td>
+    <td>
+      <select class="allergen-sel">
+        ${ALLERGEN_OPTIONS.map(a=>`<option value="${a}"${a===(d.allergen||'None')?' selected':''}>${a}</option>`).join('')}
+      </select>
+    </td>
+    <td><input type="number" class="qty-input" step="0.01" placeholder="0.00" style="width:70px" value="${d.qty||''}" oninput="recalcQcTotal(this.closest('tr'))" /></td>
+    <td>
+      <select class="unit-sel" onchange="recalcQcTotal(this.closest('tr'))">
+        <option value="lbs"${(d.unit||'lbs')==='lbs'?' selected':''}>lbs</option>
+        <option value="kg"${d.unit==='kg'?' selected':''}>kg</option>
+        <option value="oz"${d.unit==='oz'?' selected':''}>oz</option>
+        <option value="ea"${d.unit==='ea'?' selected':''}>ea</option>
+      </select>
+    </td>
+    <td class="qc-total" id="qct-${i}">—</td>
+    <td><input type="text" class="initials-input" maxlength="4" placeholder="——" style="width:54px;margin:0;" /></td>
+    <td><button type="button" class="btn-del-row" onclick="document.getElementById('tr-${i}').remove()">✕</button></td>`;
+  document.getElementById('traceBody_rows').appendChild(tr);
+}
+
+function recalcQcTotal(row){
+  if(!row) return;
+  const lot   = (row.querySelector('.lot-input')?.value || '').trim();
+  const qty   = parseFloat(row.querySelector('.qty-input')?.value) || 0;
+  const unit  = row.querySelector('.unit-sel')?.value || '';
+  const cell  = row.querySelector('.qc-total');
+  if(!cell) return;
+  if(lot && qty > 0 && unit){
+    cell.textContent = `${lot}(${qty}×${unit})`;
+    cell.style.color = 'var(--green)';
+  } else {
+    cell.textContent = '—';
+    cell.style.color = 'var(--ink-soft)';
+  }
+}
+
+/* ── One-off product search ── */
+function filterOneOffProduct(q){
+  const drop = document.getElementById('oneOffProductDrop');
+  if(!q || q.length < 2 || !_inventory.length){ drop.style.display='none'; return; }
+  const matches = _inventory
+    .filter(i => i.name.toLowerCase().includes(q.toLowerCase()) || (i.sku||'').toLowerCase().includes(q.toLowerCase()))
+    .slice(0, 20);
+  if(!matches.length){
+    drop.innerHTML = `<div class="comp-drop-item" style="pointer-events:none;color:var(--ink-soft);">No matches</div>`;
+    drop.style.display = 'block';
+    return;
+  }
+  drop.innerHTML = matches.map(i=>`
+    <div class="comp-drop-item"
+      data-name="${escHtml(i.name)}" data-sku="${escHtml(i.sku||'')}" data-id="${i.product_id}"
+      onclick="selectOneOffProduct(this)">
+      <div class="comp-name">${highlight(i.name, q)}</div>
+      <div class="comp-sku">${escHtml(i.sku||'')}</div>
+    </div>`).join('');
+  drop.style.display = 'block';
+}
+
+function selectOneOffProduct(el){
+  document.getElementById('oneOffProductSearch').value = el.dataset.name;
+  document.getElementById('oneOffProductId').value = el.dataset.id;
+  document.getElementById('oneOffProductDrop').style.display = 'none';
+  _selectedJob = {oneOff: true, product_name: el.dataset.name, product_id: parseInt(el.dataset.id)};
+  updateFullSqfLink(null, el.dataset.name, el.dataset.sku);
+}
+
+function updateFullSqfLink(order, product, sku){
+  const link = document.getElementById('fullSqfLink');
+  if(!link) return;
+  const packer = document.getElementById('packerSelect').value;
+  let href = '/packing-job-assign?';
+  if(order) href += `order=${encodeURIComponent(order)}&`;
+  if(product) href += `product=${encodeURIComponent(product)}&`;
+  if(packer) href += `packer=${encodeURIComponent(packer)}&`;
+  link.href = href.replace(/&$/, '');
+}
+
+/* ── Submit production log ── */
+async function submitProductionLog(){
+  const packer = document.getElementById('packerSelect').value;
+  if(!packer){ showMsg('submitMsg','Select your name first.',false); return; }
+  if(!_selectedJob){ showMsg('submitMsg','Select a job first.',false); return; }
+  if(!_lineClearanceDone){ showMsg('submitMsg','Complete Line Clearance first.',false); return; }
+
+  // Gather trace rows
+  const traceRows = Array.from(document.querySelectorAll('#traceBody_rows tr')).map(tr => ({
+    component:   tr.querySelector('.comp-input')?.value || '',
+    lot_number:  tr.querySelector('.lot-input')?.value || '',
+    best_by:     tr.querySelector('.bestby-input')?.value || '',
+    allergen:    tr.querySelector('.allergen-sel')?.value || 'None',
+    qty_used:    parseFloat(tr.querySelector('.qty-input')?.value) || 0,
+    unit:        tr.querySelector('.unit-sel')?.value || 'lbs',
+    qc_total:    tr.querySelector('.qc-total')?.textContent || '',
+    initials:    tr.querySelector('.initials-input')?.value || '',
+  })).filter(r => r.component);
+
+  // Get product_id
+  let product_id = null;
+  let product_name = null;
+  let qty_completed = 0;
+  let assignment_id = null;
+
+  if(_selectedJob.oneOff){
+    product_id = _selectedJob.product_id || null;
+    product_name = _selectedJob.product_name || document.getElementById('oneOffProductSearch').value;
+    if(!product_id){ showMsg('submitMsg','Select a product for this one-off production run.',false); return; }
+    qty_completed = 1; // placeholder — one-off logs 1 unit event; operator notes qty in notes
+  } else {
+    product_id = _selectedJob.product_id || PRODUCTS.find(p=>p.sku===_selectedJob.sku)?.id;
+    product_name = _selectedJob.product_name;
+    qty_completed = _selectedJob.qty_assigned - _selectedJob.qty_completed;
+    assignment_id = _selectedJob.id;
+  }
+
+  // Build notes including LC status and trace summary
+  const lcSummary = `LC:${document.querySelector('[name="lc_line_cleared"]:checked')?.value}·SF:${document.querySelector('[name="lc_surfaces"]:checked')?.value}`;
+  const traceNote = traceRows.map(r=>`${r.component}[${r.lot_number||'?'}]`).join(', ');
+  const userNotes = document.getElementById('packingNotes').value || '';
+  const notes = [lcSummary, traceNote, userNotes].filter(Boolean).join(' | ');
+
   try {
     await api('/production/log', {method:'POST', body: JSON.stringify({
-      packer_name, product_id: productId, qty_completed, assignment_id: assignmentId
+      packer_name: packer,
+      product_id,
+      qty_completed,
+      assignment_id: assignment_id || null,
+      notes,
     })});
-    showMsg('packerMsg', `Logged ${qty_completed} units.`, true);
-    loadPackerTasks();
+    showMsg('submitMsg', `✓ Production logged for ${product_name}.`, true);
+    document.getElementById('traceBody_rows').innerHTML = '';
+    document.getElementById('packingNotes').value = '';
+    // Reset portal
+    setTimeout(() => onPackerChange(), 1500);
   } catch(e){
-    showMsg('packerMsg', 'Could not log production: ' + e.message, false);
+    showMsg('submitMsg', 'Could not log production: ' + e.message, false);
   }
 }
 
-async function logAdHocProduction(){
-  const packer_name = document.getElementById('packerSelect').value;
-  if(!packer_name){ showMsg('packerMsg', 'Select your name first.', false); return; }
-  const product_id = parseInt(document.getElementById('pProduct').value);
-  const qty_completed = parseInt(document.getElementById('pQty').value);
-  const notes = document.getElementById('pNotes').value || null;
-  try {
-    await api('/production/log', {method:'POST', body: JSON.stringify({packer_name, product_id, qty_completed, notes})});
-    showMsg('packerMsg', `Logged ${qty_completed} units.`, true);
-    document.getElementById('pNotes').value = '';
-    loadPackerTasks();
-  } catch(e){
-    showMsg('packerMsg', 'Could not log production: ' + e.message, false);
-  }
-}
-
-/* ---------------- Product Mixer ---------------- */
+/* ════════════════════════════════════════════════
+   PRODUCT MIXER
+════════════════════════════════════════════════ */
 let INGREDIENT_ROW_ID = 0;
 
 function addIngredientRow(name, pct){
@@ -558,9 +1122,8 @@ function addIngredientRow(name, pct){
     <div><input type="text" class="ing-name" placeholder="Ingredient name (e.g. Rolled Oats)" value="${name||''}"></div>
     <div style="display:flex;gap:8px;">
       <input type="number" class="ing-pct" min="0" max="100" step="0.1" value="${pct||''}" placeholder="%" oninput="updateIngredientTotal()">
-      <button class="btn ghost" onclick="document.getElementById('ing-row-${id}').remove(); updateIngredientTotal();" type="button">&times;</button>
-    </div>
-  `;
+      <button class="btn secondary" onclick="document.getElementById('ing-row-${id}').remove(); updateIngredientTotal();" type="button" style="padding:8px 12px;">&times;</button>
+    </div>`;
   document.getElementById('ingredientRows').appendChild(div);
   updateIngredientTotal();
 }
@@ -579,21 +1142,16 @@ async function saveMixRecipe(){
   const names = [...document.querySelectorAll('.ing-name')].map(i => i.value.trim());
   const pcts = [...document.querySelectorAll('.ing-pct')].map(i => parseFloat(i.value) || 0);
   const ingredients = names.map((n,idx) => ({ingredient_name: n, percentage: pcts[idx]})).filter(i => i.ingredient_name);
-
   if(!ingredients.length){ showMsg('mixerSpecMsg', 'Add at least one ingredient.', false); return; }
-
   try {
     await api('/mixes/recipes', {method:'POST', body: JSON.stringify({product_id, unit_weight_lb, ingredients})});
     showMsg('mixerSpecMsg', 'Recipe saved.', true);
     loadMixRecipes();
-  } catch(e){
-    showMsg('mixerSpecMsg', 'Could not save recipe: ' + e.message, false);
-  }
+  } catch(e){ showMsg('mixerSpecMsg', 'Could not save recipe: ' + e.message, false); }
 }
 
 async function loadMixRecipes(){
   const recipes = await api('/mixes/recipes');
-
   const mixerSelect = document.getElementById('mixerProduct');
   if(!recipes.length){
     mixerSelect.innerHTML = '<option value="">— no recipes defined yet —</option>';
@@ -602,14 +1160,12 @@ async function loadMixRecipes(){
     mixerSelect.innerHTML = recipes.map(r => `<option value="${r.product_id}">${r.product_name}</option>`).join('');
     previewMixRequirement();
   }
-
   document.getElementById('recipeRows').innerHTML = recipes.map(r => `
     <tr>
       <td>${r.product_name}</td>
       <td>${r.unit_weight_lb} lb</td>
       <td style="font-size:0.82rem;">${r.ingredients.map(i => `${i.ingredient_name} (${i.percentage}%)`).join(', ')}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="3" class="empty">No recipes defined yet.</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="3" class="empty">No recipes defined yet.</td></tr>';
 }
 
 async function previewMixRequirement(){
@@ -626,9 +1182,7 @@ async function previewMixRequirement(){
         </div>
         <table>
           <thead><tr><th>Ingredient</th><th>%</th><th>Amount Needed</th></tr></thead>
-          <tbody>
-            ${r.ingredients.map(i => `<tr><td>${i.ingredient_name}</td><td>${i.percentage}%</td><td><b>${i.amount_lb} lb</b></td></tr>`).join('')}
-          </tbody>
+          <tbody>${r.ingredients.map(i=>`<tr><td>${i.ingredient_name}</td><td>${i.percentage}%</td><td><b>${i.amount_lb} lb</b></td></tr>`).join('')}</tbody>
         </table>
         <div style="margin-top:14px;padding-top:12px;border-top:1px dotted var(--line);">
           <a href="/packing-job-assign?product=${encodeURIComponent(r.product_name)}&ingredients=${encodeURIComponent(JSON.stringify(r.ingredients))}"
@@ -636,11 +1190,8 @@ async function previewMixRequirement(){
             📋 Create Packing Job (SOP-PRD-FORM-014) &rarr;
           </a>
         </div>
-      </div>
-    `;
-  } catch(e){
-    resultEl.innerHTML = '<p class="empty">No recipe defined for this product yet.</p>';
-  }
+      </div>`;
+  } catch(e){ resultEl.innerHTML = '<p class="empty">No recipe defined for this product yet.</p>'; }
 }
 
 init();
