@@ -104,6 +104,14 @@
     ["contact.html",                                        "Contact"]
   ];
 
+  // SVG leaf/plant icon for the brand mark
+  var BRAND_SVG =
+    '<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path d="M10 3 C10 3 4 5 4 11 C4 14.3 6.7 17 10 17" stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"/>' +
+      '<path d="M10 17 C10 17 16 14 16 9 C16 6 13.5 3.5 10 3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"/>' +
+      '<line x1="10" y1="17" x2="10" y2="11" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>' +
+    '</svg>';
+
   function renderChrome() {
     var here = location.pathname.split("/").pop() || "index.html";
     var head = document.querySelector("[data-masthead]");
@@ -118,9 +126,12 @@
         '</div></div>' +
         // main masthead
         '<div class="shell masthead-in">' +
-          '<a class="brand" href="index.html">' +
-            '<b>American Food &amp; Beverage</b>' +
-            '<span>Since 1989 &middot; Paterson, New Jersey</span>' +
+          '<a class="brand" href="index.html" aria-label="American Food and Beverage — home">' +
+            '<div class="brand-mark">' + BRAND_SVG + '</div>' +
+            '<div class="brand-text">' +
+              '<b>American Food &amp; Beverage</b>' +
+              '<span>SINCE 1989 &middot; PATERSON, NJ</span>' +
+            '</div>' +
           '</a>' +
           '<nav class="nav" aria-label="Main">' +
           NAV.map(function (n) {
@@ -143,39 +154,43 @@
     var foot = document.querySelector("[data-footer]");
     if (foot) {
       foot.className = "foot";
-      // Footer schema: americanfoodbeverage.com — Corporate / Links / Support / Pages
+      // Footer: dark ink background, Corporate / Links / Support / Pages columns
       foot.innerHTML =
         '<div class="shell"><div class="foot-grid">' +
           '<div>' +
-            '<h4>American Food &amp; Beverage</h4>' +
-            '<p style="font-size:.9rem;color:var(--ink-soft)">Established in 1989. Importer, roaster and packer ' +
-            'with four manufacturing facilities on 10 acres in New Jersey.</p>' +
+            '<a class="brand" href="index.html" style="margin-bottom:1rem;display:inline-flex">' +
+              '<div class="brand-mark">' + BRAND_SVG + '</div>' +
+              '<div class="brand-text"><b>American Food &amp; Beverage</b><span>SINCE 1989 &middot; PATERSON, NJ</span></div>' +
+            '</a>' +
+            '<p>Importer, roaster and packer with four manufacturing facilities on 10 acres in New Jersey.</p>' +
             '<div class="certs"><span>SQF Certified</span><span>USDA Organic</span><span>OU Kosher</span></div>' +
           '</div>' +
           '<div><h4>Corporate</h4><ul>' +
             '<li><a href="about.html">About Us</a></li>' +
-            '<li><a href="returns.html">Orders and Returns</a></li>' +
+            '<li><a href="returns.html">Orders &amp; Returns</a></li>' +
             '<li><a href="terms.html">Terms of Service</a></li>' +
           '</ul></div>' +
           '<div><h4>Links</h4><ul>' +
-            '<li><a href="contact.html">Store location</a></li>' +
+            '<li><a href="contact.html">Store Location</a></li>' +
             '<li><a href="privacy.html">Privacy Policy</a></li>' +
           '</ul></div>' +
           '<div><h4>Support</h4><ul>' +
             '<li><a href="shop.html#faq">FAQ</a></li>' +
             '<li><a href="contact.html">Contact Us</a></li>' +
-            '<li><a href="mailto:sales@americanfoodbeverage.com">Support</a></li>' +
+            '<li><a href="mailto:sales@americanfoodbeverage.com">Email Support</a></li>' +
           '</ul></div>' +
           '<div><h4>Pages</h4><ul>' +
             '<li><a href="index.html">Home</a></li>' +
-            '<li><a href="shop.html">Our Categories</a></li>' +
-            '<li><a href="shop.html">Products</a></li>' +
+            '<li><a href="shop.html">Shop</a></li>' +
+            '<li><a href="about.html">About</a></li>' +
             '<li><a href="cart.html">Checkout</a></li>' +
           '</ul></div>' +
         '</div>' +
         '<div class="legal">' +
           '&copy; 2023 American Food Beverage. All rights reserved. &nbsp;&middot;&nbsp; ' +
-          '<a href="tel:+19083456345">(908) 345-6345</a>' +
+          '<a href="tel:+19083456345">(908) 345-6345</a> &nbsp;&middot;&nbsp; ' +
+          '<a href="privacy.html">Privacy</a> &nbsp;&middot;&nbsp; ' +
+          '<a href="terms.html">Terms</a>' +
         '</div></div>';
     }
     paintChrome();

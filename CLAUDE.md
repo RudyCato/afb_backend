@@ -112,6 +112,19 @@ real SMTP credentials (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
 `SMTP_PASSWORD`, `MAIL_FROM`, `HIRING_INBOX`). A send failure never loses
 the stored application — it's caught and logged, not raised.
 
+## UI Design Principles
+
+- **Sales order # is the central pivot.** It must appear in the page header /
+  document-control banner (always visible, updating live as the user picks an
+  order) and be the *first* field in any form that touches an order. Everything —
+  lot codes, traceability records, packing logs, shipping docs — traces back to a
+  sales order number.
+- **Inventory / product lookup accepts any identifier.** Wherever a product or
+  inventory item is selected, the user can type a product name, SKU, or item
+  code. Selecting a match from any field auto-populates the other identifier
+  fields (name ↔ SKU). Never use a bare `<select>` for product lookup — use a
+  searchable combo that filters `_inventory` by both name and SKU.
+
 ## Before deploying to Render
 
 `render.yaml` already wires `DATABASE_URL` from the `afb-db` Postgres

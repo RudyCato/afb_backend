@@ -1,8 +1,9 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func, extract
 
 from .. import models
 from ..database import get_db
@@ -254,3 +255,150 @@ def alerts(db: Session = Depends(get_db)):
         })
 
     return {"issue_count": len(issues), "issues": issues}
+
+
+@router.get("/business-performance")
+def business_performance(months: int = 6, db: Session = Depends(get_db)):
+    """
+    Monthly business performance for the last N months.
+    Returns revenue, cases shipped, order count, new customers, and returns
+    per calendar month, plus MTD totals and MoM % changes.
+    """
+    now = datetime.utcnow()
+
+    # Build list of month buckets: [{"year": 2026, "month": 2, "label": "Feb 2026"}, ...]
+    buckets = []
+    for i in range(months - 1, -1, -1):
+        # Walk backwards from current month
+        m = (now.month - i - 1) % 12 + 1
+        y = now.year - ((now.month - i - 1) // 12)
+        buckets.append({"year": y, "month": m, "label": f"{date(y, m, 1).strftime('%b %Y')}"})
+
+    def month_window(year, month):
+        """Return (start_dt, end_dt) for a given month."""
+        start = datetime(year, month, 1)
+        if month == 12:
+            end = datetime(year + 1, 1, 1)
+        else:
+            end = datetime(year, month + 1, 1)
+        return start, end
+
+    def order_revenue(order):
+        """Sum revenue for one order using snapshot price then product price as fallback."""
+        total = 0.0
+        for item in order.items:
+            price = item.unit_price_snapshot or (item.product.unit_price if item.product else None)
+            if price:
+                total += price * item.qty_ordered
+        return total
+
+    # Preload all delivered orders and their items
+    delivered_orders = (
+        db.query(models.Order)
+        .filter(models.Order.status == models.OrderStatus.delivered)
+        .all()
+    )
+
+    # Preload all customers
+    all_customers = db.query(models.Customer).all()
+
+    # Preload all returns
+    all_returns = db.query(models.CustomerReturn).all()
+
+    monthly = []
+    ytd_revenue = 0.0
+    ytd_cases = 0
+    ytd_orders = 0
+    ytd_customers = 0
+    ytd_returns_qty = 0
+    ytd_year = now.year
+
+    for b in buckets:
+        start, end = month_window(b["year"], b["month"])
+        is_current = (b["year"] == now.year and b["month"] == now.month)
+
+        # Revenue + cases + orders — from delivered orders created in this month
+        month_orders = [o for o in delivered_orders if start <= o.created_at < end]
+        revenue = sum(order_revenue(o) for o in month_orders)
+        cases = sum(i.qty_ordered for o in month_orders for i in o.items)
+        order_count = len(month_orders)
+
+        # New customers created this month
+        new_customers = sum(1 for c in all_customers if start <= c.created_at < end)
+
+        # Returns logged this month
+        month_returns = [r for r in all_returns if start <= r.created_at < end]
+        returns_qty = sum(r.qty for r in month_returns)
+        returns_count = len(month_returns)
+
+        # YTD accumulation
+        if b["year"] == ytd_year:
+            ytd_revenue += revenue
+            ytd_cases += cases
+            ytd_orders += order_count
+            ytd_customers += new_customers
+            ytd_returns_qty += returns_qty
+
+        monthly.append({
+            "label": b["label"],
+            "year": b["year"],
+            "month": b["month"],
+            "is_current_month": is_current,
+            "revenue": round(revenue, 2),
+            "cases_shipped": cases,
+            "order_count": order_count,
+            "new_customers": new_customers,
+            "returns_qty": returns_qty,
+            "returns_count": returns_count,
+        })
+
+    # MoM change helpers (compare last complete month to the one before it)
+    def mom_pct(current_val, prev_val):
+        if prev_val == 0:
+            return None
+        return round((current_val - prev_val) / prev_val * 100, 1)
+
+    # Current month (last bucket) and previous month (second-to-last)
+    cur = monthly[-1]
+    prev = monthly[-2] if len(monthly) >= 2 else None
+
+    # Top customers by revenue (all time, delivered orders)
+    cust_revenue = defaultdict(float)
+    cust_cases = defaultdict(int)
+    cust_name = {}
+    for o in delivered_orders:
+        cust_revenue[o.customer_id] += order_revenue(o)
+        cust_cases[o.customer_id] += sum(i.qty_ordered for i in o.items)
+        cust_name[o.customer_id] = f"{o.customer.name}{(' — ' + o.customer.company) if o.customer.company else ''}"
+
+    top_customers = sorted(
+        [{"customer": cust_name[cid], "revenue": round(rev, 2), "cases": cust_cases[cid]}
+         for cid, rev in cust_revenue.items()],
+        key=lambda x: x["revenue"], reverse=True
+    )[:8]
+
+    return {
+        "monthly": monthly,
+        "current_month": {
+            "label": cur["label"],
+            "revenue": cur["revenue"],
+            "cases_shipped": cur["cases_shipped"],
+            "order_count": cur["order_count"],
+            "new_customers": cur["new_customers"],
+            "returns_qty": cur["returns_qty"],
+            "returns_count": cur["returns_count"],
+            "revenue_mom_pct": mom_pct(cur["revenue"], prev["revenue"]) if prev else None,
+            "cases_mom_pct": mom_pct(cur["cases_shipped"], prev["cases_shipped"]) if prev else None,
+            "customers_mom_pct": mom_pct(cur["new_customers"], prev["new_customers"]) if prev else None,
+            "returns_mom_pct": mom_pct(cur["returns_qty"], prev["returns_qty"]) if prev else None,
+        },
+        "ytd": {
+            "revenue": round(ytd_revenue, 2),
+            "cases_shipped": ytd_cases,
+            "order_count": ytd_orders,
+            "new_customers": ytd_customers,
+            "returns_qty": ytd_returns_qty,
+        },
+        "annual_target": 6_000_000,
+        "top_customers": top_customers,
+    }

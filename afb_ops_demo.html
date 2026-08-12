@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AFB — Operations Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── Design tokens ───────────────────────────────────────────────────────── */
+:root{
+  --cream:#EFE4CB; --paper:#FBF6E9; --paper2:#F5EDD8;
+  --ink:#241A10; --ink-soft:#5a4a36; --ink-faint:#8a7060;
+  --olive:#4f5c3a; --olive-deep:#3a4429; --olive-pale:#e8f0dc;
+  --rust:#a3402a; --rust-deep:#7f3121; --rust-pale:#fbe8e3;
+  --gold:#c2932f; --gold-pale:#fdf3dc;
+  --line:#d8c79a; --line-strong:#c3ab72;
+  --shadow:0 2px 12px rgba(36,26,16,.10);
+  --shadow-lg:0 6px 22px rgba(36,26,16,.16);
+  --radius:4px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  background:var(--cream); color:var(--ink);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; min-height:100vh;
+}
+h1,h2,h3,h4{font-family:"Bitter",Georgia,serif;margin:0;line-height:1.1}
+h1{font-size:1.6rem;font-weight:900}
+h2{font-size:1.2rem;font-weight:700}
+h3{font-size:1rem;font-weight:700}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+p{margin:0 0 .75em}
+a{color:var(--rust);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.06em;
+  text-transform:uppercase;padding:.55rem .9rem;border-radius:var(--radius);
+  border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);
+  cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s
+}
+.btn:hover{background:var(--rust-deep);border-color:var(--rust-deep)}
+.btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--line-strong)}
+.btn.ghost:hover{background:var(--cream);color:var(--ink);border-color:var(--ink)}
+.btn.rust{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn.rust:hover{background:var(--rust-deep);border-color:var(--rust-deep)}
+.btn.olive{background:var(--olive);border-color:var(--olive);color:#fff}
+.btn.olive:hover{background:var(--olive-deep);border-color:var(--olive-deep)}
+.btn.sm{font-size:.65rem;padding:.35rem .65rem}
+.btn.xs{font-size:.6rem;padding:.25rem .5rem;letter-spacing:.04em}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+header{
+  background:var(--ink);color:var(--paper);
+  border-bottom:3px solid var(--rust);
+  padding:0 28px;flex-shrink:0;
+}
+.hdr-in{display:flex;align-items:center;gap:1.5rem;height:56px}
+.brand{display:flex;flex-direction:column;gap:1px;text-decoration:none;color:var(--paper)}
+.brand b{font-family:"Bitter",serif;font-weight:900;font-size:1.05rem}
+.brand small{font-family:"IBM Plex Mono",monospace;font-size:.55rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
+.nav{display:flex;gap:0;margin-left:1.5rem}
+.nav button{
+  font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(251,246,233,.65);background:none;border:none;border-bottom:2px solid transparent;
+  padding:.5rem .75rem;cursor:pointer;height:56px;transition:color .12s,border-color .12s
+}
+.nav button:hover{color:var(--paper)}
+.nav button.active{color:var(--gold);border-bottom-color:var(--gold)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:1rem}
+#clock{font-family:"IBM Plex Mono",monospace;font-size:.7rem;color:rgba(251,246,233,.5)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#7cc47c;display:inline-block;margin-right:.3rem}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.shell{max-width:1240px;width:100%;margin:0 auto;padding:0 28px}
+.page{display:none;flex:1;overflow-y:auto;padding:24px 28px 48px}
+.page.show{display:block}
+.page-hdr{display:flex;align-items:baseline;gap:1rem;margin-bottom:20px;flex-wrap:wrap}
+.page-hdr h1{flex:1}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:.4rem}
+
+/* ── KPI cards ───────────────────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .n{font-family:"Bitter",serif;font-size:2rem;font-weight:900;line-height:1}
+.kpi .l{font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:.3rem}
+.kpi.warn .n{color:var(--rust)}
+.kpi.good .n{color:var(--olive)}
+
+/* ── Panels ──────────────────────────────────────────────────────────────── */
+.panel{background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow)}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+.panel-hdr h3{margin:0}
+.panel-body{padding:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+thead th{
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--ink);
+  white-space:nowrap;background:var(--paper)
+}
+tbody td{padding:.6rem .75rem;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:hover{background:var(--paper2)}
+tbody tr:last-child td{border-bottom:0}
+td.num{font-family:"IBM Plex Mono",monospace;text-align:right}
+td.mono{font-family:"IBM Plex Mono",monospace}
+
+/* ── Badges / pills ──────────────────────────────────────────────────────── */
+.badge{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.6rem;
+  letter-spacing:.08em;text-transform:uppercase;padding:.22rem .5rem;
+  border-radius:2px;font-weight:500;white-space:nowrap
+}
+.badge.new{background:var(--gold-pale);color:#7a5c1a;border:1px solid #e0bc7a}
+.badge.picking{background:#e8f0dc;color:var(--olive-deep);border:1px solid #c0d4a0}
+.badge.packing{background:#fbe8d4;color:#7a3c18;border:1px solid #e0b090}
+.badge.packed{background:#d8ecf8;color:#1a4a6a;border:1px solid #90c4e0}
+.badge.shipped{background:#e0f0e4;color:var(--olive-deep);border:1px solid #9dd0a8}
+.badge.cancelled{background:var(--rust-pale);color:var(--rust-deep);border:1px solid #e0a0a0}
+.badge.low{background:var(--rust-pale);color:var(--rust-deep);border:1px solid #e0b0b0}
+.badge.ok{background:var(--olive-pale);color:var(--olive-deep);border:1px solid #b0d0a0}
+.badge.partial{background:var(--gold-pale);color:#7a5c1a;border:1px solid #e0bc7a}
+.badge.running{background:#d8ecf8;color:#1a4a6a;border:1px solid #90c4e0}
+.badge.done{background:var(--olive-pale);color:var(--olive-deep);border:1px solid #9dd0a8}
+
+/* ── Alert strip ─────────────────────────────────────────────────────────── */
+.alert-strip{background:var(--rust-pale);border-left:4px solid var(--rust);border-radius:0 var(--radius) var(--radius) 0;padding:.7rem 1rem;margin-bottom:16px;font-size:.88rem;display:flex;gap:.5rem;align-items:flex-start}
+.alert-strip.warn{background:var(--gold-pale);border-left-color:var(--gold);color:#6a4e0a}
+.alert-strip.info{background:var(--olive-pale);border-left-color:var(--olive);color:var(--olive-deep)}
+
+/* ── Meter ───────────────────────────────────────────────────────────────── */
+.meter-bar{height:6px;background:var(--line);border-radius:100px;overflow:hidden;margin:.5rem 0}
+.meter-bar i{display:block;height:100%;border-radius:100px;background:var(--olive);transition:width .3s}
+.meter-bar.warn i{background:var(--rust)}
+.meter-bar.caution i{background:var(--gold)}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.overlay{
+  position:fixed;inset:0;background:rgba(36,26,16,.55);z-index:100;
+  display:none;align-items:flex-start;justify-content:center;overflow-y:auto;
+  padding:3rem 1rem
+}
+.overlay.show{display:flex}
+.modal{
+  background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
+  box-shadow:var(--shadow-lg);width:100%;max-width:660px;flex-shrink:0
+}
+.modal-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--line);background:var(--paper2)
+}
+.modal-hdr h2{font-size:1.1rem}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:.5rem;background:var(--paper2)}
+.close-btn{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--ink-soft);padding:.2rem .4rem;line-height:1}
+.close-btn:hover{color:var(--rust)}
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.field{margin-bottom:1rem}
+.field label{display:block;font-family:"IBM Plex Mono",monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.35rem}
+input[type=text],input[type=number],select,textarea{
+  font-family:"IBM Plex Mono",monospace;font-size:.88rem;color:var(--ink);
+  background:var(--cream);border:1px solid var(--line-strong);border-radius:var(--radius);
+  padding:.55rem .75rem;width:100%
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+textarea{resize:vertical;min-height:80px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+
+/* ── Timeline ────────────────────────────────────────────────────────────── */
+.timeline{list-style:none;margin:0;padding:0;position:relative}
+.timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1.5px;background:var(--line-strong)}
+.timeline li{display:flex;gap:.85rem;padding-bottom:1rem;position:relative}
+.timeline li:last-child{padding-bottom:0}
+.tl-dot{width:16px;height:16px;border-radius:50%;background:var(--line-strong);border:2px solid var(--paper);flex-shrink:0;margin-top:.15rem;z-index:1}
+.tl-dot.done{background:var(--olive)}
+.tl-dot.active{background:var(--rust)}
+.tl-content p{margin:0;font-size:.88rem}
+.tl-content .ts{font-family:"IBM Plex Mono",monospace;font-size:.65rem;color:var(--ink-faint)}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  background:var(--ink);color:var(--paper);
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;letter-spacing:.04em;
+  padding:.65rem 1rem;border-radius:var(--radius);border-left:3px solid var(--gold);
+  box-shadow:var(--shadow-lg);z-index:200;
+  opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none
+}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Packing board ───────────────────────────────────────────────────────── */
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:16px}
+.job-card{
+  background:var(--paper);border:1px solid var(--line-strong);border-left:4px solid var(--line-strong);
+  border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)
+}
+.job-card.assigned{border-left-color:var(--gold)}
+.job-card.in-progress{border-left-color:var(--rust)}
+.job-card.complete{border-left-color:var(--olive);opacity:.75}
+.job-card h3{font-size:.95rem;margin-bottom:.4rem}
+.job-meta{font-family:"IBM Plex Mono",monospace;font-size:.66rem;color:var(--ink-faint);margin-bottom:.7rem}
+.job-prog{display:flex;justify-content:space-between;align-items:center;font-family:"IBM Plex Mono",monospace;font-size:.72rem;margin-bottom:.35rem}
+
+/* ── Scroll behavior ─────────────────────────────────────────────────────── */
+.page{max-height:calc(100vh - 59px)}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal overlay -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal">
+    <div class="modal-hdr">
+      <h2 id="modal-title">Detail</h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="hdr-in">
+    <a class="brand" href="#" onclick="nav('dash');return false">
+      <b>American Food &amp; Beverage</b>
+      <small>Operations · Demo</small>
+    </a>
+    <nav class="nav">
+      <button onclick="nav('dash')" id="nb-dash" class="active">Dashboard</button>
+      <button onclick="nav('orders')" id="nb-orders">Orders</button>
+      <button onclick="nav('packing')" id="nb-packing">Packing</button>
+      <button onclick="nav('shipping')" id="nb-shipping">Shipping</button>
+      <button onclick="nav('inventory')" id="nb-inventory">Inventory</button>
+      <button onclick="nav('production')" id="nb-production">Production</button>
+      <button onclick="nav('reports')" id="nb-reports">Reports</button>
+    </nav>
+    <div class="hdr-right">
+      <span class="mono" style="font-size:.62rem;color:rgba(194,147,47,.75)" title="Order notifications inbox">✉ rudycato@gmail.com</span>
+      <span><span class="status-dot"></span><span class="mono" style="font-size:.65rem;color:rgba(251,246,233,.6)">Live</span></span>
+      <span id="clock" class="mono"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- DASHBOARD                                                               -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page show" id="page-dash">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Today · August 3, 2026</span><h1>Operations Dashboard</h1></div>
+    <button class="btn ghost sm" onclick="refreshDash()">↻ Refresh</button>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert-strip"><strong>⚠ 3 orders past SLA</strong> — OR-1044, OR-1038, OR-1031 have not been picked up within the 24-hour window.</div>
+  <div class="alert-strip warn"><strong>Low stock:</strong> Organic Cashews Raw (6 units remaining), Medjool Dates (8 units), Dark Choc. Almonds (4 units)</div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi warn"><div class="n" id="kpi-open">14</div><div class="l">Open Orders</div></div>
+    <div class="kpi"><div class="n" id="kpi-picking">5</div><div class="l">In Picking</div></div>
+    <div class="kpi"><div class="n" id="kpi-packing">4</div><div class="l">In Packing</div></div>
+    <div class="kpi good"><div class="n" id="kpi-shipped">11</div><div class="l">Shipped Today</div></div>
+    <div class="kpi"><div class="n">$24,180</div><div class="l">Revenue Today</div></div>
+    <div class="kpi"><div class="n">3</div><div class="l">Production Runs</div></div>
+    <div class="kpi warn"><div class="n">3</div><div class="l">Low Stock SKUs</div></div>
+    <div class="kpi"><div class="n">7</div><div class="l">Packers Active</div></div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr"><h3>Orders this week</h3><span class="mono" style="font-size:.65rem;color:var(--ink-faint)">Mon–Sun</span></div>
+      <div class="panel-body"><canvas id="weekChart" height="180"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>Order pipeline</h3><span class="mono" style="font-size:.65rem;color:var(--ink-faint)">Current status</span></div>
+      <div class="panel-body"><canvas id="pipeChart" height="180"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Recent orders + active jobs -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr"><h3>Recent orders</h3><button class="btn ghost xs" onclick="nav('orders')">View all</button></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Status</th><th class="num">Total</th></tr></thead>
+          <tbody id="dash-orders"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>Active packing jobs</h3><button class="btn ghost xs" onclick="nav('packing')">View all</button></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Job</th><th>Assigned To</th><th>Order</th><th>Progress</th></tr></thead>
+          <tbody id="dash-jobs"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- ORDERS                                                                  -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-orders">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Order Management</span><h1>Orders</h1></div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <input type="text" id="order-q" placeholder="Search customer, order #…" style="width:200px" oninput="renderOrders()">
+      <select id="order-filter" onchange="renderOrders()" style="width:140px">
+        <option value="all">All Statuses</option>
+        <option value="new">New</option>
+        <option value="picking">Picking</option>
+        <option value="packing">Packing</option>
+        <option value="packed">Packed</option>
+        <option value="shipped">Shipped</option>
+      </select>
+      <button class="btn sm" onclick="openNewOrder()">+ New Order</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Order #</th><th>Date</th><th>Customer</th><th>Type</th>
+          <th>Status</th><th class="num">Items</th><th class="num">Total</th><th></th>
+        </tr></thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- PACKING                                                                 -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-packing">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Packing Floor</span><h1>Packing Jobs</h1></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn sm rust" onclick="openAssign()">+ Assign Job</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:1rem;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn ghost sm" id="pack-all" onclick="filterJobs('all')">All Jobs</button>
+    <button class="btn ghost sm" id="pack-assigned" onclick="filterJobs('assigned')">Assigned</button>
+    <button class="btn ghost sm" id="pack-progress" onclick="filterJobs('in-progress')">In Progress</button>
+    <button class="btn ghost sm" id="pack-done" onclick="filterJobs('complete')">Complete</button>
+  </div>
+  <div class="board" id="packing-board"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SHIPPING                                                                -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-shipping">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Outbound</span><h1>Shipping</h1></div>
+    <button class="btn sm rust" onclick="openShipModal()">+ Create Shipment</button>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi good"><div class="n">11</div><div class="l">Shipped Today</div></div>
+    <div class="kpi"><div class="n">3</div><div class="l">Ready to Ship</div></div>
+    <div class="kpi"><div class="n">$1,842</div><div class="l">Freight Today</div></div>
+    <div class="kpi"><div class="n">UPS / FedEx</div><div class="l">Carriers Active</div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr"><h3>Shipments — Today</h3></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Shipment #</th><th>Order</th><th>Customer</th><th>Carrier</th>
+          <th>Tracking #</th><th>Status</th><th class="num">Weight</th><th class="num">Cost</th><th></th>
+        </tr></thead>
+        <tbody id="ship-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- INVENTORY                                                               -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-inventory">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Warehouse</span><h1>Inventory</h1></div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <input type="text" id="inv-q" placeholder="Search SKU or name…" style="width:200px" oninput="renderInventory()">
+      <select id="inv-filter" onchange="renderInventory()" style="width:140px">
+        <option value="all">All</option>
+        <option value="low">Low Stock</option>
+        <option value="ok">In Stock</option>
+      </select>
+      <button class="btn sm" onclick="openReceive()">+ Receive Inventory</button>
+    </div>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi"><div class="n">54</div><div class="l">Active SKUs</div></div>
+    <div class="kpi warn"><div class="n" id="inv-low-ct">3</div><div class="l">Low Stock</div></div>
+    <div class="kpi"><div class="n">0</div><div class="l">Out of Stock</div></div>
+    <div class="kpi"><div class="n">12,480</div><div class="l">Units on Hand</div></div>
+    <div class="kpi"><div class="n">$84,200</div><div class="l">Inventory Value</div></div>
+  </div>
+  <div class="panel">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Item #</th><th>Product</th><th>Category</th>
+          <th class="num">On Hand</th><th class="num">Committed</th><th class="num">Available</th>
+          <th class="num">Reorder Pt</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- PRODUCTION                                                              -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-production">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Manufacturing</span><h1>Production</h1></div>
+    <button class="btn sm" onclick="openNewRun()">+ New Run</button>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi running"><div class="n" style="color:var(--rust)">3</div><div class="l">Runs Active</div></div>
+    <div class="kpi"><div class="n">5</div><div class="l">Scheduled</div></div>
+    <div class="kpi good"><div class="n">18</div><div class="l">Completed This Week</div></div>
+    <div class="kpi"><div class="n">14,200 lb</div><div class="l">Output This Week</div></div>
+  </div>
+  <div class="panel">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Run #</th><th>Product</th><th>Batch Size</th><th>Facility</th>
+          <th>Operator</th><th>Started</th><th>Status</th><th class="num">Output (lb)</th><th></th>
+        </tr></thead>
+        <tbody id="prod-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- REPORTS                                                                 -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-reports">
+  <div class="page-hdr">
+    <div><span class="eyebrow">Analytics</span><h1>Reports</h1></div>
+    <button class="btn ghost sm" onclick="dlCSV()">⬇ Export CSV</button>
+  </div>
+  <div class="grid3">
+    <div class="panel">
+      <div class="panel-hdr"><h3>Packing Productivity</h3></div>
+      <div class="panel-body"><canvas id="packChart" height="200"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>Shipping Volume</h3></div>
+      <div class="panel-body"><canvas id="shipChart" height="200"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>Order Cycle Time</h3></div>
+      <div class="panel-body"><canvas id="cycleChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr"><h3>Top Products (by units)</h3></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Product</th><th class="num">Units</th><th class="num">Revenue</th></tr></thead>
+        <tbody id="top-products"></tbody>
+      </table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>Packer Performance — This Week</h3></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Packer</th><th class="num">Jobs</th><th class="num">Units/Hr</th><th class="num">Accuracy</th></tr></thead>
+        <tbody id="packer-perf"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- DATA + LOGIC                                                            -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Sample Data ─────────────────────────────────────────────────────────── */
+
+var CUSTOMERS=[
+  {id:"C001",name:"Metro Grocery Chain",type:"wholesale",contact:"Linda Park"},
+  {id:"C002",name:"Fresh Foods Co-op",type:"wholesale",contact:"Tom Reyes"},
+  {id:"C003",name:"Snack World Inc.",type:"wholesale",contact:"Sara Bloom"},
+  {id:"C004",name:"NJ Naturals Market",type:"retail",contact:"Dave Kim"},
+  {id:"C005",name:"Tri-State Distributors",type:"wholesale",contact:"Anna Voss"},
+  {id:"C006",name:"Health Hub Stores",type:"wholesale",contact:"Mike Chen"},
+  {id:"C007",name:"Corner Pantry NYC",type:"retail",contact:"Rosa Torres"},
+  {id:"C008",name:"Great Lakes Grocer",type:"wholesale",contact:"Jim Walsh"},
+];
+
+var PRODUCTS_SHORT=[
+  {id:"6000501",name:"Organic Almonds Raw",cat:"Nuts",oz:9.5},
+  {id:"6010503",name:"Organic Cashews Raw",cat:"Nuts",oz:9},
+  {id:"6010504",name:"Organic Cashews Roasted",cat:"Nuts",oz:9},
+  {id:"3210401",name:"Almonds Milk Chocolate",cat:"Chocolate",oz:10},
+  {id:"3210402",name:"Almonds Dark Chocolate",cat:"Chocolate",oz:10},
+  {id:"2910419",name:"Medjool Dates",cat:"Dried Fruits",oz:9},
+  {id:"3000503",name:"All Natural Trail Mix",cat:"Trail Mixes",oz:9},
+  {id:"3000514",name:"Berry Nutty Mix",cat:"Trail Mixes",oz:10},
+  {id:"3100501",name:"Honey Peanut Crunch",cat:"Granolas",oz:8},
+  {id:"2910553",name:"Coconut Chips",cat:"Dried Fruits",oz:6},
+  {id:"3110702",name:"Plantain Chips Salted",cat:"Plantain",oz:7},
+  {id:"2150513",name:"Chia Seeds",cat:"Grains",oz:11},
+];
+
+var ORDERS=[
+  {id:"OR-1055",date:"2026-08-03",customer:"C001",status:"new",type:"wholesale",items:[{p:"6000501",qty:48},{p:"3210401",qty:24}],total:5842.50},
+  {id:"OR-1054",date:"2026-08-03",customer:"C002",status:"picking",type:"wholesale",items:[{p:"3000503",qty:36},{p:"3000514",qty:24}],total:3218.00},
+  {id:"OR-1053",date:"2026-08-03",customer:"C004",status:"packing",type:"retail",items:[{p:"2910419",qty:6},{p:"3100501",qty:4}],total:87.40},
+  {id:"OR-1052",date:"2026-08-03",customer:"C005",status:"packing",type:"wholesale",items:[{p:"6010503",qty:60},{p:"6010504",qty:48}],total:8120.00},
+  {id:"OR-1051",date:"2026-08-03",customer:"C006",status:"packed",type:"wholesale",items:[{p:"3210402",qty:72}],total:4996.80},
+  {id:"OR-1050",date:"2026-08-03",customer:"C007",status:"shipped",type:"retail",items:[{p:"3110702",qty:3},{p:"2150513",qty:2}],total:56.25},
+  {id:"OR-1049",date:"2026-08-02",customer:"C003",status:"shipped",type:"wholesale",items:[{p:"2910553",qty:48}],total:2102.40},
+  {id:"OR-1048",date:"2026-08-02",customer:"C008",status:"shipped",type:"wholesale",items:[{p:"6000501",qty:120},{p:"6010503",qty:60}],total:12800.00},
+  {id:"OR-1047",date:"2026-08-02",customer:"C001",status:"shipped",type:"wholesale",items:[{p:"3000503",qty:60}],total:3348.00},
+  {id:"OR-1046",date:"2026-08-02",customer:"C002",status:"picking",type:"wholesale",items:[{p:"3210401",qty:36},{p:"3210402",qty:36}],total:5000.40},
+  {id:"OR-1045",date:"2026-08-02",customer:"C004",status:"new",type:"retail",items:[{p:"3100501",qty:2},{p:"2910553",qty:1}],total:44.20},
+  {id:"OR-1044",date:"2026-08-01",customer:"C005",status:"new",type:"wholesale",items:[{p:"6010503",qty:24}],total:1668.00},
+  {id:"OR-1043",date:"2026-08-01",customer:"C006",status:"packing",type:"wholesale",items:[{p:"3000514",qty:48}],total:3187.20},
+  {id:"OR-1042",date:"2026-08-01",customer:"C007",status:"shipped",type:"retail",items:[{p:"2910419",qty:3}],total:41.85},
+  {id:"OR-1041",date:"2026-08-01",customer:"C008",status:"shipped",type:"wholesale",items:[{p:"6000501",qty:96}],total:9619.20},
+  {id:"OR-1040",date:"2026-08-01",customer:"C003",status:"shipped",type:"wholesale",items:[{p:"3110702",qty:60}],total:2028.00},
+  {id:"OR-1039",date:"2026-07-31",customer:"C001",status:"picking",type:"wholesale",items:[{p:"2910553",qty:72}],total:3153.60},
+  {id:"OR-1038",date:"2026-07-31",customer:"C002",status:"new",type:"wholesale",items:[{p:"3210401",qty:60},{p:"3210402",qty:48}],total:8128.80},
+  {id:"OR-1037",date:"2026-07-31",customer:"C005",status:"shipped",type:"wholesale",items:[{p:"6000501",qty:48}],total:4809.60},
+  {id:"OR-1031",date:"2026-07-30",customer:"C003",status:"new",type:"wholesale",items:[{p:"3000503",qty:24}],total:1339.20},
+];
+
+var PACK_JOBS=[
+  {id:"PJ-0881",order:"OR-1053",packer:"Maria G.",status:"in-progress",items:10,done:7,started:"08:14"},
+  {id:"PJ-0882",order:"OR-1052",packer:"James T.",status:"in-progress",items:108,done:44,started:"08:45"},
+  {id:"PJ-0883",order:"OR-1043",packer:"Rosa P.",status:"assigned",items:48,done:0,started:"—"},
+  {id:"PJ-0884",order:"OR-1046",packer:"Unassigned",status:"assigned",items:72,done:0,started:"—"},
+  {id:"PJ-0880",order:"OR-1051",packer:"Carlos R.",status:"complete",items:72,done:72,started:"06:30"},
+  {id:"PJ-0879",order:"OR-1050",packer:"Lisa M.",status:"complete",items:5,done:5,started:"07:00"},
+  {id:"PJ-0878",order:"OR-1049",packer:"Tony B.",status:"complete",items:48,done:48,started:"06:15"},
+];
+
+var SHIPMENTS=[
+  {id:"SH-2041",order:"OR-1050",customer:"C007",carrier:"UPS",tracking:"1Z999AA10123456784",status:"shipped",weight:"14 lb",cost:12.95},
+  {id:"SH-2040",order:"OR-1049",customer:"C003",carrier:"FedEx Freight",tracking:"1234567890123",status:"shipped",weight:"180 lb",cost:148.50},
+  {id:"SH-2039",order:"OR-1048",customer:"C008",carrier:"FedEx Freight",tracking:"1234567890124",status:"shipped",weight:"540 lb",cost:312.00},
+  {id:"SH-2038",order:"OR-1047",customer:"C001",carrier:"UPS",tracking:"1Z999AA10123456785",status:"shipped",weight:"225 lb",cost:198.75},
+  {id:"SH-2037",order:"OR-1042",customer:"C007",carrier:"UPS",tracking:"1Z999AA10123456786",status:"shipped",weight:"9 lb",cost:9.95},
+  {id:"SH-2036",order:"OR-1041",customer:"C008",carrier:"FedEx Freight",tracking:"1234567890125",status:"shipped",weight:"360 lb",cost:245.00},
+  {id:"SH-2035",order:"OR-1040",customer:"C003",carrier:"FedEx Freight",tracking:"1234567890126",status:"shipped",weight:"262 lb",cost:189.50},
+  {id:"SH-2034",order:"OR-1037",customer:"C005",carrier:"UPS",tracking:"1Z999AA10123456787",status:"shipped",weight:"180 lb",cost:162.00},
+  {id:"SH-2033",order:"OR-1051",customer:"C006",carrier:"FedEx Freight",tracking:"PENDING",status:"ready",weight:"270 lb",cost:0},
+  {id:"SH-2032",order:"OR-1043",customer:"C006",carrier:"FedEx Freight",tracking:"PENDING",status:"ready",weight:"180 lb",cost:0},
+  {id:"SH-2031",order:"OR-1052",customer:"C005",carrier:"FedEx Freight",tracking:"PENDING",status:"ready",weight:"405 lb",cost:0},
+];
+
+var INVENTORY=[
+  {id:"6000501",name:"Organic Almonds Raw",cat:"Nuts",onHand:142,committed:96,reorder:100,unitVal:3.20},
+  {id:"6010503",name:"Organic Cashews Raw",cat:"Nuts",onHand:6,committed:84,reorder:80,unitVal:3.28},
+  {id:"6010504",name:"Organic Cashews Roasted",cat:"Nuts",onHand:88,committed:48,reorder:60,unitVal:3.10},
+  {id:"3210401",name:"Almonds Milk Chocolate",cat:"Chocolate",onHand:215,committed:96,reorder:100,unitVal:3.58},
+  {id:"3210402",name:"Almonds Dark Chocolate",cat:"Chocolate",onHand:4,committed:84,reorder:80,unitVal:3.65},
+  {id:"2910419",name:"Medjool Dates",cat:"Dried Fruits",onHand:8,committed:9,reorder:60,unitVal:2.61},
+  {id:"3000503",name:"All Natural Trail Mix",cat:"Trail Mixes",onHand:180,committed:60,reorder:80,unitVal:2.45},
+  {id:"3000514",name:"Berry Nutty Mix",cat:"Trail Mixes",onHand:120,committed:48,reorder:60,unitVal:3.48},
+  {id:"3100501",name:"Honey Peanut Crunch",cat:"Granolas",onHand:340,committed:0,reorder:50,unitVal:1.45},
+  {id:"2910553",name:"Coconut Chips",cat:"Dried Fruits",onHand:284,committed:72,reorder:80,unitVal:1.79},
+  {id:"3110702",name:"Plantain Chips Salted",cat:"Plantain",onHand:196,committed:60,reorder:60,unitVal:1.38},
+  {id:"2150513",name:"Chia Seeds",cat:"Grains",onHand:92,committed:0,reorder:40,unitVal:1.41},
+];
+
+var PRODUCTION=[
+  {id:"PR-0441",product:"Organic Almonds Raw",batch:"25 lb drum",facility:"Roasting A",operator:"D. Santos",started:"06:00",status:"running",output:0},
+  {id:"PR-0442",product:"All Natural Trail Mix",batch:"50 lb blend",facility:"Blending B",operator:"K. Patel",started:"07:30",status:"running",output:0},
+  {id:"PR-0443",product:"Honey Peanut Crunch",batch:"100 lb batch",facility:"Roasting B",operator:"M. Rivera",started:"08:00",status:"running",output:0},
+  {id:"PR-0440",product:"Almonds Dark Chocolate",batch:"50 lb",facility:"Chocolate",operator:"T. Nguyen",started:"05:00",status:"done",output:52.4},
+  {id:"PR-0439",product:"Coconut Chips",batch:"25 lb",facility:"Packing C",operator:"A. Jones",started:"04:30",status:"done",output:26.1},
+  {id:"PR-0438",product:"Berry Nutty Mix",batch:"100 lb",facility:"Blending A",operator:"D. Santos",started:"Yesterday",status:"done",output:98.8},
+  {id:"PR-0437",product:"Plantain Chips Salted",batch:"50 lb",facility:"Packing A",operator:"K. Patel",started:"Yesterday",status:"done",output:50.5},
+  {id:"PR-0436",product:"Organic Cashews Roasted",batch:"25 lb drum",facility:"Roasting A",operator:"M. Rivera",started:"2026-08-05",status:"scheduled",output:0},
+  {id:"PR-0435",product:"Medjool Dates",batch:"25 lb",facility:"Packing B",operator:"T. Nguyen",started:"2026-08-05",status:"scheduled",output:0},
+];
+
+var PACKERS=["Maria G.","James T.","Rosa P.","Carlos R.","Lisa M.","Tony B.","Keisha N."];
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+function custName(id){var c=CUSTOMERS.find(function(x){return x.id===id});return c?c.name:"Unknown"}
+function prodName(id){var p=PRODUCTS_SHORT.find(function(x){return x.id===id});return p?p.name:id}
+function statusBadge(s){return '<span class="badge '+s+'">'+s.charAt(0).toUpperCase()+s.slice(1)+'</span>'}
+function fmtDate(d){return d.replace("2026-","").replace("-","/")}
+function pct(a,b){return b===0?0:Math.min(100,Math.round(a/b*100))}
+var _tt;
+function toast(msg){
+  var el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");
+  clearTimeout(_tt);_tt=setTimeout(function(){el.classList.remove("show")},2800);
+}
+
+/* ── Navigation ──────────────────────────────────────────────────────────── */
+function nav(pg){
+  document.querySelectorAll(".page").forEach(function(p){p.classList.remove("show")});
+  document.querySelectorAll(".nav button").forEach(function(b){b.classList.remove("active")});
+  document.getElementById("page-"+pg).classList.add("show");
+  document.getElementById("nb-"+pg).classList.add("active");
+  if(pg==="orders") renderOrders();
+  if(pg==="packing") renderPacking("all");
+  if(pg==="shipping") renderShipping();
+  if(pg==="inventory") renderInventory();
+  if(pg==="production") renderProduction();
+  if(pg==="reports") renderReports();
+}
+
+/* ── Clock ───────────────────────────────────────────────────────────────── */
+function tick(){
+  var d=new Date();
+  document.getElementById("clock").textContent=d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+tick(); setInterval(tick,1000);
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+function refreshDash(){
+  toast("Dashboard refreshed  ✓");
+  renderDashTables();
+}
+function renderDashTables(){
+  var recents=ORDERS.slice(0,8);
+  document.getElementById("dash-orders").innerHTML=recents.map(function(o){
+    return "<tr onclick=\"openOrder('"+o.id+"')\" style=\"cursor:pointer\">"+
+      "<td class='mono'>"+o.id+"</td>"+
+      "<td>"+custName(o.customer)+"</td>"+
+      "<td>"+statusBadge(o.status)+"</td>"+
+      "<td class='num'>$"+o.total.toFixed(2)+"</td>"+
+    "</tr>";
+  }).join("");
+
+  var jobs=PACK_JOBS.filter(function(j){return j.status!=="complete"});
+  document.getElementById("dash-jobs").innerHTML=jobs.map(function(j){
+    var p=pct(j.done,j.items);
+    return "<tr onclick=\"nav('packing')\" style=\"cursor:pointer\">"+
+      "<td class='mono'>"+j.id+"</td>"+
+      "<td>"+j.packer+"</td>"+
+      "<td class='mono'>"+j.order+"</td>"+
+      "<td><div style='width:80px;display:inline-block;margin-right:.3rem'>"+
+        "<div class='meter-bar' style='margin:0'><i style='width:"+p+"%'></i></div>"+
+      "</div><span class='mono' style='font-size:.7rem'>"+p+"%</span></td>"+
+    "</tr>";
+  }).join("");
+}
+
+function renderDashCharts(){
+  // Week orders chart
+  var wCtx=document.getElementById("weekChart").getContext("2d");
+  new Chart(wCtx,{
+    type:"bar",
+    data:{
+      labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+      datasets:[{
+        label:"Orders",
+        data:[8,11,7,14,9,5,3],
+        backgroundColor:"rgba(163,64,42,.75)",
+        borderRadius:3
+      }]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{
+      y:{grid:{color:"rgba(195,171,114,.3)"},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060",fontSize:10}},
+      x:{grid:{display:false},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}}
+    }}
+  });
+
+  // Pipeline donut
+  var pCtx=document.getElementById("pipeChart").getContext("2d");
+  new Chart(pCtx,{
+    type:"doughnut",
+    data:{
+      labels:["New","Picking","Packing","Packed","Shipped"],
+      datasets:[{
+        data:[4,3,3,1,11],
+        backgroundColor:["#c2932f","#4f5c3a","#a3402a","#5b8fb9","#6aaf6a"],
+        borderWidth:1,borderColor:"#FBF6E9"
+      }]
+    },
+    options:{responsive:true,plugins:{legend:{position:"right",labels:{font:{family:"IBM Plex Mono",size:10},color:"#5a4a36"}}}}
+  });
+}
+
+/* ── Orders ──────────────────────────────────────────────────────────────── */
+function renderOrders(){
+  var q=(document.getElementById("order-q").value||"").toLowerCase();
+  var f=document.getElementById("order-filter").value;
+  var list=ORDERS.filter(function(o){
+    var fOk=f==="all"||o.status===f;
+    var qOk=!q||(o.id+custName(o.customer)).toLowerCase().includes(q);
+    return fOk&&qOk;
+  });
+  document.getElementById("orders-tbody").innerHTML=list.map(function(o){
+    return "<tr>"+
+      "<td class='mono' style='cursor:pointer;color:var(--rust)' onclick=\"openOrder('"+o.id+"')\">"+o.id+"</td>"+
+      "<td class='mono' style='font-size:.8rem'>"+fmtDate(o.date)+"</td>"+
+      "<td>"+custName(o.customer)+"</td>"+
+      "<td><span class='badge "+(o.type==="wholesale"?"picking":"ok")+"'>"+o.type+"</span></td>"+
+      "<td>"+statusBadge(o.status)+"</td>"+
+      "<td class='num'>"+o.items.reduce(function(n,i){return n+i.qty},0)+"</td>"+
+      "<td class='num'>$"+o.total.toFixed(2)+"</td>"+
+      "<td>"+actionBtns(o)+"</td>"+
+    "</tr>";
+  }).join("");
+}
+function actionBtns(o){
+  if(o.status==="new") return "<button class='btn xs olive' onclick=\"advanceOrder('"+o.id+"')\">Start Pick</button>";
+  if(o.status==="picking") return "<button class='btn xs rust' onclick=\"advanceOrder('"+o.id+"')\">→ Packing</button>";
+  if(o.status==="packing") return "<button class='btn xs' onclick=\"advanceOrder('"+o.id+"')\">Mark Packed</button>";
+  if(o.status==="packed") return "<button class='btn xs rust' onclick=\"advanceOrder('"+o.id+"')\">Ship</button>";
+  return "<span class='mono' style='font-size:.68rem;color:var(--ink-faint)'>—</span>";
+}
+function advanceOrder(id){
+  var o=ORDERS.find(function(x){return x.id===id});
+  if(!o) return;
+  var seq={new:"picking",picking:"packing",packing:"packed",packed:"shipped"};
+  if(seq[o.status]){o.status=seq[o.status];renderOrders();toast(id+" → "+o.status+"  ✓")}
+}
+function openOrder(id){
+  var o=ORDERS.find(function(x){return x.id===id});
+  if(!o) return;
+  var c=CUSTOMERS.find(function(x){return x.id===o.customer});
+  document.getElementById("modal-title").textContent=o.id;
+  document.getElementById("modal-body").innerHTML=
+    "<div class='row2' style='margin-bottom:1rem'>"+
+      "<div><div class='eyebrow'>Customer</div><strong>"+c.name+"</strong><br><span style='font-size:.85rem;color:var(--ink-soft)'>"+c.contact+"</span></div>"+
+      "<div><div class='eyebrow'>Status</div>"+statusBadge(o.status)+"<br>"+
+        "<div class='eyebrow' style='margin-top:.7rem'>Type</div><span class='badge "+(o.type==="wholesale"?"picking":"ok")+"'>"+o.type+"</span></div>"+
+    "</div>"+
+    "<div class='eyebrow'>Order Lines</div>"+
+    "<table style='margin-bottom:1rem'><thead><tr><th>Product</th><th class='num'>Qty</th><th class='num'>Unit</th><th class='num'>Line</th></tr></thead><tbody>"+
+    o.items.map(function(i){
+      var p=PRODUCTS_SHORT.find(function(x){return x.id===i.p});
+      var unit=(o.total/o.items.reduce(function(n,li){return n+li.qty},0)).toFixed(2);
+      return "<tr><td>"+(p?p.name:i.p)+"</td><td class='num'>"+i.qty+"</td><td class='num'>$"+unit+"</td><td class='num'>$"+(unit*i.qty).toFixed(2)+"</td></tr>";
+    }).join("")+
+    "<tr style='font-weight:700'><td colspan='3'>Total</td><td class='num num'>$"+o.total.toFixed(2)+"</td></tr>"+
+    "</tbody></table>"+
+    "<div class='eyebrow'>Timeline</div>"+
+    "<ul class='timeline'>"+
+      "<li><div class='tl-dot done'></div><div class='tl-content'><p><strong>Order received</strong></p><p class='ts'>"+fmtDate(o.date)+" · 09:12</p></div></li>"+
+      (o.status!=="new"?"<li><div class='tl-dot done'></div><div class='tl-content'><p><strong>Picking started</strong></p><p class='ts'>"+fmtDate(o.date)+" · 10:05</p></div></li>":"")+
+      (["packing","packed","shipped"].includes(o.status)?"<li><div class='tl-dot done'></div><div class='tl-content'><p><strong>Sent to packing</strong></p><p class='ts'>"+fmtDate(o.date)+" · 11:22</p></div></li>":"")+
+      (["packed","shipped"].includes(o.status)?"<li><div class='tl-dot done'></div><div class='tl-content'><p><strong>Packed &amp; QC'd</strong></p><p class='ts'>"+fmtDate(o.date)+" · 13:40</p></div></li>":"")+
+      (o.status==="shipped"?"<li><div class='tl-dot done' style='background:var(--olive)'></div><div class='tl-content'><p><strong>Shipped</strong></p><p class='ts'>"+fmtDate(o.date)+" · 15:00</p></div></li>":"")+
+      (o.status!=="shipped"?"<li><div class='tl-dot active'></div><div class='tl-content'><p style='color:var(--rust)'><strong>In progress…</strong></p></div></li>":"")+
+    "</ul>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Close</button>"+
+    (o.status!=="shipped"?"<button class='btn sm rust' onclick=\"advanceOrder('"+o.id+"');renderOrders();closeModal()\">Advance Status →</button>":"");
+  openModal();
+}
+function openNewOrder(){
+  document.getElementById("modal-title").textContent="New Order";
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Customer</label><select id='no-cust'>"+
+      CUSTOMERS.map(function(c){return "<option value='"+c.id+"'>"+c.name+"</option>"}).join("")+
+    "</select></div>"+
+    "<div class='row2'>"+
+      "<div class='field'><label>Order Type</label><select id='no-type'><option>wholesale</option><option>retail</option></select></div>"+
+      "<div class='field'><label>PO Number</label><input type='text' id='no-po' placeholder='Optional'></div>"+
+    "</div>"+
+    "<div class='field'><label>Notes</label><textarea id='no-notes' placeholder='Special instructions…'></textarea></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm' onclick='saveNewOrder()'>Create Order</button>";
+  openModal();
+}
+function saveNewOrder(){
+  var newId="OR-"+(1056+ORDERS.length);
+  ORDERS.unshift({id:newId,date:"2026-08-03",customer:document.getElementById("no-cust").value,
+    status:"new",type:document.getElementById("no-type").value,items:[],total:0});
+  closeModal(); renderOrders(); toast(newId+" created — notification sent to rudycato@gmail.com  ✓");
+}
+
+/* ── Packing ─────────────────────────────────────────────────────────────── */
+var jobFilter="all";
+function filterJobs(f){
+  jobFilter=f;renderPacking(f);
+}
+function renderPacking(f){
+  f=f||jobFilter;
+  var list=f==="all"?PACK_JOBS:PACK_JOBS.filter(function(j){return j.status===f});
+  document.getElementById("packing-board").innerHTML=list.map(function(j){
+    var p=pct(j.done,j.items);
+    var col=j.status==="in-progress"?"caution":"";
+    if(j.status==="complete") col="";
+    return "<div class='job-card "+j.status+"'>"+
+      "<h3>"+j.id+"</h3>"+
+      "<div class='job-meta'>Order: "+j.order+" &nbsp;|&nbsp; Started: "+j.started+"</div>"+
+      "<div style='margin-bottom:.4rem'><span class='badge "+(j.status==="in-progress"?"running":j.status==="complete"?"done":"new")+"'>"+j.status+"</span></div>"+
+      "<div class='job-prog'><span>"+j.packer+"</span><span class='mono'>"+j.done+"/"+j.items+" units</span></div>"+
+      "<div class='meter-bar "+col+"'><i style='width:"+p+"%'></i></div>"+
+      "<div style='display:flex;gap:.4rem;margin-top:.8rem;flex-wrap:wrap'>"+
+        (j.status==="in-progress"?"<button class='btn xs olive' onclick=\"logProgress('"+j.id+"')\">Log Progress</button>":"")+
+        (j.status==="in-progress"?"<button class='btn xs' onclick=\"completeJob('"+j.id+"')\">Complete</button>":"")+
+        (j.status==="assigned"&&j.packer==="Unassigned"?"<button class='btn xs rust' onclick=\"assignPacker('"+j.id+"')\">Assign</button>":"")+
+        (j.status==="assigned"&&j.packer!=="Unassigned"?"<button class='btn xs olive' onclick=\"startJob('"+j.id+"')\">Start</button>":"")+
+      "</div>"+
+    "</div>";
+  }).join("");
+}
+function logProgress(id){
+  var j=PACK_JOBS.find(function(x){return x.id===id});
+  if(!j) return;
+  var add=Math.min(j.items-j.done,Math.floor(Math.random()*10)+3);
+  j.done=Math.min(j.items,j.done+add);
+  renderPacking("all"); toast("Logged "+add+" units for "+id);
+}
+function completeJob(id){
+  var j=PACK_JOBS.find(function(x){return x.id===id});
+  if(!j) return;
+  j.done=j.items; j.status="complete";
+  renderPacking("all"); toast(id+" marked complete  ✓");
+}
+function startJob(id){
+  var j=PACK_JOBS.find(function(x){return x.id===id});
+  if(!j) return;
+  j.status="in-progress"; j.started=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+  renderPacking("all"); toast(id+" started  ✓");
+}
+function assignPacker(id){
+  document.getElementById("modal-title").textContent="Assign Packer — "+id;
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Select Packer</label><select id='ap-packer'>"+
+      PACKERS.map(function(p){return "<option>"+p+"</option>"}).join("")+
+    "</select></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm olive' onclick=\"doAssign('"+id+"')\">Assign</button>";
+  openModal();
+}
+function doAssign(id){
+  var j=PACK_JOBS.find(function(x){return x.id===id});
+  if(!j) return;
+  j.packer=document.getElementById("ap-packer").value;
+  closeModal(); renderPacking("all"); toast(id+" assigned to "+j.packer);
+}
+function openAssign(){
+  document.getElementById("modal-title").textContent="New Packing Job";
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Order</label><select id='pj-order'>"+
+      ORDERS.filter(function(o){return o.status==="packed"||o.status==="picking"}).map(function(o){return "<option value='"+o.id+"'>"+o.id+" — "+custName(o.customer)+"</option>"}).join("")+
+    "</select></div>"+
+    "<div class='field'><label>Assign To</label><select id='pj-packer'><option>Unassigned</option>"+
+      PACKERS.map(function(p){return "<option>"+p+"</option>"}).join("")+
+    "</select></div>"+
+    "<div class='field'><label>Total Units</label><input type='number' id='pj-units' value='24' min='1'></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm' onclick='savePackJob()'>Create Job</button>";
+  openModal();
+}
+function savePackJob(){
+  var newId="PJ-"+(885+PACK_JOBS.length);
+  PACK_JOBS.unshift({id:newId,order:document.getElementById("pj-order").value,
+    packer:document.getElementById("pj-packer").value,
+    status:document.getElementById("pj-packer").value==="Unassigned"?"assigned":"assigned",
+    items:parseInt(document.getElementById("pj-units").value)||24,done:0,started:"—"});
+  closeModal(); renderPacking("all"); toast(newId+" created  ✓");
+}
+
+/* ── Shipping ────────────────────────────────────────────────────────────── */
+function renderShipping(){
+  document.getElementById("ship-tbody").innerHTML=SHIPMENTS.map(function(s){
+    var readyBadge=s.status==="ready"
+      ?"<span class='badge packing'>Ready</span>"
+      :"<span class='badge shipped'>Shipped</span>";
+    return "<tr>"+
+      "<td class='mono'>"+s.id+"</td>"+
+      "<td class='mono'>"+s.order+"</td>"+
+      "<td>"+custName(s.customer)+"</td>"+
+      "<td>"+s.carrier+"</td>"+
+      "<td class='mono' style='font-size:.78rem'>"+s.tracking+"</td>"+
+      "<td>"+readyBadge+"</td>"+
+      "<td class='num'>"+s.weight+"</td>"+
+      "<td class='num'>"+(s.cost>0?"$"+s.cost.toFixed(2):"—")+"</td>"+
+      "<td>"+(s.status==="ready"?"<button class='btn xs rust' onclick=\"shipNow('"+s.id+"')\">Ship</button>":"")+"</td>"+
+    "</tr>";
+  }).join("");
+}
+function shipNow(id){
+  var s=SHIPMENTS.find(function(x){return x.id===id});
+  if(!s) return;
+  s.status="shipped"; s.tracking="1Z"+Math.random().toString().slice(2,14);
+  s.cost=(Math.random()*200+50).toFixed(2)*1;
+  renderShipping(); toast(id+" shipped — confirmation sent to rudycato@gmail.com  ✓");
+}
+function openShipModal(){
+  document.getElementById("modal-title").textContent="Create Shipment";
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Order</label><select id='sh-order'>"+
+      ORDERS.filter(function(o){return o.status==="packed"}).map(function(o){return "<option value='"+o.id+"'>"+o.id+" — "+custName(o.customer)+"</option>"}).join("")+
+    "</select></div>"+
+    "<div class='row2'>"+
+      "<div class='field'><label>Carrier</label><select id='sh-carrier'><option>FedEx Freight</option><option>UPS</option><option>USPS</option><option>Will Call</option></select></div>"+
+      "<div class='field'><label>Estimated Weight (lb)</label><input type='number' id='sh-wt' value='100'></div>"+
+    "</div>"+
+    "<div class='field'><label>Tracking #</label><input type='text' id='sh-track' placeholder='Leave blank to generate'></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm rust' onclick='saveShipment()'>Create Shipment</button>";
+  openModal();
+}
+function saveShipment(){
+  var newId="SH-"+(2042+SHIPMENTS.length);
+  SHIPMENTS.unshift({id:newId,order:document.getElementById("sh-order").value,
+    customer:"C001",carrier:document.getElementById("sh-carrier").value,
+    tracking:document.getElementById("sh-track").value||"PENDING",
+    status:"ready",weight:document.getElementById("sh-wt").value+" lb",cost:0});
+  closeModal(); renderShipping(); toast(newId+" created — notification sent to rudycato@gmail.com  ✓");
+}
+
+/* ── Inventory ───────────────────────────────────────────────────────────── */
+function renderInventory(){
+  var q=(document.getElementById("inv-q").value||"").toLowerCase();
+  var f=document.getElementById("inv-filter").value;
+  var list=INVENTORY.filter(function(i){
+    var avail=i.onHand-i.committed;
+    var low=avail<=i.reorder;
+    if(f==="low"&&!low) return false;
+    if(f==="ok"&&low) return false;
+    return !q||(i.id+i.name+i.cat).toLowerCase().includes(q);
+  });
+  document.getElementById("inv-tbody").innerHTML=list.map(function(i){
+    var avail=i.onHand-i.committed;
+    var low=avail<=i.reorder;
+    var p=Math.min(100,Math.round(avail/i.reorder*100));
+    return "<tr>"+
+      "<td class='mono' style='color:var(--rust);font-size:.8rem'>"+i.id+"</td>"+
+      "<td>"+i.name+"</td>"+
+      "<td><span style='font-family:IBM Plex Mono;font-size:.7rem;color:var(--ink-faint)'>"+i.cat+"</span></td>"+
+      "<td class='num'>"+i.onHand+"</td>"+
+      "<td class='num' style='color:var(--rust-deep)'>"+i.committed+"</td>"+
+      "<td class='num'><strong style='color:"+(low?"var(--rust)":"var(--olive)")+"'>"+avail+"</strong></td>"+
+      "<td class='num'>"+i.reorder+"</td>"+
+      "<td>"+(low?"<span class='badge low'>Low</span>":"<span class='badge ok'>OK</span>")+"</td>"+
+      "<td><button class='btn xs ghost' onclick=\"openReceiveItem('"+i.id+"')\">Receive</button></td>"+
+    "</tr>";
+  }).join("");
+}
+function openReceive(){
+  document.getElementById("modal-title").textContent="Receive Inventory";
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Product</label><select id='rc-prod'>"+
+      INVENTORY.map(function(i){return "<option value='"+i.id+"'>"+i.id+" — "+i.name+"</option>"}).join("")+
+    "</select></div>"+
+    "<div class='row2'>"+
+      "<div class='field'><label>Units Received</label><input type='number' id='rc-qty' value='100' min='1'></div>"+
+      "<div class='field'><label>PO / Lot #</label><input type='text' id='rc-po' placeholder='e.g. PO-9021'></div>"+
+    "</div>"+
+    "<div class='field'><label>Notes</label><textarea id='rc-notes' placeholder='Supplier, condition, etc.'></textarea></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm olive' onclick='saveReceipt()'>Receive</button>";
+  openModal();
+}
+function openReceiveItem(id){
+  document.getElementById("modal-title").textContent="Receive — "+id;
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Units Received</label><input type='number' id='rc-qty2' value='100' min='1'></div>"+
+    "<div class='field'><label>PO / Lot #</label><input type='text' id='rc-po2' placeholder='e.g. PO-9021'></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm olive' onclick=\"saveReceiptFor('"+id+"')\">Receive</button>";
+  openModal();
+}
+function saveReceiptFor(id){
+  var item=INVENTORY.find(function(x){return x.id===id});
+  if(!item) return;
+  var qty=parseInt(document.getElementById("rc-qty2").value)||100;
+  item.onHand+=qty;
+  closeModal(); renderInventory(); toast("Received "+qty+" units of "+item.name+"  ✓");
+}
+function saveReceipt(){
+  var id=document.getElementById("rc-prod").value;
+  var item=INVENTORY.find(function(x){return x.id===id});
+  if(!item) return;
+  var qty=parseInt(document.getElementById("rc-qty").value)||100;
+  item.onHand+=qty;
+  closeModal(); renderInventory(); toast("Received "+qty+" units  ✓");
+}
+
+/* ── Production ──────────────────────────────────────────────────────────── */
+function renderProduction(){
+  document.getElementById("prod-tbody").innerHTML=PRODUCTION.map(function(r){
+    var statBadge=r.status==="running"?"<span class='badge running'>Running</span>":
+      r.status==="done"?"<span class='badge done'>Done</span>":
+      "<span class='badge new'>Scheduled</span>";
+    return "<tr>"+
+      "<td class='mono'>"+r.id+"</td>"+
+      "<td>"+r.product+"</td>"+
+      "<td>"+r.batch+"</td>"+
+      "<td style='font-size:.83rem;color:var(--ink-soft)'>"+r.facility+"</td>"+
+      "<td>"+r.operator+"</td>"+
+      "<td class='mono' style='font-size:.8rem'>"+r.started+"</td>"+
+      "<td>"+statBadge+"</td>"+
+      "<td class='num'>"+(r.output>0?r.output+" lb":"—")+"</td>"+
+      "<td>"+(r.status==="running"?"<button class='btn xs' onclick=\"completeRun('"+r.id+"')\">Complete</button>":
+        r.status==="scheduled"?"<button class='btn xs olive' onclick=\"startRun('"+r.id+"')\">Start</button>":"")+"</td>"+
+    "</tr>";
+  }).join("");
+}
+function completeRun(id){
+  var r=PRODUCTION.find(function(x){return x.id===id});
+  if(!r) return;
+  r.status="done"; r.output=parseFloat(r.batch)*(0.95+Math.random()*.08);
+  if(isNaN(r.output)) r.output=(25+Math.random()*80).toFixed(1)*1;
+  renderProduction(); toast(id+" completed  ✓");
+}
+function startRun(id){
+  var r=PRODUCTION.find(function(x){return x.id===id});
+  if(!r) return;
+  r.status="running"; r.started=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+  renderProduction(); toast(id+" started  ✓");
+}
+function openNewRun(){
+  document.getElementById("modal-title").textContent="New Production Run";
+  document.getElementById("modal-body").innerHTML=
+    "<div class='field'><label>Product</label><select id='pr-prod'>"+
+      PRODUCTS_SHORT.map(function(p){return "<option>"+p.name+"</option>"}).join("")+
+    "</select></div>"+
+    "<div class='row2'>"+
+      "<div class='field'><label>Batch Size</label><input type='text' id='pr-batch' value='25 lb drum'></div>"+
+      "<div class='field'><label>Facility</label><select id='pr-fac'><option>Roasting A</option><option>Roasting B</option><option>Blending A</option><option>Blending B</option><option>Chocolate</option><option>Packing A</option><option>Packing B</option><option>Packing C</option></select></div>"+
+    "</div>"+
+    "<div class='field'><label>Operator</label><select id='pr-op'>"+
+      ["D. Santos","K. Patel","M. Rivera","T. Nguyen","A. Jones"].map(function(o){return "<option>"+o+"</option>"}).join("")+
+    "</select></div>";
+  document.getElementById("modal-foot").innerHTML=
+    "<button class='btn ghost sm' onclick='closeModal()'>Cancel</button>"+
+    "<button class='btn sm' onclick='saveRun()'>Schedule Run</button>";
+  openModal();
+}
+function saveRun(){
+  var newId="PR-"+(442+PRODUCTION.length);
+  PRODUCTION.unshift({id:newId,product:document.getElementById("pr-prod").value,
+    batch:document.getElementById("pr-batch").value,
+    facility:document.getElementById("pr-fac").value,
+    operator:document.getElementById("pr-op").value,
+    started:"Scheduled",status:"scheduled",output:0});
+  closeModal(); renderProduction(); toast(newId+" scheduled  ✓");
+}
+
+/* ── Reports ─────────────────────────────────────────────────────────────── */
+function renderReports(){
+  // Packing productivity
+  new Chart(document.getElementById("packChart").getContext("2d"),{
+    type:"bar",data:{
+      labels:["Mon","Tue","Wed","Thu","Fri"],
+      datasets:[{label:"Units packed",data:[320,410,280,490,350],backgroundColor:"rgba(79,92,58,.75)",borderRadius:3}]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{
+      y:{grid:{color:"rgba(195,171,114,.3)"},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}},
+      x:{grid:{display:false},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}}
+    }}
+  });
+
+  // Shipping volume
+  new Chart(document.getElementById("shipChart").getContext("2d"),{
+    type:"line",data:{
+      labels:["Mon","Tue","Wed","Thu","Fri"],
+      datasets:[{label:"Shipments",data:[6,9,5,11,8],fill:true,
+        borderColor:"#a3402a",backgroundColor:"rgba(163,64,42,.12)",tension:.35,pointRadius:4}]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{
+      y:{grid:{color:"rgba(195,171,114,.3)"},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}},
+      x:{grid:{display:false},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}}
+    }}
+  });
+
+  // Cycle time
+  new Chart(document.getElementById("cycleChart").getContext("2d"),{
+    type:"bar",data:{
+      labels:["New→Pick","Pick→Pack","Pack→Ship","Total"],
+      datasets:[{label:"Hours",data:[2.4,3.8,1.9,8.1],backgroundColor:["#c2932f","#a3402a","#4f5c3a","#241A10"],borderRadius:3}]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},indexAxis:"y",scales:{
+      x:{grid:{color:"rgba(195,171,114,.3)"},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}},
+      y:{grid:{display:false},ticks:{font:{family:"IBM Plex Mono"},color:"#8a7060"}}
+    }}
+  });
+
+  document.getElementById("top-products").innerHTML=[
+    {name:"Organic Almonds Raw",units:744,rev:14280},
+    {name:"Organic Cashews Raw",units:516,rev:10290},
+    {name:"Almonds Dark Chocolate",units:480,rev:9648},
+    {name:"All Natural Trail Mix",units:420,rev:6300},
+    {name:"Berry Nutty Mix",units:360,rev:5040},
+  ].map(function(p){
+    return "<tr><td>"+p.name+"</td><td class='num'>"+p.units+"</td><td class='num'>$"+p.rev.toLocaleString()+"</td></tr>";
+  }).join("");
+
+  document.getElementById("packer-perf").innerHTML=[
+    {name:"Maria G.",jobs:14,uph:48,acc:99.2},
+    {name:"James T.",jobs:12,uph:42,acc:98.7},
+    {name:"Carlos R.",jobs:16,uph:52,acc:99.8},
+    {name:"Rosa P.",jobs:11,uph:38,acc:97.9},
+    {name:"Lisa M.",jobs:13,uph:45,acc:99.4},
+    {name:"Tony B.",jobs:18,uph:55,acc:99.1},
+    {name:"Keisha N.",jobs:10,uph:40,acc:98.5},
+  ].map(function(p){
+    return "<tr><td>"+p.name+"</td><td class='num'>"+p.jobs+"</td>"+
+      "<td class='num'>"+p.uph+"</td><td class='num'>"+p.acc+"%</td></tr>";
+  }).join("");
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+function openModal(){document.getElementById("overlay").classList.add("show")}
+function closeModal(){document.getElementById("overlay").classList.remove("show")}
+
+/* ── CSV export ──────────────────────────────────────────────────────────── */
+function dlCSV(){
+  var head=["Order #","Date","Customer","Type","Status","Total"];
+  var rows=ORDERS.map(function(o){return[o.id,o.date,custName(o.customer),o.type,o.status,"$"+o.total.toFixed(2)]});
+  var csv=[head].concat(rows).map(function(r){
+    return r.map(function(c){c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(",");
+  }).join("\r\n");
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download="AFB-orders-report.csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ── Init ────────────────────────────────────────────────────────────────── */
+renderDashTables();
+renderDashCharts();
+renderOrders(); // pre-render so filter works on first switch
+</script>
+</body>
+</html>

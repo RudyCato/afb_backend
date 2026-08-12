@@ -227,7 +227,13 @@
 <div class="page">
 
   <div class="doc-banner">
-    <div class="meta">Doc ID: <span>SOP-PRD-FORM-014</span></div>
+    <div class="meta" style="font-size:14px;">
+      Sales Order:&nbsp;<span id="bannerOrderNum"
+        style="font-family:monospace;font-weight:700;font-size:15px;color:var(--green);letter-spacing:.04em;">
+        — select below —
+      </span>
+    </div>
+    <div class="meta" style="border-left:1px solid var(--gray4);padding-left:16px;">Doc ID: <span>SOP-PRD-FORM-014</span></div>
     <div class="meta">Rev: <span>v3.1</span></div>
     <div class="meta">SQF System: <span>PRPs · HACCP · Allergen · Traceability</span></div>
     <div class="meta" style="margin-left:auto;">Date: <span id="todayDate"></span></div>
@@ -244,24 +250,40 @@
       </div>
       <div class="card-body">
         <div class="form-grid">
+
+          <!-- ── Sales Order — first field, everything pivots off this ── -->
           <div class="form-group span2">
-            <label>Product Name <span class="req">*</span></label>
-            <select name="product_name" id="productSelect" required onchange="onProductChange()">
-              <option value="">— Loading inventory… —</option>
+            <label style="font-size:13px;font-weight:700;color:var(--green);">
+              Sales Order # <span class="req">*</span>
+            </label>
+            <select name="_sales_order" id="salesOrderSelect" required onchange="onOrderChange()"
+              style="border:2px solid var(--green-l);font-weight:700;font-size:15px;">
+              <option value="">— Loading orders… —</option>
             </select>
           </div>
+
+          <!-- ── Product search — name OR SKU ── -->
+          <div class="form-group span2" style="position:relative;">
+            <label>Product Name / SKU / Item Code <span class="req">*</span></label>
+            <input type="text" id="productSearch" name="product_name"
+              placeholder="Type name, SKU, or item code…"
+              autocomplete="off" required
+              oninput="filterProducts(this.value)"
+              onfocus="filterProducts(this.value)" />
+            <div id="productDropdown"
+              style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;
+                     background:#fff;border:1px solid var(--gray4);border-radius:var(--radius);
+                     max-height:210px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,.18);">
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Product SKU / Item Code</label>
             <input type="text" name="product_sku" id="productSku" readonly
               style="background:var(--gray5);color:var(--gray3);cursor:not-allowed;"
-              placeholder="Auto-filled from inventory" />
+              placeholder="Auto-filled" />
           </div>
-          <div class="form-group">
-            <label>Sales Order <span class="req">*</span></label>
-            <select name="_sales_order" id="salesOrderSelect" onchange="onOrderChange()">
-              <option value="">— Loading orders… —</option>
-            </select>
-          </div>
+
           <div class="form-group">
             <label>Batch / Lot Number <span class="req">*</span></label>
             <input type="text" name="batch_lot_number" id="batchLotNumber" required
@@ -576,18 +598,74 @@ async function loadInventory() {
     const res = await fetch("/inventory", {credentials:"include"});
     if (!res.ok) throw new Error();
     _inventory = await res.json(); // [{product_id, name, sku, …}]
-    const sel = document.getElementById("productSelect");
-    sel.innerHTML = '<option value="">— Select product —</option>'
-      + _inventory
-          .filter(i => i.qty_on_hand > 0 || true) // show all
-          .sort((a,b) => a.name.localeCompare(b.name))
-          .map(i => `<option value="${i.name}" data-sku="${i.sku}">${i.name}</option>`)
-          .join("");
+    _inventory.sort((a,b) => a.name.localeCompare(b.name));
+    // hint placeholder with count
+    const inp = document.getElementById("productSearch");
+    if (inp) inp.placeholder = `Search ${_inventory.length} products by name, SKU, or item code…`;
   } catch {
-    document.getElementById("productSelect").innerHTML =
-      '<option value="">⚠ Could not load inventory</option>';
+    const inp = document.getElementById("productSearch");
+    if (inp) inp.placeholder = "⚠ Could not load inventory";
   }
 }
+
+// ── Product search combo ────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                  .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function filterProducts(query) {
+  const drop = document.getElementById("productDropdown");
+  const q = (query||"").trim().toLowerCase();
+  if (!q || _inventory.length === 0) { drop.style.display = "none"; return; }
+
+  const matches = _inventory
+    .filter(i => i.name.toLowerCase().includes(q) || (i.sku||"").toLowerCase().includes(q))
+    .slice(0, 25);
+
+  if (matches.length === 0) {
+    drop.innerHTML = `<div style="padding:10px 14px;color:var(--gray3);font-size:13px;">No matches for "${escHtml(query)}"</div>`;
+    drop.style.display = "block";
+    return;
+  }
+
+  drop.innerHTML = matches.map(i => {
+    const nameFrag = highlight(i.name, q);
+    const skuFrag  = highlight(i.sku||"", q);
+    return `<div class="pd-item" data-name="${escHtml(i.name)}" data-sku="${escHtml(i.sku||"")}"
+      onclick="selectProduct(this)"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gray4);font-size:13px;
+             transition:background .1s;" onmouseover="this.style.background='var(--green-x)'"
+      onmouseout="this.style.background=''">
+      <div style="font-weight:600;">${nameFrag}</div>
+      <div style="font-size:11px;color:var(--gray3);font-family:monospace;">${skuFrag}</div>
+    </div>`;
+  }).join("");
+  drop.style.display = "block";
+}
+
+function highlight(text, query) {
+  if (!query || !text) return escHtml(text);
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx < 0) return escHtml(text);
+  return escHtml(text.slice(0, idx))
+    + `<mark style="background:#fff3cd;border-radius:2px;">${escHtml(text.slice(idx, idx+query.length))}</mark>`
+    + escHtml(text.slice(idx + query.length));
+}
+
+function selectProduct(el) {
+  document.getElementById("productSearch").value = el.dataset.name;
+  document.getElementById("productSku").value    = el.dataset.sku;
+  document.getElementById("productDropdown").style.display = "none";
+  buildLotCode();
+}
+
+document.addEventListener("click", e => {
+  if (!e.target.closest("#productSearch") && !e.target.closest("#productDropdown")) {
+    const drop = document.getElementById("productDropdown");
+    if (drop) drop.style.display = "none";
+  }
+});
 
 async function loadPackers() {
   try {
@@ -622,13 +700,10 @@ async function loadOrders() {
   }
 }
 
-function onProductChange() {
-  const sel = document.getElementById("productSelect");
-  const opt = sel.selectedOptions[0];
-  document.getElementById("productSku").value = opt ? (opt.dataset.sku || "") : "";
-}
-
 function onOrderChange() {
+  const val = document.getElementById("salesOrderSelect").value;
+  const banner = document.getElementById("bannerOrderNum");
+  if (banner) banner.textContent = val || "— select below —";
   buildLotCode();
 }
 
@@ -670,11 +745,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const qIngredients = params.get("ingredients");
 
   if (qProduct) {
-    const sel = document.getElementById("productSelect");
-    for (const opt of sel.options) {
-      if (opt.value === qProduct) { sel.value = qProduct; break; }
-    }
-    onProductChange();
+    // Match by name or SKU
+    const match = _inventory.find(i =>
+      i.name === qProduct || (i.sku||"").toLowerCase() === qProduct.toLowerCase()
+    );
+    const inp = document.getElementById("productSearch");
+    if (inp) inp.value = match ? match.name : qProduct;
+    if (match) document.getElementById("productSku").value = match.sku || "";
   }
   if (qOrder) {
     const sel = document.getElementById("salesOrderSelect");
@@ -811,7 +888,8 @@ function toMDY(s){if(!s)return null;const[y,m,d]=s.split("-");return`${m}/${d}/$
 
 function buildPayload(){
   return {
-    product_name:fv("product_name"), product_sku:fv("product_sku"),
+    product_name: document.getElementById("productSearch")?.value || null,
+    product_sku:fv("product_sku"),
     batch_lot_number:fv("batch_lot_number"), production_date:toMDY(fv("production_date")),
     shift:fv("shift"), packaging_line_id:fv("packaging_line_id"), lead_operator_name:fv("lead_operator_name"),
     line_cleared_status:rv("line_cleared_status"), line_cleared_initials:fv("line_cleared_initials"),

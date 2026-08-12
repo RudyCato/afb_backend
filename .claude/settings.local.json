@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py --version)",
+      "Bash(./venv/Scripts/python.exe -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(./venv/Scripts/python.exe -m pip show itsdangerous)",
+      "Bash(./venv/Scripts/python.exe -m pip install -r requirements.txt)",
+      "Bash(./venv/Scripts/python.exe seed.py)",
+      "Bash(./venv/Scripts/python.exe start.py --no-reload --port 8123)",
+      "Bash(echo \"Started with PID $!\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8123/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8123/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8123/dashboard)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8123/production)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8123/applications-admin)",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\\\\n\" http://127.0.0.1:8123/api/applications)",
+      "Bash(git am *)",
+      "Bash(curl -s -o /dev/null -w \"root:%{http_code}\\\\n\" http://127.0.0.1:8124/)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8124 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\" 2>&1)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(curl -s http://127.0.0.1:8125/reports/inventory)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); items=d.get\\('items'\\) if isinstance\\(d,dict\\) else d; print\\(json.dumps\\(items[0], indent=2\\)\\)\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8125 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\" 2>&1)",
+      "Bash(powershell -Command \"Stop-Process -Id 15432 -Force\")",
+      "Bash(git push *)",
+      "Bash(curl -s -o /dev/null -w \"root:%{http_code}\\\\n\" http://127.0.0.1:8126/)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8126 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\" 2>&1)",
+      "Bash(powershell -Command \"Stop-Process -Id 28284 -Force\")",
+      "Bash(curl -s -o /dev/null -w \"root:%{http_code}\\\\n\" http://127.0.0.1:8127/)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8127 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\" 2>&1)",
+      "Bash(powershell -Command \"Stop-Process -Id 31472 -Force\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8128 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\" 2>&1)",
+      "Bash(powershell -Command \"Stop-Process -Id 32648 -Force\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8129 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\" 2>&1)",
+      "Bash(powershell -Command \"Stop-Process -Id 19872 -Force\")"
+    ]
+  }
+}

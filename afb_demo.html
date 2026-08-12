@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>American Food &amp; Beverage — Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Karla:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ── AFB Design System ─────────────────────────────────────────────────── */
+:root{
+  --paper:#F4EDE0; --paper-2:#EDE3D2; --kraft:#DFCEAD; --kraft-deep:#C9B183;
+  --ink:#241A12; --ink-soft:#5C4A3A; --ink-faint:#8A7663;
+  --terra:#AE4E28; --terra-deep:#8C3D1E;
+  --grass:#3D6B37;
+  --rule:rgba(36,26,18,.14); --rule-strong:rgba(36,26,18,.30);
+  --white:#FFFCF6;
+  --sp:clamp(1rem,3vw,2rem); --shell:1240px; --radius:3px;
+  --shadow:0 1px 0 rgba(36,26,18,.06),0 12px 28px -18px rgba(36,26,18,.45);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper);
+  background-image:radial-gradient(circle at 12% 8%,rgba(201,177,131,.30),transparent 42%),
+    radial-gradient(circle at 88% 4%,rgba(174,78,40,.08),transparent 38%);
+  background-attachment:fixed;
+  color:var(--ink); font-family:"Karla",ui-sans-serif,system-ui,sans-serif;
+  font-size:17px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:"Fraunces","Georgia",serif;font-weight:600;line-height:1.05;letter-spacing:-.015em;margin:0 0 .5em;text-wrap:balance}
+h1{font-size:clamp(2.4rem,6vw,4.5rem)} h2{font-size:clamp(1.7rem,3.4vw,2.6rem)} h3{font-size:1.25rem}
+p{margin:0 0 1em;max-width:66ch}
+a{color:var(--terra-deep);text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:var(--terra)}
+img{max-width:100%;display:block}
+:focus-visible{outline:2px solid var(--terra);outline-offset:3px;border-radius:2px}
+.shell{max-width:var(--shell);margin-inline:auto;padding-inline:var(--sp)}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 1rem;display:block}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.masthead{border-bottom:1px solid var(--rule);background:rgba(244,237,224,.92);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
+.masthead-in{display:flex;align-items:center;gap:1.25rem;padding-block:.85rem;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1;text-decoration:none;color:var(--ink);background:none;border:none;cursor:pointer;padding:0;text-align:left}
+.brand b{font-family:"Fraunces",serif;font-size:1.15rem;letter-spacing:-.01em;font-weight:600}
+.brand span{font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-top:.3rem}
+.nav{display:flex;gap:.9rem;margin-left:auto;align-items:center;flex-wrap:wrap}
+.nav button{color:var(--ink-soft);background:none;border:none;border-bottom:1.5px solid transparent;font-family:"Karla",sans-serif;font-size:.92rem;padding:.3rem 0;cursor:pointer;transition:color .12s,border-color .12s}
+.nav button:hover,.nav button.active{color:var(--ink);border-bottom-color:var(--terra)}
+.stamp{display:inline-flex;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden;background:var(--paper-2)}
+.stamp button{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;padding:.5rem .7rem;border:0;background:transparent;color:var(--ink-soft);cursor:pointer;line-height:1}
+.stamp button+button{border-left:1.5px solid var(--ink)}
+.stamp button.on{background:var(--ink);color:var(--paper)}
+.stamp button:hover:not(.on){background:var(--kraft)}
+.cartbtn{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:transparent;border:1px solid var(--rule-strong);padding:.5rem .7rem;border-radius:2px;cursor:pointer;white-space:nowrap}
+.cartbtn:hover{background:var(--kraft)}
+.cartbtn b{color:var(--terra-deep)}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:"Karla",sans-serif;font-weight:700;font-size:.95rem;padding:.8rem 1.4rem;border-radius:var(--radius);border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;text-decoration:none;transition:transform .12s,background .12s}
+.btn:hover{background:var(--terra-deep);border-color:var(--terra-deep);color:var(--white);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--ink)}.btn.ghost:hover{background:var(--kraft);color:var(--ink);border-color:var(--ink)}
+.btn.sm{padding:.45rem .8rem;font-size:.8rem}
+.btn.terra{background:var(--terra-deep);border-color:var(--terra-deep);color:#fff}.btn.terra:hover{background:var(--terra)}
+
+/* ── Pages ───────────────────────────────────────────────────────────────── */
+.page{display:none}.page.show{display:block}
+
+/* ── Home ────────────────────────────────────────────────────────────────── */
+.hero{padding-block:clamp(3rem,8vw,6rem) clamp(2rem,5vw,4rem)}
+.hero h1{margin-bottom:.35em}
+.hero .lede{font-size:clamp(1.05rem,1.8vw,1.3rem);color:var(--ink-soft);max-width:56ch}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3.5rem);align-items:end}
+@media(max-width:860px){.hero-grid{grid-template-columns:1fr}}
+.wall{border:1px solid var(--rule);border-radius:var(--radius);background:var(--white);padding:1rem 1.1rem;box-shadow:var(--shadow)}
+.wall-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--rule-strong);padding-bottom:.6rem;margin-bottom:.5rem}
+.wall-head span{font-family:"IBM Plex Mono",monospace;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.wall ol{list-style:none;margin:0;padding:0;font-family:"IBM Plex Mono",monospace;font-size:.76rem}
+.wall li{display:flex;gap:.6rem;padding:.26rem 0;border-bottom:1px solid rgba(36,26,18,.06);align-items:baseline}
+.wall li b{color:var(--terra-deep);font-weight:500;flex:0 0 auto;font-size:.68rem}
+.wall li i{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.wall li em{font-style:normal;color:var(--ink-soft);flex:0 0 auto}
+.wall li:last-child{border:none}
+.band{padding-block:clamp(2.5rem,6vw,4.5rem);border-top:1px solid var(--rule)}
+.band.tint{background:rgba(223,206,173,.35)}
+.fork{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;padding-block:1rem 4rem}
+@media(max-width:760px){.fork{grid-template-columns:1fr}}
+.fork-card{display:block;text-decoration:none;color:var(--ink);border:1.5px solid var(--ink);border-radius:var(--radius);background:var(--white);padding:clamp(1.5rem,3vw,2.25rem);position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;cursor:pointer;font-family:"Karla",sans-serif;text-align:left;width:100%}
+.fork-card:hover{transform:translateY(-3px);box-shadow:0 18px 34px -22px rgba(36,26,18,.6)}
+.fork-card h2{margin-bottom:.3em}.fork-card p{color:var(--ink-soft);font-size:.96rem;margin-bottom:1.25rem;max-width:100%}
+.fork-card .go{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--terra-deep)}
+.fork-card::after{content:"";position:absolute;inset:auto -30% -60% auto;width:220px;height:220px;border-radius:50%;background:var(--kraft);opacity:.35}
+.fork-card.ws::after{background:var(--terra);opacity:.10}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.75rem}
+.cols h3{margin-bottom:.35em}.cols p{font-size:.93rem;color:var(--ink-soft);margin:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1.25rem;margin-top:1.5rem}
+.stat{border-left:2px solid var(--terra);padding-left:.9rem}
+.stat b{display:block;font-family:"Fraunces",serif;font-size:1.9rem;line-height:1}
+.stat span{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+
+/* ── Shop ────────────────────────────────────────────────────────────────── */
+.toolbar{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;padding-block:1.1rem;border-bottom:1px solid var(--rule);margin-bottom:1.5rem}
+.toolbar .grow{flex:1 1 220px;min-width:0}
+input[type=search]{font-family:"Karla",sans-serif;font-size:.95rem;color:var(--ink);background:var(--white);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:.6rem .75rem;width:100%}
+input[type=number]{font-family:"IBM Plex Mono",monospace;font-size:.95rem;color:var(--ink);background:var(--white);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:.6rem .75rem;width:5.5rem;text-align:center}
+input::placeholder{color:var(--ink-faint)}
+.chiprow{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;padding:.4rem .65rem;border:1px solid var(--rule-strong);border-radius:100px;background:transparent;cursor:pointer;color:var(--ink-soft)}
+.chip:hover{background:var(--kraft)}.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.count{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-faint);letter-spacing:.08em;margin-bottom:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1.1rem}
+.card{border:1px solid var(--rule);border-radius:var(--radius);background:var(--white);display:flex;flex-direction:column;overflow:hidden;transition:transform .14s,box-shadow .14s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.thumb{aspect-ratio:4/3;background:var(--kraft);display:grid;place-items:center;cursor:pointer;border:none;width:100%;padding:0}
+.glyph{font-family:"Fraunces",serif;font-size:2.8rem;color:rgba(36,26,18,.22)}
+.card .body{padding:.85rem .9rem 1rem;display:flex;flex-direction:column;flex:1}
+.card .body h3{font-size:.98rem;line-height:1.2;margin-bottom:.3rem;cursor:pointer}.card .body h3:hover{color:var(--terra-deep)}
+.card .meta{font-family:"IBM Plex Mono",monospace;font-size:.66rem;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:.65rem}
+.card .foot2{margin-top:auto;display:flex;align-items:center;gap:.6rem}
+.card .price{font-family:"Fraunces",serif;font-size:1.1rem;font-weight:600}
+.flag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .4rem;border-radius:2px;border:1px solid currentColor;margin-right:.3rem}
+.flag.org{color:var(--grass)}.flag.kos{color:var(--ink-faint)}
+
+/* wholesale mode price swap */
+.ws-price{display:none}
+[data-mode=wholesale] .price{display:none}
+[data-mode=wholesale] .ws-price{display:block}
+[data-mode=wholesale] .retail-add{display:none}
+[data-mode=wholesale] .ws-add{display:inline-flex!important}
+.ws-add{display:none!important}
+
+/* ── Wholesale table ─────────────────────────────────────────────────────── */
+.tablewrap{border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);overflow:auto;max-height:70vh}
+table.sheet{border-collapse:collapse;width:100%;font-size:.87rem}
+table.sheet th,table.sheet td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--rule);white-space:nowrap}
+table.sheet thead th{position:sticky;top:0;background:var(--paper-2);z-index:2;font-family:"IBM Plex Mono",monospace;font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1.5px solid var(--ink)}
+table.sheet tbody tr:hover{background:rgba(223,206,173,.4)}
+table.sheet td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+table.sheet td.sku{font-family:"IBM Plex Mono",monospace;color:var(--terra-deep)}
+table.sheet td.desc{white-space:normal;min-width:240px;cursor:pointer}.sheet td.desc:hover{color:var(--terra-deep)}
+
+/* ── PDP ─────────────────────────────────────────────────────────────────── */
+.pdp{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1.5rem,4vw,3rem);padding-block:2.5rem}
+@media(max-width:820px){.pdp{grid-template-columns:1fr}}
+.pdp-visual{aspect-ratio:1/1;background:var(--kraft);border:1px solid var(--rule-strong);border-radius:var(--radius);display:grid;place-items:center}
+.pdp-visual .glyph{font-size:5rem}
+.pdp h1{font-size:clamp(1.9rem,4vw,3rem)}
+.pdp .price{font-family:"Fraunces",serif;font-size:2rem;margin:.2em 0 .1em}
+.pdp .ws-price{display:none;font-family:"Fraunces",serif;font-size:2rem;margin:.2em 0 .1em}
+[data-mode=wholesale] .pdp .price{display:none}[data-mode=wholesale] .pdp .ws-price{display:block}
+.per{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-faint);letter-spacing:.08em}
+.buyrow{display:flex;gap:.6rem;align-items:center;margin:1.5rem 0}
+.specbox{border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);margin-top:1.5rem}
+.specbox summary{cursor:pointer;padding:.85rem 1rem;list-style:none;font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);display:flex;justify-content:space-between}
+.specbox summary::-webkit-details-marker{display:none}.specbox summary::after{content:"+"}
+.specbox[open] summary::after{content:"–"}
+.specbox .inner{padding:0 1rem 1rem;border-top:1px solid var(--rule)}
+dl.spec{display:grid;grid-template-columns:auto 1fr;gap:.4rem 1.25rem;margin:1rem 0 0;font-size:.9rem}
+dl.spec dt{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);align-self:center}
+dl.spec dd{margin:0;font-family:"IBM Plex Mono",monospace}
+.backbtn{background:none;border:none;color:var(--terra-deep);font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;padding:0;margin-bottom:1.5rem;display:flex;align-items:center;gap:.4rem}
+.backbtn:hover{color:var(--terra)}
+
+/* ── Cart ────────────────────────────────────────────────────────────────── */
+table.plain{width:100%;border-collapse:collapse;font-size:.93rem}
+table.plain th,table.plain td{padding:.7rem .5rem;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+table.plain th{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+table.plain td.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.rmbtn{all:unset;cursor:pointer;color:var(--ink-faint);font-size:.85rem}.rmbtn:hover{color:var(--terra)}
+.totals{margin-left:auto;max-width:340px;margin-top:1.5rem}
+.totals div{display:flex;justify-content:space-between;padding:.4rem 0;font-family:"IBM Plex Mono",monospace;font-size:.88rem}
+.totals .grand{border-top:1.5px solid var(--ink);margin-top:.4rem;padding-top:.7rem;font-size:1.05rem;font-weight:700}
+.meter{border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:.9rem 1rem;margin-top:1.5rem}
+.meter .bar{height:6px;background:var(--kraft);border-radius:100px;overflow:hidden;margin:.6rem 0 .5rem}
+.meter .bar i{display:block;height:100%;background:var(--terra);transition:width .25s;border-radius:100px}
+.meter.met .bar i{background:var(--grass)}
+.meter p{margin:0;font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.06em;color:var(--ink-soft);max-width:none}
+.meter.met p{color:var(--grass)}.meter strong{font-weight:500;color:var(--ink)}
+.empty{text-align:center;padding:4rem 1rem;border:1px dashed var(--rule-strong);border-radius:var(--radius);color:var(--ink-soft)}
+.notice{border-left:3px solid var(--terra);background:rgba(174,78,40,.07);padding:.9rem 1rem;font-size:.9rem;border-radius:0 var(--radius) var(--radius) 0;margin-bottom:1.5rem}
+.notice p{margin:0;max-width:none}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.foot{border-top:1.5px solid var(--ink);margin-top:4rem;padding-block:2.5rem 3rem;background:rgba(223,206,173,.4)}
+.foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:2rem}
+@media(max-width:820px){.foot-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.foot-grid{grid-template-columns:1fr}}
+.foot h4{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);font-weight:400;margin-bottom:.8rem}
+.foot ul{list-style:none;margin:0;padding:0;font-size:.9rem}.foot li{margin-bottom:.4rem}
+.foot a{color:var(--ink-soft);text-decoration:none}.foot a:hover{color:var(--terra-deep);text-decoration:underline}
+.foot .brand{color:var(--ink)}
+.foot .legal{margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--rule);font-family:"IBM Plex Mono",monospace;font-size:.66rem;color:var(--ink-faint);letter-spacing:.06em}
+.certs{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem}
+.certs span{font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--rule-strong);padding:.3rem .5rem;border-radius:2px;color:var(--ink-soft)}
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:var(--paper);font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.06em;padding:.7rem 1.1rem;border-radius:var(--radius);box-shadow:var(--shadow);z-index:200;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="masthead">
+    <div class="shell masthead-in">
+      <button class="brand" onclick="show('home')">
+        <b>American Food &amp; Beverage</b>
+        <span>Since 1989 · Paterson, New Jersey</span>
+      </button>
+      <nav class="nav">
+        <button onclick="showShop('Nuts')" class="navbtn">Nuts &amp; Seeds</button>
+        <button onclick="showShop('Dried Fruits')" class="navbtn">Dried Fruit</button>
+        <button onclick="showShop('Trail Mixes')" class="navbtn">Trail Mixes</button>
+        <button onclick="showShop('Chocolate Covered')" class="navbtn">Chocolate</button>
+        <button onclick="showShop()" class="navbtn">All Products</button>
+        <button onclick="show('about')" class="navbtn">About</button>
+        <span class="stamp">
+          <button class="on" id="btn-retail" onclick="setMode('retail')">Retail</button>
+          <button id="btn-ws" onclick="setMode('wholesale')">Wholesale</button>
+        </span>
+        <button class="cartbtn" onclick="show('cart')">Cart <b id="hdr-ct">0</b></button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- HOME PAGE                                                               -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page show" id="page-home">
+<main>
+  <div class="shell">
+    <div class="hero hero-grid">
+      <div>
+        <span class="eyebrow">Est. 1989 · Paterson, New Jersey</span>
+        <h1>The bulk-food source for serious buyers</h1>
+        <p class="lede">Importer, roaster and packer — nuts, dried fruit, trail mixes, chocolate, granolas and snacks. Four SQF-certified facilities on 10 acres in New Jersey.</p>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.75rem">
+          <button class="btn" onclick="showShop()">Browse catalog</button>
+          <button class="btn ghost" onclick="setMode('wholesale');showShop()">Wholesale pricing</button>
+        </div>
+      </div>
+      <div class="wall">
+        <div class="wall-head">
+          <span>Live SKUs</span><span id="wall-mode-label">Retail</span>
+        </div>
+        <ol id="wall-list"></ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- category strip -->
+  <section class="band tint">
+    <div class="shell">
+      <span class="eyebrow">Browse by category</span>
+      <div class="cols" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.85rem">
+        <button onclick="showShop('Nuts')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🥜</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Nuts &amp; Seeds</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">140 SKUs</div>
+        </button>
+        <button onclick="showShop('Dried Fruits')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🍑</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Dried Fruits</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">61 SKUs</div>
+        </button>
+        <button onclick="showShop('Trail Mixes')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🥾</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Trail Mixes</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">48 SKUs</div>
+        </button>
+        <button onclick="showShop('Chocolate Covered')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🍫</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Chocolate</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">43 SKUs</div>
+        </button>
+        <button onclick="showShop('Granolas & Crunches')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🌾</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Granolas</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">22 SKUs</div>
+        </button>
+        <button onclick="showShop('Candy & Gummies')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🍬</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Candy &amp; Gummies</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">20 SKUs</div>
+        </button>
+        <button onclick="showShop('Plantain Chips')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🍟</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Plantain Chips</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">11 SKUs</div>
+        </button>
+        <button onclick="showShop('Grains, Beans & Lentils')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🫘</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Grains &amp; Legumes</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">16 SKUs</div>
+        </button>
+        <button onclick="showShop('Flavored Gourmet Nuts')" style="all:unset;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--white);padding:1rem .9rem;text-align:left;transition:transform .12s,box-shadow .12s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:1.6rem;margin-bottom:.4rem">🌰</div>
+          <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:600">Gourmet Nuts</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--ink-faint);margin-top:.25rem;letter-spacing:.06em">8 SKUs</div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- fork -->
+  <section class="band"><div class="shell">
+    <span class="eyebrow">Who are you buying for?</span>
+    <h2>Two modes, one catalog</h2>
+  </div></section>
+  <div class="shell fork" style="margin-top:-.5rem">
+    <button class="fork-card" onclick="setMode('retail');showShop()">
+      <span class="eyebrow">Retail</span>
+      <h2>Consumer &amp; home buyers</h2>
+      <p>Retail-priced containers, add to cart, free shipping on orders over $75. Tax included at checkout.</p>
+      <span class="go">Shop retail →</span>
+    </button>
+    <button class="fork-card ws" onclick="setMode('wholesale');showShop()">
+      <span class="eyebrow">Wholesale</span>
+      <h2>Food businesses &amp; resellers</h2>
+      <p>Case pricing, 20-case opening order minimum. Download price sheet or submit a quote request.</p>
+      <span class="go">View wholesale catalog →</span>
+    </button>
+  </div>
+
+  <!-- about strip -->
+  <section class="band tint"><div class="shell">
+    <div class="cols">
+      <div>
+        <span class="eyebrow">Sourcing</span>
+        <h3>Direct from origin</h3>
+        <p>Farms and cooperatives across the Americas, Mediterranean, Middle East, and Southeast Asia — direct relationships, no middlemen.</p>
+      </div>
+      <div>
+        <span class="eyebrow">Processing</span>
+        <h3>In-house roasting &amp; packing</h3>
+        <p>Four facilities on 10 acres in Paterson, NJ. We control every step from raw-material receipt to finished pack.</p>
+      </div>
+      <div>
+        <span class="eyebrow">Certifications</span>
+        <h3>SQF · Organic · Kosher</h3>
+        <p>SQF Level 2 Food Safety, USDA Organic, and OU Kosher — the documentation your buyers already expect.</p>
+      </div>
+      <div>
+        <span class="eyebrow">Formats</span>
+        <h3>Any pack, any volume</h3>
+        <p>Retail pouches, food-service cases, drum packs. Private-label and contract packing programs available.</p>
+      </div>
+    </div>
+    <div class="stats" style="margin-top:2rem">
+      <div class="stat"><b>1989</b><span>Founded</span></div>
+      <div class="stat"><b>4</b><span>NJ Facilities</span></div>
+      <div class="stat"><b>10 ac</b><span>Campus</span></div>
+      <div class="stat"><b>369</b><span>Active SKUs</span></div>
+      <div class="stat"><b>SQF</b><span>Level 2</span></div>
+    </div>
+  </div></section>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SHOP PAGE                                                               -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-shop">
+<main>
+  <div class="shell" style="padding-top:2rem">
+    <h1 id="shop-h1">All Products</h1>
+    <p style="color:var(--ink-soft);margin-bottom:1.5rem" id="shop-sub">369 SKUs across 10 categories</p>
+
+    <div class="toolbar">
+      <div class="grow"><input type="search" id="q" placeholder="Search by name, item #, or category…" oninput="renderGrid()"></div>
+      <button class="btn sm ghost" onclick="dlCSV()">⬇ Price Sheet (CSV)</button>
+    </div>
+
+    <!-- retail grid view -->
+    <div id="retail-view">
+      <div class="chiprow" id="chips"></div>
+      <div class="count" id="count-line"></div>
+      <div class="grid" id="product-grid"></div>
+    </div>
+
+    <!-- wholesale table view -->
+    <div id="ws-view" style="display:none">
+      <div class="chiprow" id="ws-chips"></div>
+      <div class="count" id="ws-count"></div>
+      <div class="tablewrap">
+        <table class="sheet">
+          <thead><tr>
+            <th>Item #</th><th>Description</th><th>Category</th>
+            <th>Format</th><th class="num">Unit Oz</th>
+            <th class="num">Case Qty</th><th class="num">MOQ</th>
+            <th class="num">Wholesale</th><th></th>
+          </tr></thead>
+          <tbody id="ws-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- PRODUCT DETAIL                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-pdp">
+<main>
+  <div class="shell" style="padding-top:1.75rem;padding-bottom:3rem">
+    <button class="backbtn" onclick="show('shop')">← Back to catalog</button>
+    <div class="pdp" id="pdp-body"></div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- CART                                                                    -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-cart">
+<main>
+  <div class="shell" style="padding-top:2rem;padding-bottom:4rem">
+    <h1 id="cart-h1">Your Cart</h1>
+    <div id="cart-body"></div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- ABOUT                                                                   -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-about">
+<main>
+  <div class="shell" style="padding-top:2.5rem;padding-bottom:4rem">
+    <span class="eyebrow">Our Story</span>
+    <h1>Feeding America since 1989</h1>
+    <p style="font-size:1.1rem;color:var(--ink-soft);max-width:60ch;margin-bottom:2rem">What started as a small importer in Paterson, NJ has grown over 35 years into one of the East Coast's leading bulk-food processors — still family-operated, still in Paterson.</p>
+    <div class="cols">
+      <div><h3>Four facilities on 10 acres</h3><p>All roasting, blending, flavoring, packing, and shipping happens on our own NJ campus. No co-packers, no surprises.</p></div>
+      <div><h3>Direct-source buying</h3><p>Our buyers travel annually to origin — California, Chile, Turkey, Iran, India, Vietnam — securing crop position direct from growers.</p></div>
+      <div><h3>SQF Level 2 certified</h3><p>Safe Quality Food Level 2 certification covers our full manufacturing process. Third-party audited annually.</p></div>
+      <div><h3>USDA Organic &amp; OU Kosher</h3><p>Organic certification for qualifying products; OU Kosher across the full line. Certificates available on request.</p></div>
+    </div>
+    <div class="stats" style="margin-top:2rem">
+      <div class="stat"><b>1989</b><span>Year Founded</span></div>
+      <div class="stat"><b>4</b><span>Facilities</span></div>
+      <div class="stat"><b>10 ac</b><span>Campus</span></div>
+      <div class="stat"><b>369</b><span>Active SKUs</span></div>
+      <div class="stat"><b>30+</b><span>Countries Sourced</span></div>
+    </div>
+    <div style="margin-top:2.5rem;display:flex;gap:.75rem;flex-wrap:wrap">
+      <button class="btn" onclick="showShop()">Browse the catalog</button>
+      <button class="btn ghost" onclick="show('home')">Back to home</button>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                                  -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<footer class="foot">
+  <div class="shell">
+    <div class="foot-grid">
+      <div>
+        <button class="brand" onclick="show('home')" style="margin-bottom:.85rem">
+          <b>American Food &amp; Beverage</b>
+          <span>Since 1989 · Paterson, NJ</span>
+        </button>
+        <p style="font-size:.9rem;color:var(--ink-soft);max-width:28ch">Importer, roaster and packer. Four facilities on 10 acres in Paterson, NJ.</p>
+        <div class="certs"><span>SQF Level 2</span><span>USDA Organic</span><span>OU Kosher</span></div>
+      </div>
+      <div><h4>Products</h4><ul>
+        <li><a href="#" onclick="showShop('Nuts');return false">Nuts &amp; Seeds</a></li>
+        <li><a href="#" onclick="showShop('Dried Fruits');return false">Dried Fruits</a></li>
+        <li><a href="#" onclick="showShop('Trail Mixes');return false">Trail Mixes</a></li>
+        <li><a href="#" onclick="showShop('Chocolate Covered');return false">Chocolate</a></li>
+        <li><a href="#" onclick="showShop();return false">All Categories</a></li>
+      </ul></div>
+      <div><h4>Company</h4><ul>
+        <li><a href="#" onclick="show('about');return false">About Us</a></li>
+        <li><a href="#">Certifications</a></li>
+        <li><a href="#">Private Label</a></li>
+        <li><a href="#">Careers</a></li>
+      </ul></div>
+      <div><h4>Contact</h4><ul>
+        <li><a href="tel:+19083456345">(908) 345-6345</a></li>
+        <li><a href="mailto:sales@afbfoods.com">sales@afbfoods.com</a></li>
+        <li style="color:var(--ink-faint);font-size:.88rem;margin-top:.5rem">123 Industrial Ave<br>Paterson, NJ 07501</li>
+      </ul></div>
+    </div>
+    <div class="legal">© 2025 American Food &amp; Beverage. All rights reserved. &nbsp;·&nbsp; Demo — sample prices for illustration only.</div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- DATA + LOGIC                                                            -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Real products from catalog.json with sample prices ─────────────────── */
+var CAT_EMOJI={
+  "Nuts":"🥜","Seeds":"🌱","Flavored Gourmet Nuts":"🌰",
+  "Dried Fruits":"🍑","Trail Mixes":"🥾",
+  "Granolas & Crunches":"🌾","Chocolate Covered":"🍫",
+  "Candy & Gummies":"🍬","Plantain Chips":"🍟",
+  "Grains, Beans & Lentils":"🫘"
+};
+
+var PRODUCTS=[
+  // Nuts
+  {id:"6000501",name:"Organic Almonds Raw",cat:"Nuts",format:"16 oz Container",oz:9.5,caseQty:12,moq:1,organic:true,retail:6.92,ws:5.00},
+  {id:"6000502",name:"Organic Almonds Roasted Salted",cat:"Nuts",format:"16 oz Container",oz:9.5,caseQty:12,moq:1,organic:true,retail:6.33,ws:4.67},
+  {id:"6000503",name:"Organic Almonds Roasted Unsalted",cat:"Nuts",format:"16 oz Container",oz:9.5,caseQty:12,moq:1,organic:true,retail:7.08,ws:5.48},
+  {id:"6010503",name:"Organic Cashews Raw",cat:"Nuts",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:true,retail:6.95,ws:5.05},
+  {id:"6010504",name:"Organic Cashews Roasted Salted",cat:"Nuts",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:true,retail:6.22,ws:4.49},
+  {id:"6010505",name:"Organic Cashews Roasted Unsalted",cat:"Nuts",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:true,retail:5.91,ws:4.49},
+  {id:"6050501",name:"Organic Hazelnuts Oregon",cat:"Nuts",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:true,retail:5.61,ws:4.13},
+  {id:"6080505",name:"Organic Mixed Nuts Salted",cat:"Nuts",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:true,retail:6.57,ws:5.02},
+  {id:"6080506",name:"Organic Mixed Nuts Unsalted",cat:"Nuts",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:true,retail:6.57,ws:5.04},
+  // Seeds
+  {id:"2890400",name:"Pepitas Raw",cat:"Seeds",format:"16 oz Container",oz:6,caseQty:16,moq:1,organic:false,retail:2.26,ws:1.76},
+  {id:"2890401",name:"Pepitas Roasted Salted",cat:"Seeds",format:"16 oz Container",oz:6,caseQty:16,moq:1,organic:false,retail:2.26,ws:1.70},
+  {id:"2890402",name:"Pepitas Roasted Unsalted",cat:"Seeds",format:"16 oz Container",oz:6,caseQty:16,moq:1,organic:false,retail:2.75,ws:2.12},
+  {id:"2890505",name:"Pumpkin Seeds In-Shell Salted",cat:"Seeds",format:"16 oz Container",oz:6,caseQty:12,moq:1,organic:false,retail:2.49,ws:1.93},
+  {id:"2890506",name:"Pumpkin Seeds In-Shell Unsalted",cat:"Seeds",format:"16 oz Container",oz:6,caseQty:12,moq:1,organic:false,retail:2.67,ws:2.09},
+  // Flavored Gourmet Nuts
+  {id:"2800516C",name:"Marcona Almonds Salted",cat:"Flavored Gourmet Nuts",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:6.77,ws:5.26},
+  {id:"2800520C",name:"Marcona Almonds With Truffle",cat:"Flavored Gourmet Nuts",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:8.03,ws:6.13},
+  {id:"2800521",name:"Marcona Almonds Lemon & Pepper",cat:"Flavored Gourmet Nuts",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:7.25,ws:5.59},
+  {id:"2810520",name:"Cashews With Truffle",cat:"Flavored Gourmet Nuts",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:false,retail:6.26,ws:4.72},
+  // Dried Fruits
+  {id:"2910529",name:"Apple Rings",cat:"Dried Fruits",format:"16 oz Container",oz:4.5,caseQty:12,moq:1,organic:false,retail:2.48,ws:1.79},
+  {id:"2910415",name:"Apricots Turkish",cat:"Dried Fruits",format:"16 oz Container",oz:11,caseQty:12,moq:1,organic:false,retail:6.06,ws:4.70},
+  {id:"2910513",name:"Apricots Californian",cat:"Dried Fruits",format:"16 oz Container",oz:11,caseQty:12,moq:1,organic:false,retail:5.42,ws:3.97},
+  {id:"2910553",name:"Coconut Chips",cat:"Dried Fruits",format:"16 oz Container",oz:6,caseQty:12,moq:1,organic:false,retail:3.42,ws:2.55},
+  {id:"2910555",name:"Coconut Flakes",cat:"Dried Fruits",format:"16 oz Container",oz:4,caseQty:12,moq:1,organic:false,retail:1.85,ws:1.35},
+  {id:"2910501",name:"Cranberries",cat:"Dried Fruits",format:"16 oz Container",oz:8,caseQty:12,moq:1,organic:false,retail:4.45,ws:3.42},
+  {id:"2910519",name:"Dates Medjool",cat:"Dried Fruits",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:false,retail:4.96,ws:3.86},
+  // Trail Mixes
+  {id:"3000503",name:"All Natural Healthy Mix",cat:"Trail Mixes",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:false,retail:5.58,ws:4.45},
+  {id:"3000541",name:"Antioxidant Mix",cat:"Trail Mixes",format:"16 oz Container",oz:8,caseQty:12,moq:1,organic:false,retail:4.77,ws:3.65},
+  {id:"3000514",name:"Berry Nutty Mix",cat:"Trail Mixes",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:6.64,ws:5.11},
+  {id:"3000427",name:"Cajun Hot Mix",cat:"Trail Mixes",format:"16 oz Container",oz:5,caseQty:16,moq:1,organic:false,retail:3.35,ws:2.57},
+  {id:"3000517",name:"California Aloha Mix",cat:"Trail Mixes",format:"16 oz Container",oz:8,caseQty:12,moq:1,organic:false,retail:5.17,ws:3.74},
+  {id:"3000513",name:"Cherry Berry Mix",cat:"Trail Mixes",format:"16 oz Container",oz:8,caseQty:12,moq:1,organic:false,retail:4.59,ws:3.41},
+  // Chocolate Covered
+  {id:"3140407",name:"Graham Crackers Dark Choc.",cat:"Chocolate Covered",format:"16 oz Container",oz:5,caseQty:12,moq:1,organic:false,retail:3.22,ws:2.38},
+  {id:"3140406",name:"Graham Crackers Milk Choc.",cat:"Chocolate Covered",format:"16 oz Container",oz:5,caseQty:12,moq:1,organic:false,retail:3.24,ws:2.40},
+  {id:"3200501",name:"Nonpareils Dark Chocolate",cat:"Chocolate Covered",format:"16 oz Container",oz:10.5,caseQty:12,moq:1,organic:false,retail:7.78,ws:5.83},
+  {id:"3210402",name:"Almonds Dark Chocolate",cat:"Chocolate Covered",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:6.95,ws:5.12},
+  {id:"3210401",name:"Almonds Milk Chocolate",cat:"Chocolate Covered",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:6.77,ws:5.38},
+  {id:"3210403",name:"Almonds Yogurt Covered",cat:"Chocolate Covered",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:7.43,ws:5.71},
+  // Granolas & Crunches
+  {id:"3100503",name:"Honey Nut & Seed Crunch",cat:"Granolas & Crunches",format:"16 oz Container",oz:8,caseQty:12,moq:1,organic:false,retail:3.45,ws:2.49},
+  {id:"3100501",name:"Honey Peanut Crunch",cat:"Granolas & Crunches",format:"16 oz Container",oz:8,caseQty:12,moq:1,organic:false,retail:3.52,ws:2.61},
+  {id:"3100502",name:"Honey Sesame Crunch",cat:"Granolas & Crunches",format:"16 oz Container",oz:7,caseQty:12,moq:1,organic:false,retail:3.00,ws:2.39},
+  {id:"3190502",name:"Oat Bran Sticks",cat:"Granolas & Crunches",format:"16 oz Container",oz:5.5,caseQty:12,moq:1,organic:false,retail:2.77,ws:2.06},
+  {id:"3190505",name:"Oriental Rice Snack",cat:"Granolas & Crunches",format:"16 oz Container",oz:4,caseQty:12,moq:1,organic:false,retail:1.91,ws:1.44},
+  // Candy & Gummies
+  {id:"3360614",name:"Gummy Worms Sour",cat:"Candy & Gummies",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:7.34,ws:5.55},
+  {id:"3310604",name:"Jelly Beans",cat:"Candy & Gummies",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:6.28,ws:4.65},
+  {id:"3310605",name:"Raspberries Red & Black",cat:"Candy & Gummies",format:"16 oz Container",oz:9,caseQty:12,moq:1,organic:false,retail:6.09,ws:4.51},
+  {id:"3370602",name:"Red Fish",cat:"Candy & Gummies",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:6.80,ws:5.38},
+  // Plantain Chips
+  {id:"3110501",name:"Banana Chips Sweetened",cat:"Plantain Chips",format:"16 oz Container",oz:5,caseQty:12,moq:1,organic:false,retail:2.10,ws:1.55},
+  {id:"3110703",name:"Plantain Chips Garlic",cat:"Plantain Chips",format:"16 oz Container",oz:7,caseQty:12,moq:1,organic:false,retail:3.38,ws:2.57},
+  {id:"3110702",name:"Plantain Chips Salted",cat:"Plantain Chips",format:"16 oz Container",oz:7,caseQty:12,moq:1,organic:false,retail:2.71,ws:1.96},
+  {id:"3110704",name:"Plantain Chips Spicy",cat:"Plantain Chips",format:"16 oz Container",oz:7,caseQty:12,moq:1,organic:false,retail:2.73,ws:2.10},
+  // Grains, Beans & Lentils
+  {id:"2112008",name:"Blackeyed Peas",cat:"Grains, Beans & Lentils",format:"16 oz Container",oz:16,caseQty:20,moq:1,organic:false,retail:6.15,ws:4.64},
+  {id:"2150513",name:"Chia Seeds",cat:"Grains, Beans & Lentils",format:"16 oz Container",oz:11,caseQty:12,moq:1,organic:false,retail:3.53,ws:2.65},
+  {id:"2112012",name:"Chick Peas / Garbanzos",cat:"Grains, Beans & Lentils",format:"16 oz Container",oz:16,caseQty:20,moq:1,organic:false,retail:6.43,ws:4.90},
+  {id:"2120539",name:"Couscous Israeli",cat:"Grains, Beans & Lentils",format:"16 oz Container",oz:10,caseQty:12,moq:1,organic:false,retail:4.00,ws:3.16},
+];
+
+var MINIMUMS={retail:{orderSubtotal:35,freeShippingAt:75,shippingFlat:9.95,taxRate:0.06625},
+              wholesale:{orderCases:20}};
+
+/* ── State ───────────────────────────────────────────────────────────────── */
+var mode='retail', activeCat='All', cart=[], curPdpId=null;
+
+/* ── Routing ─────────────────────────────────────────────────────────────── */
+function show(pg){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('show')});
+  var el=document.getElementById('page-'+pg);
+  if(el) el.classList.add('show');
+  window.scrollTo(0,0);
+  if(pg==='cart') renderCart();
+  if(pg==='home') renderWall();
+}
+function showShop(cat){
+  if(cat!==undefined) activeCat=cat;
+  show('shop');
+  renderShop();
+}
+function showPdp(id){
+  curPdpId=id;
+  show('pdp');
+  renderPdp(id);
+}
+
+/* ── Mode ────────────────────────────────────────────────────────────────── */
+function setMode(m){
+  mode=m;
+  document.documentElement.dataset.mode=m;
+  document.getElementById('btn-retail').classList.toggle('on',m==='retail');
+  document.getElementById('btn-ws').classList.toggle('on',m==='wholesale');
+  document.getElementById('wall-mode-label').textContent=m==='retail'?'Retail':'Wholesale';
+  // re-render whatever's open
+  if(document.getElementById('page-shop').classList.contains('show')) renderShop();
+  if(document.getElementById('page-pdp').classList.contains('show')) renderPdp(curPdpId);
+  renderWall();
+}
+
+/* ── Wall ─────────────────────────────────────────────────────────────────── */
+function renderWall(){
+  var picks=PRODUCTS.slice(0,10);
+  document.getElementById('wall-list').innerHTML=picks.map(function(p){
+    var price=mode==='retail'?p.retail:p.ws;
+    return '<li><b>'+p.id+'</b><i>'+p.name+'</i><em>$'+price.toFixed(2)+'</em></li>';
+  }).join('');
+}
+
+/* ── Shop: categories ────────────────────────────────────────────────────── */
+var CATS=['All','Nuts','Seeds','Flavored Gourmet Nuts','Dried Fruits','Trail Mixes',
+          'Granolas & Crunches','Chocolate Covered','Candy & Gummies',
+          'Plantain Chips','Grains, Beans & Lentils'];
+
+function renderShop(){
+  // update heading
+  document.getElementById('shop-h1').textContent=activeCat==='All'?'All Products':activeCat;
+  document.getElementById('shop-sub').textContent=activeCat==='All'
+    ?'54 sample SKUs — '+PRODUCTS.length+' in full catalog'
+    :'Showing '+activeCat;
+
+  if(mode==='wholesale'){
+    document.getElementById('retail-view').style.display='none';
+    document.getElementById('ws-view').style.display='block';
+    renderWsTable();
+  } else {
+    document.getElementById('retail-view').style.display='block';
+    document.getElementById('ws-view').style.display='none';
+    renderChips('chips');
+    renderGrid();
+  }
+}
+
+function renderChips(id){
+  document.getElementById(id).innerHTML=CATS.map(function(c){
+    var lbl=c==='All'?'All':c;
+    return '<button class="chip'+(activeCat===c?' on':'')+'" onclick="setCat(\''+escQ(c)+'\')">'+lbl+'</button>';
+  }).join('');
+}
+
+function setCat(c){activeCat=c;document.getElementById('q').value='';renderShop()}
+
+function renderGrid(){
+  var q=(document.getElementById('q').value||'').toLowerCase().trim();
+  var list=filter(q);
+  document.getElementById('count-line').textContent=list.length+' product'+(list.length!==1?'s':'')+' shown';
+  var g=document.getElementById('product-grid');
+  if(!list.length){g.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>No results</h3><p>Try a different search or category filter.</p></div>';return}
+  g.innerHTML=list.map(function(p){
+    var em=CAT_EMOJI[p.cat]||'●';
+    var flags=(p.organic?'<span class="flag org">Organic</span>':'')+' <span class="flag kos">Kosher</span>';
+    return '<div class="card">'+
+      '<button class="thumb" onclick="showPdp(\''+p.id+'\')"><span class="glyph">'+em+'</span></button>'+
+      '<div class="body">'+
+        '<h3 onclick="showPdp(\''+p.id+'\')" >'+p.name+'</h3>'+
+        '<div class="meta">'+p.id+' &middot; '+p.format+'</div>'+
+        '<div style="margin-bottom:.65rem">'+flags+'</div>'+
+        '<div class="foot2">'+
+          '<span class="price retail-price">$'+p.retail.toFixed(2)+'</span>'+
+          '<span class="ws-price">$'+p.ws.toFixed(2)+'</span>'+
+          '<button class="btn sm retail-add" onclick="addItem(\''+p.id+'\',1)" style="margin-left:auto">Add</button>'+
+          '<button class="btn sm ws-add terra" onclick="addItem(\''+p.id+'\',1)" style="margin-left:auto;display:none">RFQ</button>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
+}
+
+function renderWsTable(){
+  var q=(document.getElementById('q').value||'').toLowerCase().trim();
+  var list=filter(q);
+  document.getElementById('ws-count').textContent=list.length+' product'+(list.length!==1?'s':'')+' shown';
+  // chips for wholesale
+  document.getElementById('ws-chips').innerHTML=CATS.map(function(c){
+    return '<button class="chip'+(activeCat===c?' on':'')+'" onclick="setCat(\''+escQ(c)+'\')">'+c+'</button>';
+  }).join('');
+  document.getElementById('ws-tbody').innerHTML=list.map(function(p){
+    var em=CAT_EMOJI[p.cat]||'';
+    return '<tr>'+
+      '<td class="sku">'+p.id+'</td>'+
+      '<td class="desc" onclick="showPdp(\''+p.id+'\')">'+em+' '+p.name+
+        (p.organic?' <span class="flag org" style="vertical-align:middle">Org</span>':'')+'</td>'+
+      '<td>'+p.cat+'</td>'+
+      '<td>'+p.format+'</td>'+
+      '<td class="num">'+p.oz+'</td>'+
+      '<td class="num">'+p.caseQty+'</td>'+
+      '<td class="num">'+p.moq+'</td>'+
+      '<td class="num">$'+p.ws.toFixed(2)+'</td>'+
+      '<td><button class="btn sm terra" onclick="addItem(\''+p.id+'\',1)">RFQ</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function filter(q){
+  return PRODUCTS.filter(function(p){
+    var catOk=activeCat==='All'||p.cat===activeCat;
+    var qOk=!q||(p.name+' '+p.id+' '+p.cat+' '+p.format).toLowerCase().indexOf(q)>-1;
+    return catOk&&qOk;
+  });
+}
+
+/* ── PDP ─────────────────────────────────────────────────────────────────── */
+function renderPdp(id){
+  var p=PRODUCTS.find(function(x){return x.id===id});
+  if(!p) return;
+  var em=CAT_EMOJI[p.cat]||'●';
+  var lbs=(p.oz/16).toFixed(1);
+  document.getElementById('pdp-body').innerHTML=
+    '<div class="pdp-visual"><span class="glyph" style="font-size:6rem">'+em+'</span></div>'+
+    '<div>'+
+      '<span class="eyebrow">'+p.cat+'</span>'+
+      '<h1>'+p.name+'</h1>'+
+      '<div class="price retail-price">$'+p.retail.toFixed(2)+'</div>'+
+      '<div class="ws-price" style="display:none">$'+p.ws.toFixed(2)+'</div>'+
+      '<div class="per">per container &middot; '+p.oz+' oz net wt. ('+lbs+' lb)</div>'+
+      '<div style="margin:.85rem 0">'+
+        (p.organic?'<span class="flag org">USDA Organic</span>':'')+
+        ' <span class="flag kos">OU Kosher</span>'+
+      '</div>'+
+      '<div class="buyrow">'+
+        '<input type="number" id="pdp-qty" value="1" min="1" max="99">'+
+        '<button class="btn retail-add" onclick="addFromPdp()">Add to Cart</button>'+
+        '<button class="btn terra ws-add" onclick="addFromPdp()" style="display:none">Add to Quote</button>'+
+      '</div>'+
+      '<details class="specbox">'+
+        '<summary>Product Specifications</summary>'+
+        '<div class="inner"><dl class="spec">'+
+          '<dt>Item #</dt><dd>'+p.id+'</dd>'+
+          '<dt>Format</dt><dd>'+p.format+'</dd>'+
+          '<dt>Net Weight</dt><dd>'+p.oz+' oz ('+lbs+' lb)</dd>'+
+          '<dt>Case Qty</dt><dd>'+p.caseQty+' units</dd>'+
+          '<dt>Min. Order</dt><dd>'+p.moq+' case'+(p.moq!==1?'s':'')+'</dd>'+
+          '<dt>Retail Price</dt><dd>$'+p.retail.toFixed(2)+'/unit</dd>'+
+          '<dt>Wholesale</dt><dd>$'+p.ws.toFixed(2)+'/unit</dd>'+
+          '<dt>Organic</dt><dd>'+(p.organic?'Yes — USDA Certified':'No')+'</dd>'+
+          '<dt>Kosher</dt><dd>Yes — OU Certified</dd>'+
+        '</dl></div>'+
+      '</details>'+
+    '</div>';
+}
+function addFromPdp(){
+  var qty=parseInt(document.getElementById('pdp-qty').value)||1;
+  addItem(curPdpId,qty);
+}
+
+/* ── Cart ────────────────────────────────────────────────────────────────── */
+function addItem(id,qty){
+  var row=cart.find(function(r){return r.id===id});
+  if(row) row.qty+=qty; else cart.push({id:id,qty:qty});
+  updateHdrCount();
+  toast('Added to '+(mode==='wholesale'?'quote':'cart')+'  ✓');
+}
+function removeItem(id){
+  cart=cart.filter(function(r){return r.id!==id});
+  updateHdrCount();
+  renderCart();
+}
+function updateHdrCount(){
+  document.getElementById('hdr-ct').textContent=cart.reduce(function(n,r){return n+r.qty},0);
+}
+
+function renderCart(){
+  var el=document.getElementById('cart-body');
+  document.getElementById('cart-h1').textContent=mode==='wholesale'?'Quote Request':'Your Cart';
+
+  if(!cart.length){
+    el.innerHTML='<div class="empty"><h3>Your '+(mode==='wholesale'?'quote request':'cart')+' is empty</h3>'+
+      '<p>Head to the catalog and add some products.</p>'+
+      '<button class="btn" onclick="showShop()" style="margin-top:1.25rem">Browse catalog</button></div>';
+    return;
+  }
+
+  var subtotal=0, cases=0;
+  var rows=cart.map(function(r){
+    var p=PRODUCTS.find(function(x){return x.id===r.id});
+    if(!p) return '';
+    var u=mode==='retail'?p.retail:p.ws;
+    var line=u*r.qty;
+    subtotal+=line; cases+=r.qty;
+    return '<tr>'+
+      '<td><strong style="cursor:pointer" onclick="showPdp(\''+p.id+'\')">'+p.name+'</strong>'+
+        '<br><span style="font-family:\'IBM Plex Mono\',monospace;font-size:.68rem;color:var(--ink-faint)">'+p.id+' &middot; '+p.format+'</span></td>'+
+      '<td class="num">$'+u.toFixed(2)+'</td>'+
+      '<td class="num">'+r.qty+'</td>'+
+      '<td class="num">$'+line.toFixed(2)+'</td>'+
+      '<td><button class="rmbtn" onclick="removeItem(\''+r.id+'\')" title="Remove">✕</button></td>'+
+    '</tr>';
+  }).join('');
+
+  var meterHtml='', totalHtml='', checkoutBtn='';
+
+  if(mode==='retail'){
+    var min=MINIMUMS.retail;
+    var met=subtotal>=min.orderSubtotal;
+    var pct=Math.min(100,(subtotal/min.orderSubtotal)*100);
+    var shipping=subtotal>=min.freeShippingAt?0:min.shippingFlat;
+    var tax=subtotal*min.taxRate;
+    var total=subtotal+shipping+tax;
+    meterHtml='<div class="meter'+(met?' met':'')+'">'+
+      '<div style="display:flex;justify-content:space-between"><strong>Order minimum</strong>'+
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:.72rem">'+(met?'✓ Met':'$'+Math.max(0,min.orderSubtotal-subtotal).toFixed(2)+' to go')+'</span></div>'+
+      '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+      '<p>'+(met?'Your order meets the $'+min.orderSubtotal.toFixed(2)+' minimum.':'Add $'+Math.max(0,min.orderSubtotal-subtotal).toFixed(2)+' more to reach the $'+min.orderSubtotal.toFixed(2)+' order minimum.')+'</p></div>';
+    totalHtml='<div><span>Subtotal</span><span>$'+subtotal.toFixed(2)+'</span></div>'+
+      '<div><span>Shipping</span><span>'+(shipping===0?'Free':'$'+shipping.toFixed(2))+'</span></div>'+
+      '<div><span>NJ Sales Tax (6.625%)</span><span>$'+tax.toFixed(2)+'</span></div>'+
+      '<div class="grand"><span>Total</span><span>$'+total.toFixed(2)+'</span></div>';
+    checkoutBtn='<button class="btn'+(met?'':' ghost')+'" onclick="checkout()"'+(met?'':' title="Minimum not met yet"')+'>Proceed to Checkout</button>';
+  } else {
+    var wsMin=MINIMUMS.wholesale;
+    var wsOk=cases>=wsMin.orderCases;
+    meterHtml='<div class="meter'+(wsOk?' met':'')+'">'+
+      '<div style="display:flex;justify-content:space-between"><strong>Wholesale minimum</strong>'+
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:.72rem">'+(wsOk?'✓ Met':cases+' / '+wsMin.orderCases+' cases')+'</span></div>'+
+      '<div class="bar"><i style="width:'+Math.min(100,(cases/wsMin.orderCases)*100)+'%"></i></div>'+
+      '<p>'+(wsOk?'Opening order minimum of '+wsMin.orderCases+' cases met.':'Opening order minimum is '+wsMin.orderCases+' cases. Add '+(wsMin.orderCases-cases)+' more.')+'</p></div>';
+    totalHtml='<div><span>Units</span><span>'+cases+'</span></div>'+
+      '<div><span>Wholesale subtotal</span><span>$'+subtotal.toFixed(2)+'</span></div>'+
+      '<div class="grand"><span>Estimated total</span><span>$'+subtotal.toFixed(2)+'</span></div>'+
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:.66rem;color:var(--ink-faint);padding-top:.35rem">Shipping quoted separately</div>';
+    checkoutBtn='<button class="btn terra" onclick="checkout()">Submit Quote Request</button>';
+  }
+
+  el.innerHTML=
+    '<div style="overflow-x:auto"><table class="plain">'+
+      '<thead><tr><th>Product</th><th class="num">Unit</th><th class="num">Qty</th><th class="num">Line</th><th></th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table></div>'+
+    meterHtml+
+    '<div class="totals">'+totalHtml+'</div>'+
+    '<div style="margin-top:1.75rem;display:flex;gap:.75rem;flex-wrap:wrap">'+
+      checkoutBtn+
+      '<button class="btn ghost" onclick="showShop()">Continue Shopping</button>'+
+    '</div>';
+}
+
+function checkout(){
+  toast(mode==='wholesale'
+    ?'Quote submitted! We\'ll respond within 24 hours.'
+    :'Order placed! Confirmation sent to rudycato@gmail.com.');
+  cart=[]; updateHdrCount(); renderCart();
+}
+
+/* ── CSV ─────────────────────────────────────────────────────────────────── */
+function dlCSV(){
+  var head=["Item #","Description","Category","Format","Unit Oz","Case Qty","MOQ","Retail","Wholesale","Organic","Kosher"];
+  var rows=PRODUCTS.map(function(p){
+    return [p.id,p.name,p.cat,p.format,p.oz,p.caseQty,p.moq,
+      '$'+p.retail.toFixed(2),'$'+p.ws.toFixed(2),p.organic?'Yes':'','Yes'];
+  });
+  var csv=[head].concat(rows).map(function(r){
+    return r.map(function(c){c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(',');
+  }).join('\r\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='AFB-price-sheet.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+var _tt;
+function toast(msg){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(function(){el.classList.remove('show')},2500);
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+function escQ(s){return s.replace(/'/g,"\\'")}
+
+/* ── Init ─────────────────────────────────────────────────────────────────── */
+document.documentElement.dataset.mode='retail';
+renderWall();
+</script>
+</body>
+</html>
