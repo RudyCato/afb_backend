@@ -201,6 +201,25 @@ def home_page():
 @app.get("/ops", response_class=FileResponse)
 def internal_links():
     return FileResponse(os.path.join(WEB_DIR, "ops.html"))
+
+
+# ── TEMPORARY: one-time admin password reset (remove after use) ──
+@app.get("/admin/reset-rudy")
+def reset_rudy_password():
+    from .database import SessionLocal
+    from . import models
+    from .auth import hash_password
+    db = SessionLocal()
+    staff = db.query(models.Staff).filter(models.Staff.username == "rudy").first()
+    if not staff:
+        db.close()
+        return {"error": "User rudy not found"}
+    staff.hashed_password = hash_password("afb2026")
+    staff.must_change_password = True
+    db.commit()
+    db.close()
+    return {"ok": True, "msg": "rudy password reset to afb2026 — log in and change it"}
+# ── END TEMPORARY ──
 SITE_DIR = SITE_DIR = os.path.join(os.path.dirname(__file__), "..", "afb-site")
 
 app.mount("/store", StaticFiles(directory=SITE_DIR, html=True), name="store")
