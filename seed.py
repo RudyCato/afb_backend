@@ -512,9 +512,22 @@ def seed_staff_users(db):
     return created
 
 
-def run(catalog_only=False):
+def run(catalog_only=False, if_empty=False):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
+
+    if if_empty:
+        # Skip seeding entirely if any staff user already exists (DB already seeded)
+        existing = db.query(models.Staff).first()
+        if existing:
+            db.close()
+            print("Database already seeded — skipping.")
+            return
+        # DB is empty: fall through to full seed below
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        catalog_only = False  # force full seed
 
     if catalog_only:
         # wipe products/inventory only, leave customers/orders alone
@@ -546,4 +559,7 @@ def run(catalog_only=False):
 
 
 if __name__ == "__main__":
-    run(catalog_only="--catalog-only" in sys.argv)
+    run(
+        catalog_only="--catalog-only" in sys.argv,
+        if_empty="--if-empty" in sys.argv,
+    )
