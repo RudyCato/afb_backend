@@ -195,7 +195,7 @@ def hr_portal_page(staff=Depends(get_current_staff_optional)):
 
 @app.get("/", response_class=FileResponse)
 def home_page():
-    return FileResponse(os.path.join(WEB_DIR, "home.html"))
+    return FileResponse(os.path.join(WEB_DIR, "ops.html"))
 
 
 @app.get("/ops", response_class=FileResponse)
