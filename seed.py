@@ -518,7 +518,7 @@ def run(catalog_only=False, if_empty=False):
 
     if if_empty:
         # Skip seeding entirely if any staff user already exists (DB already seeded)
-        existing = db.query(models.Staff).first()
+        existing = db.query(models.StaffUser).first()
         if existing:
             db.close()
             print("Database already seeded — skipping.")
