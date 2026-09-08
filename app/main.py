@@ -204,21 +204,28 @@ def internal_links():
 
 
 # ── TEMPORARY: one-time admin password reset (remove after use) ──
+import hashlib, secrets as _secrets
 @app.get("/admin/reset-rudy")
 def reset_rudy_password():
     from .database import SessionLocal
     from . import models
-    from .auth import hash_password
+    salt = _secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", b"afb2026", bytes.fromhex(salt), 260000)
+    pw_hash = f"{salt}${digest.hex()}"
     db = SessionLocal()
-    staff = db.query(models.StaffUser).filter(models.StaffUser.username == "rudy").first()
-    if not staff:
+    try:
+        staff = db.query(models.StaffUser).filter(models.StaffUser.username == "rudy").first()
+        if not staff:
+            return {"error": "User rudy not found"}
+        staff.password_hash = pw_hash
+        staff.must_change_password = True
+        db.commit()
+        return {"ok": True, "msg": "rudy password reset to afb2026"}
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
+    finally:
         db.close()
-        return {"error": "User rudy not found"}
-    staff.password_hash = hash_password("afb2026")
-    staff.must_change_password = True
-    db.commit()
-    db.close()
-    return {"ok": True, "msg": "rudy password reset to afb2026 — log in and change it"}
 # ── END TEMPORARY ──
 SITE_DIR = SITE_DIR = os.path.join(os.path.dirname(__file__), "..", "afb-site")
 
