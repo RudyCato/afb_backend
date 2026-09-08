@@ -210,11 +210,11 @@ def reset_rudy_password():
     from . import models
     from .auth import hash_password
     db = SessionLocal()
-    staff = db.query(models.Staff).filter(models.Staff.username == "rudy").first()
+    staff = db.query(models.StaffUser).filter(models.StaffUser.username == "rudy").first()
     if not staff:
         db.close()
         return {"error": "User rudy not found"}
-    staff.hashed_password = hash_password("afb2026")
+    staff.password_hash = hash_password("afb2026")
     staff.must_change_password = True
     db.commit()
     db.close()
